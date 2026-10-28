@@ -90,7 +90,7 @@
   .hero{padding:18px 0 8px}
   @media(min-width:900px){.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;padding:36px 0 20px}}
   .hero h1{font-size:38px}
-  @media(min-width:900px){.hero h1{font-size:44px}}
+  @media(min-width:900px){.hero h1{font-size:clamp(34px,3.7vw,44px)}}
   .hero .kicker{font-family:var(--serif);color:var(--rose);font-size:15px;letter-spacing:2px;margin-bottom:8px}
   .demo{position:relative;width:100%;border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh);aspect-ratio:4/5;max-width:420px;margin:16px auto;background:#fff;touch-action:none;user-select:none;cursor:ew-resize}
   @media(min-width:900px){.demo{margin:0 0 0 auto}}
@@ -605,7 +605,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '2.5.0';
-const BUILD = '2026-10-28-12';
+const BUILD = '2026-10-28-13';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -666,6 +666,7 @@ const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings'];
 const NEED_LOGIN=['wardrobe','history','credits','admin','settings'];
 const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=magiclink|type=recovery)=?/;
 function go(v){
+  if (window.__pickResolve) window.__pickResolve();
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
   if (NEED_LOGIN.includes(v) && !state.user) { if(!document.querySelector('.view.on')) go('home'); openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
@@ -866,7 +867,7 @@ function renderSlots(){
   const n=Object.keys(state.slots).length * mult; $('costN').textContent=n;
   if (state.me){ const free=Math.min(state.me.free_left,n); $('costNote').textContent = n? `（免費額度抵 ${free} 點，點數扣 ${n-free} 點）`:''; }
   renderFit();
-  $('btnRun').disabled = !n;
+  $('btnRun').disabled = !n || busy;
 }
 function openSlotMenu(type){
   const def=SLOT_DEFS.find(s=>s.type===type);
@@ -1070,7 +1071,7 @@ $('btnRun').onclick=async()=>{
     busy=false; $('btnRun').disabled=false;
     let finalImg = imgs[0];
     if (imgs.length > 1) {
-      finalImg = await new Promise(res=>{ $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選妳比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>res(imgs[+el.dataset.i])); });
+      finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選妳比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
     state.result = finalImg;
     renderCompare(state.personOrig, finalImg);
@@ -1106,7 +1107,7 @@ function renderCompare(before, after){
 $('btnDownload').onclick=()=>{ if(state.result) saveImage(state.result,'試穿吧_'+Date.now()+'.png'); };
 async function shareImage(dataUri){
   if (IS_APP && Plug('Filesystem') && Plug('Share')) {
-    try{ const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.png', data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
+    try{ const ext=/^data:image\/jpe?g/i.test(dataUri)?'jpg':'png'; const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.'+ext, data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
   }
   try{ const file=new File([dataUriToBlob(dataUri)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else { toast('此裝置不支援分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); } }catch(e){ if(e&&e.name==='AbortError') return; toast('無法分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); }
 }
@@ -1132,7 +1133,9 @@ async function storyImage(before, after){
 }
 $('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在妳身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
-$('btnContinue').onclick=()=>{ if(!state.result) return; setPerson(state.result); state.slots={}; renderSlots(); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
+const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
+function resetResult(){ state.result=null; $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
+$('btnContinue').onclick=()=>{ if(!state.result) return; const img=state.result; resetResult(); setPerson(img); state.slots={}; renderSlots(); setStep(2); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */
 let wardrobeFilter='';
@@ -1281,7 +1284,7 @@ restoreSession();
 renderSlots();
 loadPrefs();
 initAuth();
-window.addEventListener('hashchange',()=>{ const h=location.hash.replace('#',''); const cur=document.querySelector('.view.on'); if(VIEWS.includes(h) && (!cur||cur.id!=='view-'+h)) go(h); });
+window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h); });
 (function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();
 })();
 </script>
