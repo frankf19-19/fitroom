@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>雲端試衣間</title>
+<meta name="description" content="輸入身材與衣服尺寸，免費預覽上衣與下身穿在身上的比例與合身度。">
+<style>
+  :root{
+    --bg:#faf7f5; --card:#ffffff; --ink:#2b2325; --muted:#8a7f82; --line:#eadfe0;
+    --accent:#c96a7d; --accent-2:#f3d9df; --ok:#3f9a6e; --warn:#d9962b; --bad:#d6514f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-tap-highlight-color:transparent}
+  header{position:sticky;top:0;z-index:10;background:rgba(250,247,245,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+  header h1{font-size:18px;margin:0;letter-spacing:.5px}
+  header h1 span{color:var(--accent)}
+  .ver{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:2px 8px}
+  main{max-width:1100px;margin:0 auto;padding:16px;display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:900px){main{grid-template-columns:400px 1fr;align-items:start}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .card h2 .n{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;align-items:center;justify-content:center}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px 10px}
+  label.f{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px}
+  label.f input,label.f select{font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);width:100%}
+  label.f input:focus{outline:2px solid var(--accent-2);border-color:var(--accent)}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:14px;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.ghost{background:transparent}
+  .btn:active{transform:scale(.98)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .upload{border:2px dashed var(--line);border-radius:12px;padding:14px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;position:relative;background:#fffdfd}
+  .upload input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .upload img{max-height:90px;max-width:100%;display:block;margin:6px auto 0;border-radius:8px;background:
+    repeating-conic-gradient(#eee 0 25%,#fff 0 50%) 0 0/16px 16px}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .pill.ok{background:#e4f4ec;color:var(--ok)} .pill.warn{background:#fbefd9;color:var(--warn)} .pill.bad{background:#fde5e5;color:var(--bad)} .pill.na{background:#f0ecec;color:var(--muted)}
+  .fit-line{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .fit-line:last-child{border-bottom:none}
+  .stage-wrap{position:sticky;top:64px}
+  .stage{background:linear-gradient(180deg,#fff 0%,#fbf4f2 100%);border:1px solid var(--line);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;align-items:center;gap:10px}
+  canvas#stage{width:100%;max-width:420px;height:auto;border-radius:10px;touch-action:none;cursor:grab;background:#fff}
+  .tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;width:100%}
+  .tools .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .tools .seg button{border:none;background:#fff;padding:7px 12px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .tools .seg button.on{background:var(--accent);color:#fff}
+  .slider{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);width:100%;max-width:420px}
+  .slider input{flex:1}
+  .ai-box{border:1px solid var(--accent-2);background:#fff7f8;border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
+  .ai-box b{color:var(--accent)}
+  details summary{cursor:pointer;font-size:13px;color:var(--accent);margin:4px 0}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2b2325;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s}
+  .toast.show{opacity:1}
+  footer{text-align:center;font-size:12px;color:var(--muted);padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>雲端<span>試衣間</span></h1>
+  <span class="ver" id="verBadge"></span>
+</header>
+
+<main>
+  <section id="panel">
+    <div class="card">
+      <h2><span class="n">1</span>妳的身材</h2>
+      <div class="grid3">
+        <label class="f">身高 (cm)<input type="number" id="bHeight" value="162" min="130" max="200"></label>
+        <label class="f">體重 (kg)<input type="number" id="bWeight" value="52" min="30" max="150"></label>
+        <label class="f">肩寬 (cm)<input type="number" id="bShoulder" value="38" min="28" max="55"></label>
+        <label class="f">胸圍 (cm)<input type="number" id="bBust" value="84" min="60" max="140"></label>
+        <label class="f">腰圍 (cm)<input type="number" id="bWaist" value="66" min="50" max="130"></label>
+        <label class="f">臀圍 (cm)<input type="number" id="bHip" value="90" min="60" max="150"></label>
+      </div>
+      <div class="hint">資料只存在妳的瀏覽器，不會上傳。肩寬不確定可留預設值，系統會依身高估算。</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>上衣</h2>
+      <div class="upload" id="upTop">
+        <input type="file" accept="image/*" id="fileTop">
+        <div>點此上傳上衣照片（白底或透明 PNG 最佳）</div>
+        <img id="prevTop" style="display:none" alt="">
+      </div>
+      <div class="grid3" style="margin-top:10px">
+        <label class="f">尺碼
+          <select id="sizeTop">
+            <option value="">自訂</option>
+            <option value="XS">XS</option><option value="S">S</option><option value="M" selected>M</option><option value="L">L</option><option value="XL">XL</option>
+          </select></label>
+        <label class="f">胸寬平量 (cm)<input type="number" id="gTopChest" placeholder="例 44"></label>
+        <label class="f">衣長 (cm)<input type="number" id="gTopLen" placeholder="例 58"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="rmTop" checked style="width:auto">自動去白底</label>
+        <button class="btn ghost" id="clearTop">移除上衣</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>褲子 / 裙子</h2>
+      <div class="upload" id="upBot">
+        <input type="file" accept="image/*" id="fileBot">
+        <div>點此上傳褲子或裙子照片</div>
+        <img id="prevBot" style="display:none" alt="">
+      </div>
+      <div class="grid3" style="margin-top:10px">
+        <label class="f">尺碼
+          <select id="sizeBot">
+            <option value="">自訂</option>
+            <option value="XS">XS</option><option value="S">S</option><option value="M" selected>M</option><option value="L">L</option><option value="XL">XL</option>
+          </select></label>
+        <label class="f">腰寬平量 (cm)<input type="number" id="gBotWaist" placeholder="例 34"></label>
+        <label class="f">臀寬平量 (cm)<input type="number" id="gBotHip" placeholder="例 48"></label>
+        <label class="f">長度 (cm)<input type="number" id="gBotLen" placeholder="例 96"></label>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <label class="f" style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="rmBot" checked style="width:auto">自動去白底</label>
+        <button class="btn ghost" id="clearBot">移除下身</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>合身度</h2>
+      <div id="fitResult"><div class="hint">填好身材與衣服尺寸後，這裡會顯示每個部位的鬆緊。</div></div>
+      <details style="margin-top:8px"><summary>尺碼表與判斷方式</summary>
+        <div class="hint">
+          通用尺碼（胸圍／腰圍／臀圍 cm）：XS 80/60/84、S 84/64/88、M 88/68/92、L 92/72/96、XL 96/76/100。<br>
+          「平量」是衣服攤平量一邊的寬度，乘 2 即為衣服圍度。鬆份 = 衣服圍度 − 身體圍度：小於 0 偏緊、0–6 合身、6–14 寬鬆、超過 14 過大。各品牌版型不同，此為參考值。
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="stage-wrap">
+    <div class="stage">
+      <canvas id="stage" width="420" height="760"></canvas>
+      <div class="tools">
+        <div class="seg">
+          <button id="selTop" class="on">調整上衣</button>
+          <button id="selBot">調整下身</button>
+        </div>
+        <button class="btn" id="autoFit">自動貼合</button>
+        <button class="btn primary" id="download">下載圖片</button>
+      </div>
+      <div class="slider">大小<input type="range" id="scale" min="50" max="160" value="100"><span id="scaleVal">100%</span></div>
+      <div class="hint" style="text-align:center">可在人形上直接拖曳衣服位置。</div>
+      <div class="ai-box">
+        <b>AI 真實合成（即將推出）</b><br>
+        上傳自己的全身照，由 AI 把這套穿搭合成到妳的照片上。此功能為付費功能，第二期開放。
+        <div style="margin-top:8px"><button class="btn" disabled>上傳全身照 · 敬請期待</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>雲端試衣間 · 紙娃娃預覽為比例示意，實際穿著以商品為準</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const APP_VERSION = '0.1.0';
+const BUILD = '2026-10-28-01';
+document.getElementById('verBadge').textContent = 'v' + APP_VERSION + ' · ' + BUILD;
+
+/* ---------- 共用 ---------- */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+let toastT; function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2200);}
+
+const SIZE_CHART = { // 胸圍 / 腰圍 / 臀圍（衣服圍度）
+  XS:{bust:80,waist:60,hip:84}, S:{bust:84,waist:64,hip:88}, M:{bust:88,waist:68,hip:92}, L:{bust:92,waist:72,hip:96}, XL:{bust:96,waist:76,hip:100}
+};
+const WIDTH_RATIO = 2.6; // 圍度 → 正面可見寬度
+const STAGE_W = 420, STAGE_H = 760, MARGIN_TOP = 36, FIG_H = 690;
+
+/* ---------- 狀態 ---------- */
+const body = {height:162,weight:52,shoulder:38,bust:84,waist:66,hip:90};
+const layers = {
+  top:{img:null,x:0,y:0,w:0,h:0,scale:1,baseW:0,baseH:0,autoDone:false},
+  bot:{img:null,x:0,y:0,w:0,h:0,scale:1,baseW:0,baseH:0,autoDone:false}
+};
+let active = 'top';
+let landmarks = null;
+
+/* ---------- 身材讀寫 ---------- */
+function loadBody(){
+  try{const s=JSON.parse(localStorage.getItem('fitroom.body')||'null'); if(s) Object.assign(body,s);}catch(e){}
+  $('bHeight').value=body.height;$('bWeight').value=body.weight;$('bShoulder').value=body.shoulder;
+  $('bBust').value=body.bust;$('bWaist').value=body.waist;$('bHip').value=body.hip;
+}
+function readBody(){
+  body.height=clamp(+$('bHeight').value||162,130,200);
+  body.weight=clamp(+$('bWeight').value||52,30,150);
+  body.shoulder=clamp(+$('bShoulder').value||Math.round(body.height*0.235),28,55);
+  body.bust=clamp(+$('bBust').value||84,60,140);
+  body.waist=clamp(+$('bWaist').value||66,50,130);
+  body.hip=clamp(+$('bHip').value||90,60,150);
+  try{localStorage.setItem('fitroom.body',JSON.stringify(body));}catch(e){}
+}
+
+/* ---------- 人形關鍵點 ---------- */
+function computeLandmarks(){
+  const H = FIG_H, cx = STAGE_W/2, pxPerCm = H/body.height, top = MARGIN_TOP;
+  const y = f => top + H*f;
+  const half = circ => (circ/WIDTH_RATIO)/2*pxPerCm;
+  return {
+    cx, pxPerCm, top,
+    headCy:y(0.065), headRx:H*0.044, headRy:H*0.062,
+    neckTop:y(0.125), neckBot:y(0.165), neckHalf:H*0.028,
+    shoulderY:y(0.18), shoulderHalf:body.shoulder/2*pxPerCm,
+    bustY:y(0.275), bustHalf:half(body.bust),
+    waistY:y(0.39), waistHalf:half(body.waist),
+    hipY:y(0.50), hipHalf:half(body.hip),
+    crotchY:y(0.54),
+    kneeY:y(0.73), kneeHalf:H*0.040,
+    ankleY:y(0.95), ankleHalf:H*0.024,
+    footY:y(1.0),
+    armW:H*0.036, wristY:y(0.61)
+  };
+}
+
+/* ---------- 畫人形 ---------- */
+function drawFigure(ctx,L){
+  const skin='#f1d9c8', skinLine='#d9b9a3', hair='#4a3230';
+  ctx.save();
+  ctx.lineWidth=1.2; ctx.strokeStyle=skinLine; ctx.fillStyle=skin;
+  // 手臂（兩側）
+  [-1,1].forEach(s=>{
+    const sx = L.cx + s*(L.shoulderHalf-2);
+    ctx.beginPath();
+    ctx.moveTo(sx, L.shoulderY);
+    ctx.quadraticCurveTo(sx+s*L.armW*1.1, L.bustY, sx+s*L.armW*0.9, L.waistY);
+    ctx.quadraticCurveTo(sx+s*L.armW*0.8, L.hipY, sx+s*L.armW*0.75, L.wristY+10);
+    ctx.lineTo(sx+s*L.armW*0.1, L.wristY+12);
+    ctx.quadraticCurveTo(sx+s*L.armW*0.05, L.hipY, sx-s*4, L.waistY);
+    ctx.quadraticCurveTo(sx-s*6, L.bustY, sx, L.shoulderY);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+  // 腿
+  [-1,1].forEach(s=>{
+    const inner = s*4, legCx = L.cx + s*(L.hipHalf*0.48);
+    ctx.beginPath();
+    ctx.moveTo(L.cx+inner, L.crotchY);
+    ctx.lineTo(L.cx+s*L.hipHalf, L.hipY);
+    ctx.quadraticCurveTo(legCx+s*L.kneeHalf*1.3, L.kneeY-40, legCx+s*L.kneeHalf, L.kneeY);
+    ctx.quadraticCurveTo(legCx+s*L.ankleHalf*1.3, L.ankleY-40, legCx+s*L.ankleHalf, L.ankleY);
+    ctx.lineTo(legCx+s*(L.ankleHalf+8), L.footY);
+    ctx.lineTo(legCx-s*(L.ankleHalf), L.footY);
+    ctx.lineTo(legCx-s*L.ankleHalf, L.ankleY);
+    ctx.quadraticCurveTo(legCx-s*L.kneeHalf*0.9, L.ankleY-40, legCx-s*L.kneeHalf*0.9, L.kneeY);
+    ctx.quadraticCurveTo(legCx-s*L.kneeHalf*0.9, L.kneeY-40, L.cx+inner, L.crotchY);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  });
+  // 軀幹
+  ctx.beginPath();
+  ctx.moveTo(L.cx-L.neckHalf, L.neckBot);
+  ctx.quadraticCurveTo(L.cx-L.shoulderHalf*0.7, L.neckBot+2, L.cx-L.shoulderHalf, L.shoulderY);
+  ctx.quadraticCurveTo(L.cx-L.bustHalf*1.05, L.bustY-10, L.cx-L.bustHalf, L.bustY);
+  ctx.quadraticCurveTo(L.cx-L.waistHalf*0.98, L.waistY-16, L.cx-L.waistHalf, L.waistY);
+  ctx.quadraticCurveTo(L.cx-L.hipHalf*1.02, L.hipY-18, L.cx-L.hipHalf, L.hipY);
+  ctx.quadraticCurveTo(L.cx-L.hipHalf*0.6, L.crotchY+6, L.cx, L.crotchY);
+  ctx.quadraticCurveTo(L.cx+L.hipHalf*0.6, L.crotchY+6, L.cx+L.hipHalf, L.hipY);
+  ctx.quadraticCurveTo(L.cx+L.hipHalf*1.02, L.hipY-18, L.cx+L.waistHalf, L.waistY);
+  ctx.quadraticCurveTo(L.cx+L.waistHalf*0.98, L.waistY-16, L.cx+L.bustHalf, L.bustY);
+  ctx.quadraticCurveTo(L.cx+L.bustHalf*1.05, L.bustY-10, L.cx+L.shoulderHalf, L.shoulderY);
+  ctx.quadraticCurveTo(L.cx+L.shoulderHalf*0.7, L.neckBot+2, L.cx+L.neckHalf, L.neckBot);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+  // 內衣示意（淡色）
+  ctx.fillStyle='#e8cfd3';
+  ctx.beginPath();
+  ctx.moveTo(L.cx-L.bustHalf*0.95, L.bustY-14);
+  ctx.quadraticCurveTo(L.cx, L.bustY+30, L.cx+L.bustHalf*0.95, L.bustY-14);
+  ctx.quadraticCurveTo(L.cx+L.bustHalf*0.9, L.bustY+24, L.cx, L.bustY+30);
+  ctx.quadraticCurveTo(L.cx-L.bustHalf*0.9, L.bustY+24, L.cx-L.bustHalf*0.95, L.bustY-14);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(L.cx-L.hipHalf*0.95, L.hipY-10);
+  ctx.lineTo(L.cx+L.hipHalf*0.95, L.hipY-10);
+  ctx.quadraticCurveTo(L.cx+L.hipHalf*0.5, L.crotchY+4, L.cx, L.crotchY+6);
+  ctx.quadraticCurveTo(L.cx-L.hipHalf*0.5, L.crotchY+4, L.cx-L.hipHalf*0.95, L.hipY-10);
+  ctx.fill();
+  // 脖子
+  ctx.fillStyle=skin; ctx.beginPath();
+  ctx.rect(L.cx-L.neckHalf, L.neckTop, L.neckHalf*2, L.neckBot-L.neckTop+3); ctx.fill();
+  // 頭
+  ctx.beginPath(); ctx.ellipse(L.cx, L.headCy, L.headRx, L.headRy, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  // 頭髮
+  ctx.fillStyle=hair; ctx.beginPath();
+  ctx.ellipse(L.cx, L.headCy-L.headRy*0.25, L.headRx*1.12, L.headRy*0.85, 0, Math.PI, Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(L.cx-L.headRx*1.12, L.headCy-L.headRy*0.25);
+  ctx.quadraticCurveTo(L.cx-L.headRx*1.35, L.shoulderY-10, L.cx-L.headRx*0.9, L.shoulderY+16);
+  ctx.lineTo(L.cx-L.headRx*0.55, L.shoulderY+10);
+  ctx.quadraticCurveTo(L.cx-L.headRx*0.95, L.neckTop, L.cx-L.headRx*0.95, L.headCy-L.headRy*0.1);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(L.cx+L.headRx*1.12, L.headCy-L.headRy*0.25);
+  ctx.quadraticCurveTo(L.cx+L.headRx*1.35, L.shoulderY-10, L.cx+L.headRx*0.9, L.shoulderY+16);
+  ctx.lineTo(L.cx+L.headRx*0.55, L.shoulderY+10);
+  ctx.quadraticCurveTo(L.cx+L.headRx*0.95, L.neckTop, L.cx+L.headRx*0.95, L.headCy-L.headRy*0.1);
+  ctx.closePath(); ctx.fill();
+  // 五官（極簡）
+  ctx.strokeStyle='#7a5a52'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.arc(L.cx-L.headRx*0.38, L.headCy+2, 2.2, 0, Math.PI*2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(L.cx+L.headRx*0.38, L.headCy+2, 2.2, 0, Math.PI*2); ctx.stroke();
+  ctx.strokeStyle='#c9808e'; ctx.beginPath(); ctx.arc(L.cx, L.headCy+L.headRy*0.45, 5, 0.15*Math.PI, 0.85*Math.PI); ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------- 衣服圖層 ---------- */
+function autoPlace(key){
+  const Ly = landmarks, Lr = layers[key]; if(!Lr.img) return;
+  const aspect = Lr.img.height/Lr.img.width;
+  if(key==='top'){
+    const len = +$('gTopLen').value;
+    if(len>0){ Lr.baseH = len*Ly.pxPerCm; Lr.baseW = Lr.baseH/aspect; }
+    else { Lr.baseW = Ly.shoulderHalf*2*1.18; Lr.baseH = Lr.baseW*aspect; }
+    Lr.scale=1; Lr.w=Lr.baseW; Lr.h=Lr.baseH;
+    Lr.x = Ly.cx - Lr.w/2; Lr.y = Ly.shoulderY - Lr.h*0.04;
+  } else {
+    const len = +$('gBotLen').value;
+    if(len>0){ Lr.baseH = len*Ly.pxPerCm; Lr.baseW = Lr.baseH/aspect; }
+    else { Lr.baseW = Ly.hipHalf*2*1.12; Lr.baseH = Lr.baseW*aspect; }
+    Lr.scale=1; Lr.w=Lr.baseW; Lr.h=Lr.baseH;
+    Lr.x = Ly.cx - Lr.w/2; Lr.y = Ly.waistY - 4;
+  }
+  Lr.autoDone=true;
+}
+function applyScale(key){
+  const Lr=layers[key]; if(!Lr.img) return;
+  const cx=Lr.x+Lr.w/2, cy=Lr.y+Lr.h/2;
+  Lr.w=Lr.baseW*Lr.scale; Lr.h=Lr.baseH*Lr.scale;
+  Lr.x=cx-Lr.w/2; Lr.y=cy-Lr.h/2;
+}
+
+/* ---------- 去白底 ---------- */
+function removeBackground(img, tol){
+  const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+  const x=c.getContext('2d'); x.drawImage(img,0,0);
+  const d=x.getImageData(0,0,c.width,c.height), p=d.data, W=c.width, Hh=c.height;
+  // 取四角平均當背景色
+  const samp=[[0,0],[W-1,0],[0,Hh-1],[W-1,Hh-1],[W>>1,0],[W>>1,Hh-1],[0,Hh>>1],[W-1,Hh>>1]];
+  let r=0,g=0,b=0; samp.forEach(([sx,sy])=>{const i=(sy*W+sx)*4;r+=p[i];g+=p[i+1];b+=p[i+2];});
+  r/=samp.length;g/=samp.length;b/=samp.length;
+  const soft=tol*0.6;
+  for(let i=0;i<p.length;i+=4){
+    if(p[i+3]===0) continue;
+    const dist=Math.sqrt((p[i]-r)**2+(p[i+1]-g)**2+(p[i+2]-b)**2);
+    if(dist<tol-soft) p[i+3]=0;
+    else if(dist<tol) p[i+3]=Math.round(p[i+3]*(dist-(tol-soft))/soft);
+  }
+  x.putImageData(d,0,0);
+  const out=new Image(); out.src=c.toDataURL('image/png'); return out;
+}
+function loadGarment(key, file){
+  if(!file) return;
+  const rd=new FileReader();
+  rd.onload=e=>{
+    const im=new Image();
+    im.onload=()=>{
+      const useRm = $(key==='top'?'rmTop':'rmBot').checked;
+      const finish = finalImg=>{
+        layers[key].img=finalImg; layers[key].autoDone=false;
+        const pv=$(key==='top'?'prevTop':'prevBot'); pv.src=finalImg.src; pv.style.display='block';
+        autoPlace(key); active=key; syncSeg(); render(); toast(key==='top'?'上衣已放上':'下身已放上');
+      };
+      if(useRm){ const o=removeBackground(im,60); if(o.complete) finish(o); else o.onload=()=>finish(o); }
+      else finish(im);
+    };
+    im.src=e.target.result;
+  };
+  rd.readAsDataURL(file);
+}
+
+/* ---------- 合身度 ---------- */
+function fitTag(ease){
+  if(ease==null||isNaN(ease)) return '<span class="pill na">未填</span>';
+  if(ease<0) return '<span class="pill bad">偏緊 '+ease.toFixed(0)+' cm</span>';
+  if(ease<=6) return '<span class="pill ok">合身 +'+ease.toFixed(0)+' cm</span>';
+  if(ease<=14) return '<span class="pill warn">寬鬆 +'+ease.toFixed(0)+' cm</span>';
+  return '<span class="pill bad">過大 +'+ease.toFixed(0)+' cm</span>';
+}
+function garmentCirc(key){
+  const size = $(key==='top'?'sizeTop':'sizeBot').value;
+  if(key==='top'){
+    const flat=+$('gTopChest').value;
+    const bust = flat>0 ? flat*2 : (SIZE_CHART[size]?SIZE_CHART[size].bust:null);
+    return {bust, len:+$('gTopLen').value||null};
+  }
+  const fw=+$('gBotWaist').value, fh=+$('gBotHip').value;
+  return {
+    waist: fw>0?fw*2:(SIZE_CHART[size]?SIZE_CHART[size].waist:null),
+    hip: fh>0?fh*2:(SIZE_CHART[size]?SIZE_CHART[size].hip:null),
+    len:+$('gBotLen').value||null
+  };
+}
+function renderFit(){
+  const out=[]; const t=garmentCirc('top'), b=garmentCirc('bot');
+  const legCm = body.height*0.46; // 腰到地面概略
+  if(layers.top.img || $('gTopChest').value){
+    out.push('<div class="fit-line"><span>上衣 · 胸圍</span>'+fitTag(t.bust!=null?t.bust-body.bust:null)+'</div>');
+    if(t.len) out.push('<div class="fit-line"><span>上衣 · 衣長</span><span class="pill na">約到'+(t.len< body.height*0.22?'腰上':t.len<body.height*0.3?'腰線':t.len<body.height*0.36?'臀部':'大腿')+'</span></div>');
+  }
+  if(layers.bot.img || $('gBotWaist').value || $('gBotHip').value){
+    out.push('<div class="fit-line"><span>下身 · 腰圍</span>'+fitTag(b.waist!=null?b.waist-body.waist:null)+'</div>');
+    out.push('<div class="fit-line"><span>下身 · 臀圍</span>'+fitTag(b.hip!=null?b.hip-body.hip:null)+'</div>');
+    if(b.len) out.push('<div class="fit-line"><span>下身 · 長度</span><span class="pill na">約到'+(b.len<legCm*0.5?'大腿':b.len<legCm*0.8?'膝蓋':b.len<legCm*0.97?'小腿':'腳踝')+'</span></div>');
+  }
+  const bmi = body.weight/((body.height/100)**2);
+  out.push('<div class="fit-line"><span>BMI 參考</span><span class="pill na">'+bmi.toFixed(1)+'</span></div>');
+  $('fitResult').innerHTML = out.join('');
+}
+
+/* ---------- 渲染 ---------- */
+const canvas=$('stage'), ctx=canvas.getContext('2d');
+function render(){
+  landmarks=computeLandmarks();
+  ctx.clearRect(0,0,STAGE_W,STAGE_H);
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,STAGE_W,STAGE_H);
+  // 地面線
+  ctx.strokeStyle='#efe3e4'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(40,landmarks.footY+1); ctx.lineTo(STAGE_W-40,landmarks.footY+1); ctx.stroke();
+  drawFigure(ctx,landmarks);
+  ['bot','top'].forEach(k=>{
+    const L=layers[k]; if(!L.img) return;
+    ctx.drawImage(L.img,L.x,L.y,L.w,L.h);
+    if(k===active){ ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle='rgba(201,106,125,.8)'; ctx.lineWidth=1.5; ctx.strokeRect(L.x,L.y,L.w,L.h); ctx.restore(); }
+  });
+  // 身高標示
+  ctx.fillStyle='#b9aaad'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText(body.height+' cm', 14, landmarks.top+8);
+  ctx.strokeStyle='#e4d6d8'; ctx.beginPath(); ctx.moveTo(10,landmarks.top); ctx.lineTo(10,landmarks.footY); ctx.stroke();
+  renderFit();
+}
+
+/* ---------- 拖曳 ---------- */
+let drag=null;
+function toCanvas(e){const r=canvas.getBoundingClientRect();return {x:(e.clientX-r.left)*STAGE_W/r.width,y:(e.clientY-r.top)*STAGE_H/r.height};}
+canvas.addEventListener('pointerdown',e=>{
+  const p=toCanvas(e);
+  const hit=['top','bot'].find(k=>{const L=layers[k];return L.img&&p.x>=L.x&&p.x<=L.x+L.w&&p.y>=L.y&&p.y<=L.y+L.h;});
+  if(hit){ active=hit; syncSeg(); }
+  const L=layers[active]; if(!L.img) return;
+  drag={dx:p.x-L.x,dy:p.y-L.y}; canvas.setPointerCapture(e.pointerId); canvas.style.cursor='grabbing'; render();
+});
+canvas.addEventListener('pointermove',e=>{ if(!drag) return; const p=toCanvas(e), L=layers[active]; L.x=p.x-drag.dx; L.y=p.y-drag.dy; render(); });
+const endDrag=()=>{drag=null;canvas.style.cursor='grab';};
+canvas.addEventListener('pointerup',endDrag); canvas.addEventListener('pointercancel',endDrag);
+
+/* ---------- 控制列 ---------- */
+function syncSeg(){
+  $('selTop').classList.toggle('on',active==='top'); $('selBot').classList.toggle('on',active==='bot');
+  const s=Math.round(layers[active].scale*100); $('scale').value=s; $('scaleVal').textContent=s+'%';
+}
+$('selTop').onclick=()=>{active='top';syncSeg();render();};
+$('selBot').onclick=()=>{active='bot';syncSeg();render();};
+$('scale').oninput=e=>{const L=layers[active]; if(!L.img) return; L.scale=+e.target.value/100; applyScale(active); $('scaleVal').textContent=e.target.value+'%'; render();};
+$('autoFit').onclick=()=>{['top','bot'].forEach(autoPlace);syncSeg();render();toast('已依身材重新貼合');};
+$('download').onclick=()=>{
+  const a=document.createElement('a'); a.download='試衣間_'+body.height+'cm.png'; a.href=canvas.toDataURL('image/png'); a.click();
+};
+$('fileTop').onchange=e=>loadGarment('top',e.target.files[0]);
+$('fileBot').onchange=e=>loadGarment('bot',e.target.files[0]);
+$('clearTop').onclick=()=>{layers.top.img=null;$('prevTop').style.display='none';$('fileTop').value='';render();};
+$('clearBot').onclick=()=>{layers.bot.img=null;$('prevBot').style.display='none';$('fileBot').value='';render();};
+['rmTop','rmBot'].forEach(id=>$(id).onchange=()=>{const k=id==='rmTop'?'top':'bot'; const f=$(k==='top'?'fileTop':'fileBot').files[0]; if(f) loadGarment(k,f);});
+
+['bHeight','bWeight','bShoulder','bBust','bWaist','bHip'].forEach(id=>$(id).addEventListener('input',()=>{readBody();['top','bot'].forEach(k=>{if(layers[k].img) autoPlace(k);});syncSeg();render();}));
+['gTopChest','gTopLen','gBotWaist','gBotHip','gBotLen'].forEach(id=>$(id).addEventListener('input',()=>{
+  const k = id.startsWith('gTop')?'top':'bot';
+  if(id.endsWith('Len') && layers[k].img) autoPlace(k);
+  syncSeg(); render();
+}));
+['sizeTop','sizeBot'].forEach(id=>$(id).addEventListener('change',render));
+
+/* ---------- 啟動 ---------- */
+loadBody(); readBody(); syncSeg(); render();
+})();
+</script>
+</body>
+</html>
