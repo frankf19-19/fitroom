@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>試穿吧 TryOn — 買之前，先看看穿在妳身上的樣子</title>
 <meta name="description" content="上傳一張全身照，再放入想試的上衣、褲裙、洋裝、鞋子、帽子、飾品或髮型，AI 直接合成穿上身的真實照片。">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src * data: blob:; worker-src 'self' blob:; frame-src 'none'; base-uri 'self'; form-action 'self' https://payment.ecpay.com.tw https://payment-stage.ecpay.com.tw">
 <meta name="theme-color" content="#fff7f3">
 <meta property="og:title" content="試穿吧 TryOn — 一張照片，先看穿上身的樣子再買">
 <meta property="og:description" content="上傳全身照，放入想試的衣服、鞋子、帽子、飾品、髮型，AI 直接合成真實穿搭照。">
@@ -286,6 +287,26 @@
   .hitem .fav.on svg{fill:var(--rose)}
   .filt{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none}
   .filt::-webkit-scrollbar{display:none}
+  /* 導覽（首次） */
+  .onb{position:fixed;inset:0;z-index:90;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:28px;text-align:center}
+  .onb.on{display:flex}
+  .onb .ill{width:150px;height:150px;border-radius:48px;display:grid;place-items:center;margin-bottom:26px;transition:background .3s}
+  .onb .ill svg{width:70px;height:70px;stroke:var(--ink);fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.85}
+  .onb h2{font-size:24px;margin-bottom:8px}
+  .onb p{color:var(--ink2);font-size:15px;max-width:300px;margin:0 0 28px;line-height:1.7}
+  .onb .dots{display:flex;gap:6px;margin-bottom:20px}
+  .onb .dots i{width:8px;height:8px;border-radius:50%;background:#eedde2;transition:.2s}
+  .onb .dots i.on{width:22px;border-radius:4px;background:var(--rose)}
+  .onb .skip{position:absolute;top:calc(16px + env(safe-area-inset-top));right:16px}
+  /* 設定頁 */
+  .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .setrow:last-child{border-bottom:none}
+  .setrow small{display:block;color:var(--muted);font-size:12px}
+  .setrow a{text-decoration:none;color:var(--rose-d);font-weight:700}
+  .view.slide{animation:slide .28s cubic-bezier(.2,.8,.2,1)}
+  @keyframes slide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+  .abtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#000;color:#fff;border-color:#000}
+  .abtn svg{width:18px;height:18px;fill:#fff}
   /* 花瓣 */
   .petal{position:fixed;top:-20px;width:12px;height:12px;border-radius:12px 0;background:#f7b9c9;z-index:70;pointer-events:none;animation:petal 2.6s linear forwards;opacity:.9}
   @keyframes petal{to{transform:translateY(110vh) rotate(540deg);opacity:0}}
@@ -295,7 +316,7 @@
 
 <div class="topbar"><div class="in">
   <div class="logo" data-go="home">試穿<em>吧</em> <small>TRYON</small></div>
-  <nav class="topnav">
+  <nav class="topnav" aria-label="主選單">
     <button data-go="tryon">試衣間</button>
     <button data-go="wardrobe">我的衣櫃</button>
     <button data-go="history">合成紀錄</button>
@@ -314,6 +335,7 @@
         <p class="sub">一張全身照，放進想試的上衣、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照。</p>
         <div class="card login" id="loginCard">
           <h2>登入開始試穿</h2>
+          <button class="btn block abtn hidden" id="btnApple"><svg viewBox="0 0 24 24"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM13.9 4.9c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>使用 Apple 登入</button>
           <button class="btn block gbtn" id="btnGoogle"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.9l-7.8 6C6.5 42.6 14.6 48 24 48z"/></svg>使用 Google 登入</button>
           <div class="or">或用 Email</div>
           <div class="row" style="flex-wrap:nowrap"><input type="email" id="emailInput" placeholder="妳的 Email"><button class="btn" id="btnEmail">寄驗證碼</button></div>
@@ -454,10 +476,29 @@
     <div class="muted hidden-app" style="margin-top:12px">付款由綠界 ECPay 處理，支援信用卡、ATM、超商。付款完成後點數自動入帳。</div>
     <div class="card" style="margin-top:18px">
       <h3>帳號</h3>
-      <div class="row" style="justify-content:space-between"><span id="accEmail" class="muted"></span><span class="row"><button class="btn sm" id="btnLogout">登出</button><button class="btn sm ghost" id="btnDeleteAcc" style="color:var(--bad)">刪除帳號</button></span></div>
+      <div class="row" style="justify-content:space-between"><span id="accEmail" class="muted"></span><span class="row"><button class="btn sm" data-go="settings">設定</button><button class="btn sm" id="btnLogout">登出</button><button class="btn sm ghost" id="btnDeleteAcc" style="color:var(--bad)">刪除帳號</button></span></div>
       <div class="muted" style="margin-top:8px">刪除帳號會一併刪除妳所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
     </div>
   </section>
+  <!-- ===== 設定 ===== -->
+  <section class="view" id="view-settings">
+    <h1 style="font-size:24px;margin:0 0 12px">設定</h1>
+    <div class="card">
+      <h3>合成偏好</h3>
+      <div class="setrow"><span>預設鎖定本人臉部<small>配件、髮型合成後把原本的臉貼回去</small></span><div class="switch on" id="prefFace"></div></div>
+      <div class="setrow"><span>預設一次產 2 張<small>點數 ×2，更容易抽到滿意的</small></span><div class="switch" id="prefTwo"></div></div>
+      <div class="setrow"><span>震動回饋<small>App 內操作時的觸覺回饋</small></span><div class="switch on" id="prefHaptic"></div></div>
+    </div>
+    <div class="card">
+      <h3>關於</h3>
+      <div class="setrow"><span>聯絡客服<small>問題、建議、合作</small></span><a href="mailto:frankccc199@gmail.com?subject=試穿吧%20TryOn">寫信</a></div>
+      <div class="setrow"><span>隱私權政策</span><a href="#" data-doc="privacy">查看</a></div>
+      <div class="setrow"><span>服務條款</span><a href="#" data-doc="terms">查看</a></div>
+      <div class="setrow"><span>重看使用導覽</span><a href="#" id="onbAgain">開啟</a></div>
+      <div class="setrow"><span>版本</span><span class="muted" id="verSettings"></span></div>
+    </div>
+  </section>
+
   <!-- ===== 管理後台 ===== -->
   <section class="view" id="view-admin">
     <div class="row" style="justify-content:space-between;margin-bottom:12px"><h1 style="font-size:24px;margin:0">管理後台</h1><button class="btn sm" id="adminRefresh">重新整理</button></div>
@@ -480,6 +521,13 @@
 
 <div class="lightbox" id="lightbox"><img alt=""><div class="row"><button class="btn primary" id="lbDownload">下載</button><button class="btn" id="lbUse">當作底圖</button><button class="btn" id="lbDelete">刪除</button><button class="btn ghost" id="lbClose" style="color:#fff">關閉</button></div></div>
 
+<div class="onb" id="onb" role="dialog" aria-label="使用導覽">
+  <button class="btn ghost sm skip" id="onbSkip">略過</button>
+  <div class="ill" id="onbIll"></div>
+  <h2 id="onbTitle"></h2><p id="onbText"></p>
+  <div class="dots" id="onbDots"></div>
+  <button class="btn primary lg" id="onbNext" style="min-width:200px">下一步</button>
+</div>
 <div class="offline" id="offline">目前離線中，合成需要網路連線</div>
 <div class="installbar" id="installbar"><span>加到主畫面，像 App 一樣使用</span><span class="row" style="margin-left:auto"><button class="btn sm primary" id="installYes">安裝</button><button class="btn sm ghost" id="installNo">✕</button></span></div>
 <div class="dlg" id="dlg"><div class="box"><h3 id="dlgTitle"></h3><p id="dlgText"></p><input type="text" id="dlgInput" class="hidden"><div class="acts"><button class="btn" id="dlgNo">取消</button><button class="btn primary" id="dlgOk">確定</button></div></div></div>
@@ -501,10 +549,12 @@
 const CONFIG = {
   SUPABASE_URL: '',        // 例 https://abcd1234.supabase.co
   SUPABASE_ANON_KEY: '',   // Supabase → Settings → API → anon public
-  WORKER_URL: ''           // 例 https://tryon-api.xxx.workers.dev（結尾不要加斜線）
+  WORKER_URL: '',          // 例 https://tryon-api.xxx.workers.dev（結尾不要加斜線）
+  GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
+  GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '2.2.0';
-const BUILD = '2026-10-28-09';
+const APP_VERSION = '2.3.0';
+const BUILD = '2026-10-28-10';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -513,7 +563,7 @@ const IS_APP = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const PLATFORM = IS_APP ? CAP.getPlatform() : 'web';
 if (IS_APP) document.documentElement.classList.add('app', PLATFORM);
 const Plug = name => (CAP && CAP.Plugins && CAP.Plugins[name]) || null;
-function haptic(kind){ try{ const H=Plug('Haptics'); if(!H) return; if(kind==='success') H.notification({type:'SUCCESS'}); else if(kind==='error') H.notification({type:'ERROR'}); else H.impact({style:'LIGHT'}); }catch{} }
+function haptic(kind){ try{ if(localStorage.getItem('tryon.haptic')==='0') return; const H=Plug('Haptics'); if(!H) return; if(kind==='success') H.notification({type:'SUCCESS'}); else if(kind==='error') H.notification({type:'ERROR'}); else H.impact({style:'LIGHT'}); }catch{} }
 const ICON={
   top:'<svg viewBox="0 0 24 24"><path d="M8 4l1.5-1h5L16 4l5 3-2 4-3-1v11H8V10l-3 1-2-4z"/><path d="M9.5 3c.5 2 1.5 3 2.5 3s2-1 2.5-3"/></svg>',
   bottom:'<svg viewBox="0 0 24 24"><path d="M7 3h10l1 18h-5l-1-10-1 10H6z"/><path d="M7 7h10"/></svg>',
@@ -541,8 +591,10 @@ function dialog({title='', text='', ok='確定', cancel='取消', danger=false, 
     const d=$('dlg'); $('dlgTitle').textContent=title; $('dlgText').textContent=text; $('dlgText').classList.toggle('hidden',!text);
     const inp=$('dlgInput'); inp.classList.toggle('hidden',input===null); if(input!==null){ inp.value=input.value||''; inp.placeholder=input.placeholder||''; }
     const bOk=$('dlgOk'), bNo=$('dlgNo'); bOk.textContent=ok; bNo.textContent=cancel; bNo.classList.toggle('hidden',cancel===null); bOk.className='btn '+(danger?'danger':'primary');
-    d.classList.add('on'); if(input!==null) setTimeout(()=>inp.focus(),50);
-    const done=v=>{ d.classList.remove('on'); bOk.onclick=bNo.onclick=null; res(v); };
+    d.classList.add('on'); d.setAttribute('role','dialog'); d.setAttribute('aria-modal','true'); setTimeout(()=>(input!==null?inp:bOk).focus(),50);
+    const onKey=e=>{ if(e.key==='Escape'){ bNo.click(); } if(e.key==='Tab'){ const f=[bNo,bOk,inp].filter(x=>!x.classList.contains('hidden')); const i=f.indexOf(document.activeElement); e.preventDefault(); f[(i+(e.shiftKey?-1:1)+f.length)%f.length].focus(); } };
+    document.addEventListener('keydown',onKey);
+    const done=v=>{ d.classList.remove('on'); document.removeEventListener('keydown',onKey); bOk.onclick=bNo.onclick=null; res(v); };
     bOk.onclick=()=>done(input!==null?inp.value:true); bNo.onclick=()=>done(input!==null?null:false);
     d.onclick=e=>{ if(e.target===d) done(input!==null?null:false); };
     inp.onkeydown=e=>{ if(e.key==='Enter') bOk.click(); };
@@ -559,13 +611,14 @@ let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- 導覽 ---------- */
-const VIEWS=['home','tryon','wardrobe','history','credits','admin'];
-const NEED_LOGIN=['wardrobe','history','credits','admin'];
+const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings'];
+const NEED_LOGIN=['wardrobe','history','credits','admin','settings'];
 function go(v){
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
   if (NEED_LOGIN.includes(v) && !state.user) { openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
-  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on', x.id==='view-'+v));
+  document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.toggle('slide', on); });
+  haptic();
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v));
   location.hash = v==='home' ? '' : v;
   window.scrollTo({top:0});
@@ -573,6 +626,7 @@ function go(v){
   if (v==='history') loadHistory();
   if (v==='credits') refreshMe();
   if (v==='admin') loadAdmin();
+  if (v==='settings') renderSettings();
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 
@@ -587,7 +641,7 @@ function setSession(s){
   const was = !!state.user;
   state.session = s; state.user = s ? s.user : null;
   renderUser();
-  if (state.user && !was) { refreshMe(); closePick(); const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
+  if (state.user && !was) { refreshMe(); closePick(); track('login'); loadPrefs(); const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
   if (!state.user && was) go('home');
   if (state.user) { if (new URLSearchParams(location.search).get('paid')==='1') { toast('付款完成，點數已入帳'); history.replaceState(null,'',location.pathname+location.hash); } }
 }
@@ -598,9 +652,38 @@ function renderUser(){
   a.innerHTML = `<div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
   a.firstChild.onclick=()=>go('credits');
 }
-if (IS_APP) { $('btnGoogle').classList.add('hidden'); document.querySelector('#loginCard .or').textContent='用 Email 登入'; }
+const Social = Plug('SocialLogin');
+let socialReady=false;
+async function initSocial(){
+  if(!IS_APP||!Social||socialReady) return socialReady;
+  try{
+    const opts={};
+    if(PLATFORM==='ios') opts.apple={ clientId: 'tw.tryon.app' };
+    if(CONFIG.GOOGLE_WEB_CLIENT_ID) opts.google={ webClientId: CONFIG.GOOGLE_WEB_CLIENT_ID, iOSClientId: CONFIG.GOOGLE_IOS_CLIENT_ID||undefined, mode:'online' };
+    await Social.initialize(opts); socialReady=true;
+  }catch(e){ socialReady=false; }
+  return socialReady;
+}
+async function nativeLogin(provider){
+  if(!supa) return showSetup(true);
+  if(!await initSocial()) return toast('App 內原生登入尚未設定，請用 Email');
+  try{
+    const r=await Social.login({ provider, options: provider==='apple'?{ scopes:['email','name'] }:{ scopes:['email','profile'] } });
+    const idToken = r && r.result && (r.result.idToken || r.result.identityToken);
+    if(!idToken) throw new Error('沒有取得登入憑證');
+    const { error } = await supa.auth.signInWithIdToken({ provider, token: idToken, nonce: r.result.nonce||undefined });
+    if(error) throw error;
+    haptic('success'); track('login',{provider});
+  }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('登入失敗：'+(e.message||e)); }
+}
+if (IS_APP) {
+  if (PLATFORM==='ios') $('btnApple').classList.remove('hidden');
+  if (!CONFIG.GOOGLE_WEB_CLIENT_ID) $('btnGoogle').classList.add('hidden');
+  $('btnApple').onclick=()=>nativeLogin('apple');
+}
 $('btnGoogle').onclick=async()=>{
   if(!supa) return showSetup(true);
+  if(IS_APP) return nativeLogin('google');
   const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
   if (error) toast('Google 登入失敗：'+error.message);
 };
@@ -629,7 +712,8 @@ function openLogin(){
     <div class="login" style="max-width:none"><div class="or">或用 Email</div></div>
     <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄登入連結</button></div>
     <div class="emailsent hidden" id="sheetSent" style="margin-top:10px"></div>`);
-  if (IS_APP) $('sheetGoogle').classList.add('hidden'); else $('sheetGoogle').onclick=()=>$('btnGoogle').click();
+  if (IS_APP) { if(PLATFORM==='ios'){ $('sheetGoogle').insertAdjacentHTML('beforebegin','<button class="btn block abtn" id="sheetApple" style="margin-bottom:8px">使用 Apple 登入</button>'); $('sheetApple').onclick=()=>nativeLogin('apple'); } if(!CONFIG.GOOGLE_WEB_CLIENT_ID) $('sheetGoogle').classList.add('hidden'); else $('sheetGoogle').onclick=()=>nativeLogin('google'); }
+  else $('sheetGoogle').onclick=()=>$('btnGoogle').click();
   $('sheetEmailBtn').onclick=async()=>{ const email=$('sheetEmail').value.trim(); if(!email) return toast('請輸入 Email'); $('sheetEmailBtn').disabled=true;
     const { error } = await supa.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } }); $('sheetEmailBtn').disabled=false;
     if(error) toast('寄送失敗：'+error.message); else { const b=$('sheetSent'); b.classList.remove('hidden'); b.innerHTML='✉️ 已寄到 '+email+'，輸入信中的驗證碼：<div class="otp"><input type="text" inputmode="numeric" autocomplete="one-time-code" id="sheetOtp" placeholder="驗證碼"><button class="btn primary" id="sheetOtpBtn">登入</button></div>'; $('sheetOtp').focus(); $('sheetOtpBtn').onclick=()=>verifyOtp(email,$('sheetOtp').value,$('sheetOtpBtn')); $('sheetOtp').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('sheetOtpBtn').click(); }); } };
@@ -640,6 +724,12 @@ function showSetup(flash){
   b.innerHTML='<b>網站還在準備中。</b> 管理者需在 index.html 的 CONFIG 填入 Supabase 與 Worker 設定（見 設定指南.md）。';
   if (flash) toast('網站尚未完成設定，暫時無法登入');
 }
+
+/* ---------- 事件追蹤與錯誤回報（匿名、不含個資） ---------- */
+let anonId=''; try{ anonId=localStorage.getItem('tryon.anon')||(Math.random().toString(36).slice(2)+Date.now().toString(36)); localStorage.setItem('tryon.anon',anonId); }catch{}
+function track(name, props){ if(!CONFIG.WORKER_URL) return; const token=state.session&&state.session.access_token; fetch(CONFIG.WORKER_URL+'/api/event',{method:'POST',headers:{'Content-Type':'application/json',...(token?{'Authorization':'Bearer '+token}:{})},body:JSON.stringify({name,props,anon_id:anonId,platform:PLATFORM}),keepalive:true}).catch(()=>{}); }
+window.addEventListener('error',e=>{ if(!CONFIG.WORKER_URL) return; fetch(CONFIG.WORKER_URL+'/api/error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:e.message,stack:e.error&&e.error.stack,url:location.href,platform:PLATFORM,version:APP_VERSION}),keepalive:true}).catch(()=>{}); });
+window.addEventListener('unhandledrejection',e=>{ if(!CONFIG.WORKER_URL) return; const r=e.reason||{}; fetch(CONFIG.WORKER_URL+'/api/error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'unhandled: '+(r.message||String(r)),stack:r.stack,url:location.href,platform:PLATFORM,version:APP_VERSION}),keepalive:true}).catch(()=>{}); });
 
 /* ---------- API ---------- */
 async function api(path, opts={}){
@@ -688,7 +778,7 @@ function setPerson(dataUri){
 }
 function onPersonImage(im){
   const short=Math.min(im.width,im.height);
-  setPerson(downscale(im,1280,'image/jpeg')); haptic();
+  setPerson(downscale(im,1280,'image/jpeg')); haptic(); track('photo');
   if(short<600) toast('照片解析度偏低，合成細節可能較差');
   else if(im.width>im.height) toast('直式全身照效果最好，橫式也可以試試');
   else toast('全身照已就緒');
@@ -729,7 +819,7 @@ function openSlotMenu(type){
     <div class="opt" id="optWardrobe"><span class="ic">${ICON.top}</span><div>從衣櫃選<small>之前存過的${def.label}</small></div></div>`;
   if (type==='hair') html += `<div class="opt" id="optHairText"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M13 7l3 3"/></svg></span><div>用文字描述<small>例：及肩微捲、奶茶棕</small></div></div>`;
   openPick(def.label, html);
-  $('optUpload').onclick=()=>{ closePick(); pickImage(async im=>{ try{ const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); state.slots[type]={image:out.image, photo_type:out.photoType}; renderSlots(); haptic(); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }); };
+  $('optUpload').onclick=()=>{ closePick(); pickImage(async im=>{ try{ const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); state.slots[type]={image:out.image, photo_type:out.photoType}; renderSlots(); haptic(); track('item',{type}); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }); };
   $('optWardrobe').onclick=async()=>{ await loadWardrobe(); const list=state.wardrobe.filter(w=>w.type===type); if(!list.length){ toast('衣櫃裡還沒有'+def.label); return; }
     openPick('從衣櫃選 '+def.label, `<div class="wgrid">${list.map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${w.name||''}</span></div>`).join('')}</div>`);
     $('pickBody').querySelectorAll('.witem').forEach(el=>el.onclick=async()=>{ const w=list.find(x=>String(x.id)===el.dataset.id); closePick(); try{ state.slots[type]={image:await urlToDataUri(w.image_url), name:w.name}; renderSlots(); }catch{ toast('載入失敗'); } }); };
@@ -815,12 +905,51 @@ function renderFit(){
 ['fHeight','fBust','fWaist','fHip'].forEach(id=>$(id).addEventListener('input',renderFit));
 try{ const b=JSON.parse(localStorage.getItem('tryon.body')||'null'); if(b){ $('fHeight').value=b.height||''; $('fBust').value=b.bust||''; $('fWaist').value=b.waist||''; $('fHip').value=b.hip||''; } }catch{}
 
+/* ---------- 設定與偏好 ---------- */
+const PREF_DEFAULT={face:true,two:false};
+function applyPrefs(p){ $('faceLock').classList.toggle('on',p.face!==false); $('twoVariants').classList.toggle('on',!!p.two); renderSlots(); }
+async function loadPrefs(){
+  let p={...PREF_DEFAULT}; try{ Object.assign(p, JSON.parse(localStorage.getItem('tryon.prefs')||'{}')); }catch{}
+  if(supa&&state.user){ try{ const { data } = await supa.from('profiles').select('prefs').eq('id',state.user.id).single(); if(data&&data.prefs) Object.assign(p,data.prefs); }catch{} }
+  applyPrefs(p);
+}
+async function savePrefs(){
+  const p={face:$('prefFace').classList.contains('on'), two:$('prefTwo').classList.contains('on')};
+  try{ localStorage.setItem('tryon.prefs',JSON.stringify(p)); localStorage.setItem('tryon.haptic',$('prefHaptic').classList.contains('on')?'1':'0'); }catch{}
+  applyPrefs(p);
+  if(supa&&state.user){ await supa.from('profiles').update({prefs:p}).eq('id',state.user.id); }
+}
+function renderSettings(){
+  $('verSettings').textContent='v'+APP_VERSION+' · '+BUILD+(IS_APP?' · '+PLATFORM:'');
+  $('prefFace').classList.toggle('on',$('faceLock').classList.contains('on')); $('prefTwo').classList.toggle('on',$('twoVariants').classList.contains('on'));
+  try{ $('prefHaptic').classList.toggle('on',localStorage.getItem('tryon.haptic')!=='0'); }catch{}
+}
+['prefFace','prefTwo','prefHaptic'].forEach(id=>$(id).onclick=()=>{ $(id).classList.toggle('on'); savePrefs(); });
+document.querySelectorAll('#view-settings [data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefault(); openDoc(a.dataset.doc); });
+
+/* ---------- 首次導覽 ---------- */
+const ONB=[
+  {t:'放一張全身照',x:'正面站好、光線均勻、衣服貼身。手機拍的就可以。',bg:'var(--blush)',ic:'<svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'},
+  {t:'放入想試的單品',x:'上衣、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。從網拍截圖直接上傳。',bg:'var(--mint)',ic:ICON.dress},
+  {t:'看看穿起來的樣子',x:'30 秒內看到真實合成照，可以前後比較、下載、做成限動分享。',bg:'var(--lilac)',ic:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>'}
+];
+let onbI=0;
+function showOnb(i){ onbI=i; const o=ONB[i]; $('onbIll').style.background=o.bg; $('onbIll').innerHTML=o.ic; $('onbTitle').textContent=o.t; $('onbText').textContent=o.x; $('onbDots').innerHTML=ONB.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join(''); $('onbNext').textContent=i===ONB.length-1?'開始試穿':'下一步'; $('onb').classList.add('on'); }
+function closeOnb(){ $('onb').classList.remove('on'); try{ localStorage.setItem('tryon.onb','1'); }catch{} }
+$('onbNext').onclick=()=>{ haptic(); if(onbI<ONB.length-1) showOnb(onbI+1); else { closeOnb(); go('tryon'); } };
+$('onbSkip').onclick=closeOnb;
+$('onbAgain').onclick=e=>{ e.preventDefault(); showOnb(0); };
+try{ if(!localStorage.getItem('tryon.onb') && (IS_APP || matchMedia('(max-width:899px)').matches)) setTimeout(()=>showOnb(0),400); }catch{}
+
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
   const box=$('adminBody'); box.textContent='載入中…';
   try{
     const d=await api('/api/admin/stats');
     const types=Object.entries(d.by_type||{}).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${TYPE_LABEL[t]||t} ${n}`).join('、')||'—';
+    const F=d.funnel||{}; const fn=['open','photo','item','tryon_start','tryon_ok','share','buy_click','paid']; const fl={open:'開啟',photo:'放照片',item:'放單品',tryon_start:'開始合成',tryon_ok:'合成成功',share:'分享',buy_click:'點購買',paid:'付款'};
+    const funnelHtml=`<div class="card" style="margin-top:14px"><h3>近 7 天漏斗（不重複人數）</h3><table class="tb"><tr>${fn.map(k=>`<th>${fl[k]}</th>`).join('')}</tr><tr>${fn.map(k=>`<td><b>${F[k]||0}</b></td>`).join('')}</tr></table></div>`;
+    const errHtml=`<div class="card"><h3>前端錯誤（最近 20 筆）</h3>${(d.client_errors||[]).length?`<table class="tb"><tr><th>時間</th><th>平台/版本</th><th>訊息</th></tr>${d.client_errors.map(e=>`<tr><td>${new Date(e.created_at).toLocaleString('zh-TW')}</td><td>${e.platform||''} ${e.app_version||''}</td><td>${(e.message||'').slice(0,120)}</td></tr>`).join('')}</table>`:'<div class="muted">沒有錯誤 🎉</div>'}</div>`;
     box.innerHTML=`<div class="stats">
       <div class="stat"><div class="v">${d.users}</div><div class="l">會員數</div></div>
       <div class="stat"><div class="v">${d.gen_today}</div><div class="l">今日合成</div></div>
@@ -831,7 +960,9 @@ async function loadAdmin(){
       <div class="stat"><div class="v">${d.credits_outstanding}</div><div class="l">未使用點數（負債）</div></div>
       <div class="stat"><div class="v" style="font-size:14px;line-height:1.5">${types}</div><div class="l">近 7 天品項分布</div></div>
     </div>
-    <div class="card" style="margin-top:14px"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${d.failures.length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${d.failures.map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${f.error||''}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
+    ${funnelHtml}
+    <div class="card"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${d.failures.length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${d.failures.map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${f.error||''}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
+    ${errHtml}
     <div class="card"><h3>最近加入的會員</h3><table class="tb"><tr><th>Email</th><th>點數</th><th>加入</th></tr>${d.recent_users.map(u=>`<tr><td>${u.email||''}</td><td>${u.credits}</td><td>${new Date(u.created_at).toLocaleDateString('zh-TW')}</td></tr>`).join('')}</table></div>`;
   }catch(e){ box.innerHTML='<span style="color:var(--bad)">'+e.message+'</span>'; }
 }
@@ -846,6 +977,8 @@ function offerSave(type){
 function openPick(title, html){ $('pickTitle').textContent=title; $('pickBody').innerHTML=html; $('pickmenu').classList.add('on'); }
 function closePick(){ $('pickmenu').classList.remove('on'); }
 $('pickClose').onclick=closePick; $('pickmenu').addEventListener('click',e=>{ if(e.target===$('pickmenu')) closePick(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('pickmenu').classList.contains('on')) closePick(); if($('lightbox').classList.contains('on')) $('lightbox').classList.remove('on'); } });
+document.querySelectorAll('.bottomnav button').forEach(b=>b.setAttribute('aria-label',b.textContent.trim()));
 
 /* ---------- 執行試穿 ---------- */
 let busy=false;
@@ -856,7 +989,7 @@ $('btnRun').onclick=async()=>{
   if (!items.length) return toast('請至少放一個單品');
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
-  busy=true; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
+  track('tryon_start',{n:items.length}); busy=true; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='8%';
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
   const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
@@ -883,10 +1016,10 @@ $('btnRun').onclick=async()=>{
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
     $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`; renderFit();
     if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
-    toast('完成，看看妳穿起來的樣子'); haptic('success'); petals();
+    toast('完成，看看妳穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
   }catch(e){
     clearInterval(tick);
-    haptic('error');
+    haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
     $('runStatus').innerHTML = '<span style="color:var(--bad)">'+e.message+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
     const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
   }finally{
@@ -920,7 +1053,7 @@ async function saveImage(dataUri, name){
   }
   const a=document.createElement('a'); a.download=name; a.href=dataUri; a.click();
 }
-$('btnShare').onclick=()=>{ if(state.result) shareImage(state.result); };
+$('btnShare').onclick=()=>{ if(state.result){ track('share'); shareImage(state.result); } };
 async function storyImage(before, after){
   const [b,a]=await Promise.all([loadImg(before), loadImg(after)]);
   const W=1080,H=1920; const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
@@ -933,7 +1066,7 @@ async function storyImage(before, after){
   x.fillStyle='#6f5a62'; x.font='400 32px "Noto Sans TC", sans-serif'; x.fillText('買之前，先看看穿在妳身上的樣子', W/2, 1760);
   return c.toDataURL('image/jpeg',0.92);
 }
-$('btnStory').onclick=async()=>{ if(!state.result) return; try{ await document.fonts.ready; const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
+$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ await document.fonts.ready; const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
 $('btnContinue').onclick=()=>{ if(!state.result) return; setPerson(state.result); state.slots={}; renderSlots(); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
@@ -1012,6 +1145,7 @@ function renderCredits(){
   $('packs').querySelectorAll('[data-pack]').forEach(b=>b.onclick=()=>buy(b.dataset.pack));
 }
 async function buy(pack){
+  track('buy_click',{pack});
   try{
     const w=window.open('','_blank');
     const d=await api('/api/checkout',{method:'POST',body:JSON.stringify({pack})});
@@ -1061,7 +1195,7 @@ function setOffline(){ $('offline').classList.toggle('on', !navigator.onLine); }
 window.addEventListener('online',setOffline); window.addEventListener('offline',setOffline); setOffline();
 let installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; try{ if(!localStorage.getItem('tryon.installDismissed')) $('installbar').classList.add('on'); }catch{} });
-$('installYes').onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); await installEvt.userChoice; $('installbar').classList.remove('on'); };
+$('installYes').onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); const c=await installEvt.userChoice; if(c&&c.outcome==='accepted') track('install'); $('installbar').classList.remove('on'); };
 $('installNo').onclick=()=>{ $('installbar').classList.remove('on'); try{ localStorage.setItem('tryon.installDismissed','1'); }catch{} };
 if (IS_APP) {
   try{ const SB=Plug('StatusBar'); if(SB){ SB.setStyle({style:'LIGHT'}); if(PLATFORM==='android') SB.setBackgroundColor({color:'#fff8f5'}); } }catch{}
@@ -1076,8 +1210,10 @@ if (IS_APP) {
 }
 
 /* ---------- 啟動 ---------- */
+track('open');
 restoreSession();
 renderSlots();
+loadPrefs();
 initAuth();
 window.addEventListener('hashchange',()=>{ const h=location.hash.replace('#',''); if(VIEWS.includes(h)) go(h); });
 (function(){ const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();

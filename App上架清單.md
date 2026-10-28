@@ -83,7 +83,23 @@ App 內功能：原生相機與相簿選圖、分享到其他 App、儲存到相
 
 ---
 
-## 五、已知限制與之後要做的
-- App 內目前只有 Email 驗證碼登入；Google 登入需要外部瀏覽器導回，之後加 Sign in with Apple（Apple 規定：若有第三方登入就必須提供 Apple 登入）。
+## 五、App 內原生登入（Apple / Google）設定
+
+程式已內建（`@capgo/capacitor-social-login` → Supabase ID Token 登入）。要啟用需要：
+
+**Sign in with Apple（iOS 必做，Apple 審核規定）**
+1. Apple Developer → Identifiers → `tw.tryon.app` → 勾選 **Sign in with Apple**。
+2. Xcode 專案（或 Claude 幫你在 CI 補）加入 Sign in with Apple capability。
+3. Supabase → Authentication → Providers → Apple：開啟，**Client IDs** 填 `tw.tryon.app`（原生登入不需要 Secret Key）。
+
+**Google（App 內）**
+1. Google Cloud → Credentials 建兩組 OAuth client：**Web application**（給 Supabase 驗證用）與 **iOS**（Bundle ID `tw.tryon.app`）；Android 另建 **Android** 類型（需 SHA-1，Claude 產簽章時一起給）。
+2. 把 Web client ID 填進 `index.html` CONFIG 的 `GOOGLE_WEB_CLIENT_ID`，iOS client ID 填 `GOOGLE_IOS_CLIENT_ID`。
+3. Supabase → Providers → Google 的 **Authorized Client IDs** 加上 iOS 與 Android client ID。
+4. iOS 還要在 `Info.plist` 加 URL scheme（反轉的 iOS client ID），跟 Claude 說一聲會補進 `patch-native.js`。
+
+沒設定時 App 會自動只顯示 Email 驗證碼登入，不會壞。
+
+## 六、已知限制與之後要做的
 - App 內購（IAP / Google Play Billing）之後再加，先用網站賣點數符合規定。
 - 要換 Bundle ID 或 App 名稱，跟 Claude 說一聲即可。

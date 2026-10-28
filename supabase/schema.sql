@@ -109,3 +109,32 @@ alter table public.generations add column if not exists variants integer not nul
 alter table public.generations add column if not exists favorite boolean not null default false;
 drop policy if exists "update own generations" on public.generations;
 create policy "update own generations" on public.generations for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- v2.3：使用行為事件、錯誤回報、偏好設定
+create table if not exists public.events (
+  id bigint generated always as identity primary key,
+  user_id uuid,
+  anon_id text,
+  name text not null,
+  props jsonb,
+  platform text,
+  created_at timestamptz not null default now()
+);
+create index if not exists events_name_day on public.events (name, created_at desc);
+alter table public.events enable row level security;  -- 只有 Worker（service key）寫，不開放前端
+
+create table if not exists public.client_errors (
+  id bigint generated always as identity primary key,
+  user_id uuid,
+  message text,
+  stack text,
+  url text,
+  platform text,
+  app_version text,
+  created_at timestamptz not null default now()
+);
+alter table public.client_errors enable row level security;
+
+alter table public.profiles add column if not exists prefs jsonb not null default '{}'::jsonb;
+drop policy if exists "update own profile prefs" on public.profiles;
+create policy "update own profile prefs" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);

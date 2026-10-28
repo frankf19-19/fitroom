@@ -50,7 +50,7 @@ export default {
     const cors = corsHeaders(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '1.3.0' }, 200, cors);
+      if (url.pathname === '/api/health') return json({ ok: true, version: '1.4.0' }, 200, cors);
       if (url.pathname === '/api/me' && request.method === 'GET') return handleMe(request, env, cors);
       if (url.pathname === '/api/tryon' && request.method === 'POST') return handleTryon(request, env, cors);
       if (url.pathname === '/api/checkout' && request.method === 'POST') return handleCheckout(request, env, cors);
@@ -58,6 +58,8 @@ export default {
       if (url.pathname === '/api/ecpay/return') return handleEcpayReturn(request, env);
       if (url.pathname === '/api/delete-account' && request.method === 'POST') return handleDeleteAccount(request, env, cors);
       if (url.pathname === '/api/admin/stats' && request.method === 'GET') return handleAdminStats(request, env, cors);
+      if (url.pathname === '/api/event' && request.method === 'POST') return handleEvent(request, env, cors);
+      if (url.pathname === '/api/error' && request.method === 'POST') return handleClientError(request, env, cors);
       return json({ error: '找不到此路徑' }, 404, cors);
     } catch (e) {
       return json({ error: '伺服器錯誤：' + (e.message || e) }, 500, cors);
@@ -313,6 +315,29 @@ async function urlToDataUri(u) {
   return `data:${mime};base64,${btoa(s)}`;
 }
 
+/* ---------------- 事件與錯誤回報 ---------------- */
+async function optionalUser(request, env) { try { return await requireUser(request, env); } catch { return null; } }
+const EVENT_NAMES = new Set(['open', 'login', 'photo', 'item', 'tryon_start', 'tryon_ok', 'tryon_fail', 'share', 'story', 'buy_click', 'paid', 'install']);
+async function handleEvent(request, env, cors) {
+  let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }
+  const name = String(body.name || ''); if (!EVENT_NAMES.has(name)) return json({ ok: false }, 400, cors);
+  const user = await optionalUser(request, env);
+  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({
+    user_id: user ? user.id : null, anon_id: String(body.anon_id || '').slice(0, 64) || null, name,
+    props: body.props && typeof body.props === 'object' ? body.props : null, platform: String(body.platform || 'web').slice(0, 20)
+  }) }).catch(() => {});
+  return json({ ok: true }, 200, cors);
+}
+async function handleClientError(request, env, cors) {
+  let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }
+  const user = await optionalUser(request, env);
+  await sb(env, '/rest/v1/client_errors', { method: 'POST', body: JSON.stringify({
+    user_id: user ? user.id : null, message: String(body.message || '').slice(0, 500), stack: String(body.stack || '').slice(0, 2000),
+    url: String(body.url || '').slice(0, 300), platform: String(body.platform || 'web').slice(0, 20), app_version: String(body.version || '').slice(0, 20)
+  }) }).catch(() => {});
+  return json({ ok: true }, 200, cors);
+}
+
 /* ---------------- 管理後台 ---------------- */
 async function handleAdminStats(request, env, cors) {
   let user;
@@ -338,7 +363,12 @@ async function handleAdminStats(request, env, cors) {
   const recentUsers = await sb(env, '/rest/v1/profiles?select=email,credits,created_at&order=created_at.desc&limit=20');
   const itemsWeek = await sb(env, `/rest/v1/generations?status=eq.ok&created_at=gte.${encodeURIComponent(week)}&select=items`);
   const byType = {}; itemsWeek.forEach(g => (g.items || []).forEach(t => byType[t] = (byType[t] || 0) + 1));
-  return json({ users, gen_total: genTotal, gen_today: genToday, gen_week: genWeek, fail_week: failWeek, revenue, revenue_week: revenueWeek, orders_paid: paid.length, credits_outstanding: outstanding, by_type: byType, failures, recent_users: recentUsers }, 200, cors);
+  // 近 7 天漏斗：不重複的人（有 user_id 用 user_id，否則用 anon_id）
+  const ev = await sb(env, `/rest/v1/events?created_at=gte.${encodeURIComponent(week)}&select=name,user_id,anon_id&limit=20000`);
+  const funnel = {}; for (const e of ev) { const who = e.user_id || e.anon_id || 'x'; (funnel[e.name] = funnel[e.name] || new Set()).add(who); }
+  const funnelCounts = Object.fromEntries(Object.entries(funnel).map(([k, v]) => [k, v.size]));
+  const errors = await sb(env, '/rest/v1/client_errors?select=created_at,message,url,platform,app_version&order=created_at.desc&limit=20');
+  return json({ users, gen_total: genTotal, gen_today: genToday, gen_week: genWeek, fail_week: failWeek, revenue, revenue_week: revenueWeek, orders_paid: paid.length, credits_outstanding: outstanding, by_type: byType, failures, recent_users: recentUsers, funnel: funnelCounts, client_errors: errors }, 200, cors);
 }
 
 /* ---------------- 刪除帳號（含所有資料與圖片） ---------------- */
