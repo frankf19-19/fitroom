@@ -203,6 +203,25 @@
   .switch{position:relative;width:42px;height:24px;border-radius:999px;background:#ddd;cursor:pointer;flex:none;transition:.2s}
   .switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
   .switch.on{background:var(--ok)}.switch.on::after{left:21px}
+  .variants{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .variants .v{border:2px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;background:#fff}
+  .variants .v img{width:100%;display:block}
+  .variants .v span{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:3px 8px;border-radius:999px}
+  .variants .v:hover{border-color:var(--coral)}
+  .fitgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .fitgrid label{display:flex;flex-direction:column;font-size:11px;color:var(--muted);gap:3px}
+  .fitgrid input{font-size:14px;padding:8px;border:1px solid var(--line);border-radius:10px;width:100%;font-family:inherit}
+  .fitrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;gap:8px}
+  .fitrow select{font-size:13px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;font-family:inherit}
+  .fitrow:last-child{border-bottom:none}
+  .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
+  .tag.ok{background:#e4f4ec;color:var(--ok)}.tag.warn{background:#fbefd9;color:var(--warn)}.tag.bad{background:#fde5e5;color:var(--bad)}.tag.na{background:#f0ecec;color:var(--muted)}
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:700px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}
+  .stat .v{font-size:26px;font-weight:900;color:var(--coral-d)}.stat .l{font-size:12px;color:var(--muted)}
+  table.tb{width:100%;border-collapse:collapse;font-size:12px}
+  table.tb td,table.tb th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
   .guestbar{background:var(--coral-s);color:var(--coral-d);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 </style>
 </head>
@@ -274,7 +293,8 @@
             <span>本次 <b id="costN">0</b> 點 <span class="muted" id="costNote"></span></span>
             <span class="muted">每個品項 1 點</span>
           </div>
-          <div class="opt-row"><span>🔒 鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是妳本人）</span></span><div class="switch on" id="faceLock"></div></div>
+          <div class="opt-row"><span>🎲 一次產 2 張挑一張 <span class="muted">（點數 ×2，更容易抽到滿意的）</span></span><div class="switch" id="twoVariants"></div></div>
+          <div class="opt-row" style="margin-top:0"><span>🔒 鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是妳本人）</span></span><div class="switch on" id="faceLock"></div></div>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
           <div class="progress hidden" id="prog"><i></i></div>
           <div class="muted" id="runStatus" style="margin-top:8px"></div>
@@ -293,6 +313,17 @@
             <button class="btn" id="btnContinue">用這張繼續搭</button>
             <button class="btn ghost" id="btnRetry" title="換一組隨機結果，會再扣一次點數">🔁 不滿意，再試一次</button>
           </div>
+        </div>
+        <div class="card">
+          <h2>4 · 尺寸合身預估 <span class="muted" style="font-weight:400">（選填，不用 AI、不扣點）</span></h2>
+          <div class="fitgrid">
+            <label>身高 cm<input type="number" id="fHeight" placeholder="162"></label>
+            <label>胸圍 cm<input type="number" id="fBust" placeholder="84"></label>
+            <label>腰圍 cm<input type="number" id="fWaist" placeholder="66"></label>
+            <label>臀圍 cm<input type="number" id="fHip" placeholder="90"></label>
+          </div>
+          <div id="fitRows" style="margin-top:10px"><div class="muted">放入上衣、下身或洋裝後，這裡可以選尺碼看合不合身。</div></div>
+          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">通用尺碼表與判斷方式</summary><div class="muted" style="margin-top:6px;line-height:1.7">胸圍／腰圍／臀圍（cm）：XS 80/60/84、S 84/64/88、M 88/68/92、L 92/72/96、XL 96/76/100、2XL 100/80/104。<br>鬆份＝衣服圍度−身體圍度：小於 0 偏緊、0–6 合身、6–14 寬鬆、超過 14 過大。各品牌版型不同，僅供參考；若賣場有提供平量尺寸，以平量×2 換算更準。</div></details>
         </div>
       </div>
     </div>
@@ -333,6 +364,11 @@
       <div class="muted" style="margin-top:8px">刪除帳號會一併刪除妳所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
     </div>
   </section>
+  <!-- ===== 管理後台 ===== -->
+  <section class="view" id="view-admin">
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h1 style="font-size:24px;margin:0">管理後台</h1><button class="btn sm" id="adminRefresh">重新整理</button></div>
+    <div id="adminBody" class="muted">載入中…</div>
+  </section>
 </main>
 
 <nav class="bottomnav">
@@ -370,8 +406,8 @@ const CONFIG = {
   SUPABASE_ANON_KEY: '',   // Supabase → Settings → API → anon public
   WORKER_URL: ''           // 例 https://tryon-api.xxx.workers.dev（結尾不要加斜線）
 };
-const APP_VERSION = '1.2.0';
-const BUILD = '2026-10-28-05';
+const APP_VERSION = '1.3.0';
+const BUILD = '2026-10-28-06';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -396,8 +432,8 @@ let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- 導覽 ---------- */
-const VIEWS=['home','tryon','wardrobe','history','credits'];
-const NEED_LOGIN=['wardrobe','history','credits'];
+const VIEWS=['home','tryon','wardrobe','history','credits','admin'];
+const NEED_LOGIN=['wardrobe','history','credits','admin'];
 function go(v){
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
   if (NEED_LOGIN.includes(v) && !state.user) { openLogin(); return; }
@@ -409,6 +445,7 @@ function go(v){
   if (v==='wardrobe') loadWardrobe();
   if (v==='history') loadHistory();
   if (v==='credits') refreshMe();
+  if (v==='admin') loadAdmin();
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 
@@ -531,8 +568,10 @@ function renderSlots(){
   }).join('');
   $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } openSlotMenu(el.dataset.type); });
   persistSlots();
-  const n=Object.keys(state.slots).length; $('costN').textContent=n;
+  const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
+  const n=Object.keys(state.slots).length * mult; $('costN').textContent=n;
   if (state.me){ const free=Math.min(state.me.free_left,n); $('costNote').textContent = n? `（免費額度抵 ${free} 點，點數扣 ${n-free} 點）`:''; }
+  renderFit();
   $('btnRun').disabled = !n;
 }
 function openSlotMenu(type){
@@ -607,6 +646,47 @@ async function faceLock(originalUri, resultUri){
   return c.toDataURL('image/png');
 }
 $('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
+$('twoVariants').onclick=()=>{ $('twoVariants').classList.toggle('on'); renderSlots(); };
+
+/* ---------- 尺寸合身預估 ---------- */
+const SIZE_CHART={XS:{bust:80,waist:60,hip:84},S:{bust:84,waist:64,hip:88},M:{bust:88,waist:68,hip:92},L:{bust:92,waist:72,hip:96},XL:{bust:96,waist:76,hip:100},'2XL':{bust:100,waist:80,hip:104}};
+const fitSizes={};
+function fitTag(e){ if(e==null||isNaN(e)) return '<span class="tag na">填身材</span>'; if(e<0) return `<span class="tag bad">偏緊 ${e.toFixed(0)}</span>`; if(e<=6) return `<span class="tag ok">合身 +${e.toFixed(0)}</span>`; if(e<=14) return `<span class="tag warn">寬鬆 +${e.toFixed(0)}</span>`; return `<span class="tag bad">過大 +${e.toFixed(0)}</span>`; }
+function renderFit(){
+  const body={bust:+$('fBust').value||null, waist:+$('fWaist').value||null, hip:+$('fHip').value||null};
+  try{ localStorage.setItem('tryon.body', JSON.stringify({height:$('fHeight').value,bust:$('fBust').value,waist:$('fWaist').value,hip:$('fHip').value})); }catch{}
+  const cl=['top','bottom','dress'].filter(t=>state.slots[t]);
+  const box=$('fitRows'); if(!cl.length){ box.innerHTML='<div class="muted">放入上衣、下身或洋裝後，這裡可以選尺碼看合不合身。</div>'; return; }
+  box.innerHTML=cl.map(t=>{ const sz=fitSizes[t]||''; const g=SIZE_CHART[sz]; let tags='';
+    if(t==='top'||t==='dress') tags+='胸 '+fitTag(g&&body.bust?g.bust-body.bust:null)+' ';
+    if(t==='bottom'||t==='dress') tags+='腰 '+fitTag(g&&body.waist?g.waist-body.waist:null)+' 臀 '+fitTag(g&&body.hip?g.hip-body.hip:null);
+    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${Object.keys(SIZE_CHART).map(k=>`<option ${k===sz?'selected':''}>${k}</option>`).join('')}</select></span><span>${sz?tags:'<span class="tag na">選尺碼</span>'}</span></div>`; }).join('');
+  box.querySelectorAll('[data-fit]').forEach(sel=>sel.onchange=()=>{ fitSizes[sel.dataset.fit]=sel.value; renderFit(); });
+}
+['fHeight','fBust','fWaist','fHip'].forEach(id=>$(id).addEventListener('input',renderFit));
+try{ const b=JSON.parse(localStorage.getItem('tryon.body')||'null'); if(b){ $('fHeight').value=b.height||''; $('fBust').value=b.bust||''; $('fWaist').value=b.waist||''; $('fHip').value=b.hip||''; } }catch{}
+
+/* ---------- 管理後台 ---------- */
+async function loadAdmin(){
+  const box=$('adminBody'); box.textContent='載入中…';
+  try{
+    const d=await api('/api/admin/stats');
+    const types=Object.entries(d.by_type||{}).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${TYPE_LABEL[t]||t} ${n}`).join('、')||'—';
+    box.innerHTML=`<div class="stats">
+      <div class="stat"><div class="v">${d.users}</div><div class="l">會員數</div></div>
+      <div class="stat"><div class="v">${d.gen_today}</div><div class="l">今日合成</div></div>
+      <div class="stat"><div class="v">${d.gen_week}</div><div class="l">近 7 天合成（失敗 ${d.fail_week}）</div></div>
+      <div class="stat"><div class="v">${d.gen_total}</div><div class="l">累計合成</div></div>
+      <div class="stat"><div class="v">NT$${d.revenue_week}</div><div class="l">近 7 天收入</div></div>
+      <div class="stat"><div class="v">NT$${d.revenue}</div><div class="l">累計收入（${d.orders_paid} 筆）</div></div>
+      <div class="stat"><div class="v">${d.credits_outstanding}</div><div class="l">未使用點數（負債）</div></div>
+      <div class="stat"><div class="v" style="font-size:14px;line-height:1.5">${types}</div><div class="l">近 7 天品項分布</div></div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${d.failures.length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${d.failures.map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${f.error||''}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
+    <div class="card"><h3>最近加入的會員</h3><table class="tb"><tr><th>Email</th><th>點數</th><th>加入</th></tr>${d.recent_users.map(u=>`<tr><td>${u.email||''}</td><td>${u.credits}</td><td>${new Date(u.created_at).toLocaleDateString('zh-TW')}</td></tr>`).join('')}</table></div>`;
+  }catch(e){ box.innerHTML='<span style="color:var(--bad)">'+e.message+'</span>'; }
+}
+$('adminRefresh').onclick=loadAdmin;
 
 function offerSave(type){
   if(!supa||!state.user) return;
@@ -633,16 +713,21 @@ $('btnRun').onclick=async()=>{
   $('runStatus').textContent=`AI 合成中：${names}（約 ${items.length*15} 秒）…`;
   let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; }, 800);
   try{
-    const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items }) });
+    const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
+    const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants }) });
     clearInterval(tick); bar.style.width='96%';
-    let finalImg = d.image;
+    let imgs = d.images && d.images.length ? d.images : [d.image];
     const needLock = $('faceLock').classList.contains('on') && items.some(i=>!['top','bottom','dress'].includes(i.type));
-    if (needLock) { $('runStatus').textContent='鎖定臉部中…'; try{ finalImg = await faceLock(state.personOrig, d.image); }catch(e){ /* 偵測失敗就用原結果 */ } }
+    if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(state.personOrig, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
+    let finalImg = imgs[0];
+    if (imgs.length > 1) {
+      finalImg = await new Promise(res=>{ $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選妳比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>res(imgs[+el.dataset.i])); });
+    }
     state.result = finalImg;
     renderCompare(state.personOrig, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
-    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`;
+    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`; renderFit();
     if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
     toast('合成完成 ✨');
   }catch(e){
@@ -731,6 +816,7 @@ function renderCredits(){
   if(!state.me){ $('balCredits').textContent='–'; $('balFree').textContent='–'; return; }
   $('balCredits').textContent=state.me.credits; $('balFree').textContent=`${state.me.free_left} / ${state.me.free_daily}`;
   $('accEmail').textContent=state.me.email||'';
+  if (state.me.is_admin && !document.querySelector('.topnav [data-go=admin]')) { const b=document.createElement('button'); b.textContent='管理'; b.dataset.go='admin'; b.onclick=()=>go('admin'); document.querySelector('.topnav').appendChild(b); const c=document.createElement('button'); c.className='btn sm'; c.textContent='管理後台'; c.onclick=()=>go('admin'); $('accEmail').after(c); }
   const packs=state.me.packs||{};
   $('packs').innerHTML=Object.entries(packs).map(([k,p],i)=>`<div class="pack ${i===1?'hot':''}">${i===1?'<span class="pill">最划算</span>':''}<div class="cr">${p.credits} 點</div><div class="pr">NT$ ${p.price}</div><div class="each">每點約 NT$ ${(p.price/p.credits).toFixed(1)}</div><button class="btn ${i===1?'primary':''} block" data-pack="${k}" style="margin-top:10px">購買</button></div>`).join('');
   $('packs').querySelectorAll('[data-pack]').forEach(b=>b.onclick=()=>buy(b.dataset.pack));
@@ -777,11 +863,11 @@ document.querySelectorAll('[data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefau
 $('btnTips').onclick=()=>openDoc('tips');
 
 /* ---------- 啟動 ---------- */
+restoreSession();
 renderSlots();
 initAuth();
 window.addEventListener('hashchange',()=>{ const h=location.hash.replace('#',''); if(VIEWS.includes(h)) go(h); });
 (function(){ const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();
-restoreSession();
 })();
 </script>
 </body>

@@ -99,3 +99,8 @@ create policy "wardrobe owner delete" on storage.objects for delete to authentic
   using (bucket_id = 'wardrobe' and (storage.foldername(name))[1] = auth.uid()::text);
 drop policy if exists "public read images" on storage.objects;
 create policy "public read images" on storage.objects for select using (bucket_id in ('results','wardrobe'));
+
+-- v1.3：合成狀態與錯誤記錄（失敗不計入免費額度）
+alter table public.generations add column if not exists status text not null default 'ok';
+alter table public.generations add column if not exists error text;
+alter table public.generations add column if not exists variants integer not null default 1;
