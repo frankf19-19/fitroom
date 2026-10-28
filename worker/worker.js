@@ -1,5 +1,5 @@
 /**
- * 試穿吧 TryOn — 後端 Worker  v1.0.0
+ * 試穿吧 TryOn — 後端 Worker  v1.1.0
  * 部署到 Cloudflare Workers。所有金鑰、額度、扣點、金流都在這裡，前端只拿結果。
  *
  * 需要設定的變數（Worker → Settings → Variables and Secrets）
@@ -26,13 +26,22 @@ const ECPAY_TEST = { merchant: '3002607', key: 'pwFHCqoQZGmho4w6', iv: 'EkRm7iFT
 const ECPAY_PROD_URL = 'https://payment.ecpay.com.tw/Cashier/AioCheckOut/V5';
 
 const CLOTHING = { top: 'tops', bottom: 'bottoms', dress: 'one-pieces' };
+// 影像編輯提示詞用英文：目前的影像模型對英文指令的遵循度明顯較高
+const KEEP = 'Keep everything else in the first photo exactly the same: the person\'s face, identity, skin, pose, body shape, the rest of the outfit, background, camera angle and lighting. Do not crop, do not change the aspect ratio, do not add text or watermarks. Output one photorealistic image of the same size as the first photo.';
 const EDIT_PROMPTS = {
-  shoes: '把第一張照片中人物腳上的鞋子換成第二張圖片的鞋子。鞋子的款式、顏色、細節必須與第二張圖片一致。人物的姿勢、臉、身體、衣服、背景、光線全部保持不變，只改鞋子。輸出一張與第一張同尺寸的真實照片。',
-  hat: '讓第一張照片中的人物戴上第二張圖片的帽子。帽子款式與顏色必須與第二張圖片一致，大小要符合頭部、自然貼合並有合理陰影。臉、髮型、身體、衣服、背景全部保持不變。輸出真實照片。',
-  accessory: '讓第一張照片中的人物配戴第二張圖片的飾品（可能是項鍊、耳環、手錶、手鍊、包包或眼鏡）。飾品款式必須與第二張圖片一致，配戴位置自然合理。人物其他部分與背景保持不變。輸出真實照片。',
-  hair: '把第一張照片中人物的髮型改成第二張圖片的髮型（長度、造型、顏色都要一致），髮際線與臉型自然銜接，光線一致。臉、身體、衣服、背景保持不變。輸出真實照片。',
-  hair_text: '把照片中人物的髮型改成：{{desc}}。髮際線與臉型自然銜接，光線一致。臉、身體、衣服、背景保持不變。輸出真實照片。'
+  shoes: 'Photo edit task. Replace the shoes the person is wearing in the first photo with the shoes shown in the second image. Match the second image\'s style, color, material and details precisely, fit them naturally to the feet with correct perspective and shadows. ' + KEEP,
+  hat: 'Photo edit task. Put the hat from the second image on the person in the first photo. Match the hat\'s style and color exactly, size it correctly to the head, sit it naturally on the hair with realistic shadows. ' + KEEP,
+  accessory: 'Photo edit task. Make the person in the first photo wear or carry the accessory shown in the second image (it may be a necklace, earrings, a watch, a bracelet, glasses or a bag). Match its design exactly and place it where that kind of accessory is naturally worn. ' + KEEP,
+  hair: 'Photo edit task. Change the hairstyle of the person in the first photo to the hairstyle shown in the second image: same length, cut, texture and hair color. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP,
+  hair_text: 'Photo edit task. Change the hairstyle of the person in the photo to: {{desc}}. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP
 };
+const UPSTREAM_TIMEOUT_MS = 120000;
+async function fetchT(url, opts, label) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), UPSTREAM_TIMEOUT_MS);
+  try { return await fetch(url, { ...opts, signal: ctl.signal }); }
+  catch (e) { throw new Error((label || '服務') + (e.name === 'AbortError' ? '逾時，請稍後再試' : '連線失敗：' + e.message)); }
+  finally { clearTimeout(t); }
+}
 
 export default {
   async fetch(request, env, ctx) {
@@ -40,12 +49,13 @@ export default {
     const cors = corsHeaders(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     try {
-      if (url.pathname === '/api/health') return json({ ok: true, version: '1.0.0' }, 200, cors);
+      if (url.pathname === '/api/health') return json({ ok: true, version: '1.1.0' }, 200, cors);
       if (url.pathname === '/api/me' && request.method === 'GET') return handleMe(request, env, cors);
       if (url.pathname === '/api/tryon' && request.method === 'POST') return handleTryon(request, env, cors);
       if (url.pathname === '/api/checkout' && request.method === 'POST') return handleCheckout(request, env, cors);
       if (url.pathname === '/api/ecpay/notify' && request.method === 'POST') return handleEcpayNotify(request, env);
       if (url.pathname === '/api/ecpay/return') return handleEcpayReturn(request, env);
+      if (url.pathname === '/api/delete-account' && request.method === 'POST') return handleDeleteAccount(request, env, cors);
       return json({ error: '找不到此路徑' }, 404, cors);
     } catch (e) {
       return json({ error: '伺服器錯誤：' + (e.message || e) }, 500, cors);
@@ -199,11 +209,11 @@ async function handleTryon(request, env, cors) {
 }
 
 async function fashnTryon(env, person, garment, category) {
-  const r = await fetch(FAL_ENDPOINT, {
+  const r = await fetchT(FAL_ENDPOINT, {
     method: 'POST',
     headers: { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' },
     body: JSON.stringify({ model_image: person, garment_image: garment, category, mode: 'balanced', garment_photo_type: 'auto', num_samples: 1, output_format: 'png' })
-  });
+  }, '衣服試穿服務');
   const t = await r.text();
   if (!r.ok) { let m = t; try { const j = JSON.parse(t); m = j.detail ? JSON.stringify(j.detail) : (j.error || t); } catch {} throw new Error('衣服試穿服務：' + String(m).slice(0, 200)); }
   const d = JSON.parse(t);
@@ -221,10 +231,10 @@ async function geminiEdit(env, person, item) {
   parts.push({ text: prompt });
   parts.push(inlinePart(person));
   if (isDataImage(item.image)) parts.push(inlinePart(item.image));
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${need(env, 'GEMINI_KEY')}`, {
+  const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${need(env, 'GEMINI_KEY')}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'] } })
-  });
+  }, '配件/髮型服務');
   const t = await r.text();
   if (!r.ok) { let m = t; try { m = JSON.parse(t).error.message; } catch {} throw new Error('配件/髮型服務：' + String(m).slice(0, 200)); }
   const d = JSON.parse(t);
@@ -240,7 +250,13 @@ function inlinePart(dataUri) {
   const m = /^data:(image\/[a-z]+);base64,(.+)$/i.exec(dataUri);
   return { inlineData: { mimeType: m[1], data: m[2] } };
 }
-function isDataImage(s) { return typeof s === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(s) && s.length < 8 * 1024 * 1024; }
+function isDataImage(s) {
+  if (typeof s !== 'string' || s.length > 8 * 1024 * 1024) return false;
+  const m = /^data:image\/(png|jpe?g|webp);base64,([A-Za-z0-9+/]{16})/i.exec(s);
+  if (!m) return false;
+  const head = atob(m[2]);
+  return head.startsWith('\x89PNG') || head.startsWith('\xff\xd8\xff') || head.startsWith('RIFF');
+}
 function dataUriToBytes(uri) {
   const m = /^data:(image\/([a-z]+));base64,(.+)$/i.exec(uri);
   const b = atob(m[3]); const bytes = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) bytes[i] = b.charCodeAt(i);
@@ -252,6 +268,24 @@ async function urlToDataUri(u) {
   const buf = new Uint8Array(await r.arrayBuffer());
   let s = ''; const CH = 0x8000; for (let i = 0; i < buf.length; i += CH) s += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
   return `data:${mime};base64,${btoa(s)}`;
+}
+
+/* ---------------- 刪除帳號（含所有資料與圖片） ---------------- */
+async function handleDeleteAccount(request, env, cors) {
+  let user;
+  try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  for (const bucket of ['results', 'wardrobe']) {
+    try {
+      const list = await sb(env, `/storage/v1/object/list/${bucket}`, { method: 'POST', body: JSON.stringify({ prefix: user.id + '/', limit: 1000 }) });
+      const names = (list || []).map(o => `${user.id}/${o.name}`);
+      if (names.length) await sb(env, `/storage/v1/object/${bucket}`, { method: 'DELETE', body: JSON.stringify({ prefixes: names }) });
+    } catch (e) { /* 圖片刪不掉不阻擋 */ }
+  }
+  const r = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
+    method: 'DELETE', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY }
+  });
+  if (!r.ok) return json({ error: '刪除帳號失敗，請聯絡客服' }, 500, cors);
+  return json({ ok: true }, 200, cors);
 }
 
 /* ---------------- 綠界金流 ---------------- */
