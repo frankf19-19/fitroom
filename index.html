@@ -53,6 +53,13 @@
   .slider input{flex:1}
   .ai-box{border:1px solid var(--accent-2);background:#fff7f8;border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
   .ai-box b{color:var(--accent)}
+  .ai-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .ai-grid .upload{margin:0;display:flex;flex-direction:column;justify-content:center;min-height:160px}
+  .ai-grid .upload img{max-height:220px}
+  .ai-result{border:1px solid var(--line);border-radius:12px;min-height:160px;display:flex;align-items:center;justify-content:center;background:#fff;overflow:hidden;position:relative}
+  .ai-result img{max-width:100%;max-height:360px;display:block}
+  .ai-placeholder{color:var(--muted);font-size:12px;text-align:center;padding:12px}
+  .ai-result.busy::after{content:"";position:absolute;inset:0;background:rgba(255,255,255,.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='16' fill='none' stroke='%23c96a7d' stroke-width='4' stroke-dasharray='60 40'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 20 20' to='360 20 20' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E") center/40px no-repeat}
   details summary{cursor:pointer;font-size:13px;color:var(--accent);margin:4px 0}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2b2325;color:#fff;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s}
   .toast.show{opacity:1}
@@ -150,10 +157,28 @@
       </div>
       <div class="slider">大小<input type="range" id="scale" min="50" max="160" value="100"><span id="scaleVal">100%</span></div>
       <div class="hint" style="text-align:center">可在人形上直接拖曳衣服位置。</div>
-      <div class="ai-box">
-        <b>AI 真實合成（即將推出）</b><br>
-        上傳自己的全身照，由 AI 把這套穿搭合成到妳的照片上。此功能為付費功能，第二期開放。
-        <div style="margin-top:8px"><button class="btn" disabled>上傳全身照 · 敬請期待</button></div>
+      <div class="ai-box" id="aiBox">
+        <b>AI 真實合成</b> — 用妳的全身照，讓 AI 把衣服真的穿上去
+        <div class="ai-grid">
+          <div class="upload" id="upPerson">
+            <input type="file" accept="image/*" id="filePerson">
+            <div>上傳全身照<br><small>正面站立、光線均勻、衣著貼身效果最好</small></div>
+            <img id="prevPerson" style="display:none" alt="">
+          </div>
+          <div class="ai-result" id="aiResult"><div class="ai-placeholder">合成結果會顯示在這裡</div></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn primary" id="aiTop">合成上衣</button>
+          <button class="btn primary" id="aiBot">合成下身</button>
+          <button class="btn primary" id="aiBoth">整套合成</button>
+          <button class="btn" id="aiUseResult" style="display:none">用結果繼續試穿</button>
+          <button class="btn" id="aiDownload" style="display:none">下載合成圖</button>
+        </div>
+        <div class="hint" id="aiStatus">需先上傳全身照，並在上方放入要試穿的衣服。每次合成約 10–20 秒。</div>
+        <details style="margin-top:6px"><summary>進階：合成服務網址</summary>
+          <label class="f" style="margin-top:6px">Worker 網址<input type="url" id="aiEndpoint" placeholder="https://xxx.workers.dev"></label>
+          <div class="hint">正式上線後由網站內建，這裡供測試時覆寫。</div>
+        </details>
       </div>
     </div>
   </section>
@@ -164,8 +189,9 @@
 <script>
 (function(){
 'use strict';
-const APP_VERSION = '0.1.0';
-const BUILD = '2026-10-28-01';
+const APP_VERSION = '0.2.0';
+const BUILD = '2026-10-28-02';
+const AI_ENDPOINT_DEFAULT = ''; // 正式 Worker 網址，部署後填入，例如 'https://fitroom-ai.xxx.workers.dev'
 document.getElementById('verBadge').textContent = 'v' + APP_VERSION + ' · ' + BUILD;
 
 /* ---------- 共用 ---------- */
@@ -182,8 +208,8 @@ const STAGE_W = 420, STAGE_H = 760, MARGIN_TOP = 36, FIG_H = 690;
 /* ---------- 狀態 ---------- */
 const body = {height:162,weight:52,shoulder:38,bust:84,waist:66,hip:90};
 const layers = {
-  top:{img:null,x:0,y:0,w:0,h:0,scale:1,baseW:0,baseH:0,autoDone:false},
-  bot:{img:null,x:0,y:0,w:0,h:0,scale:1,baseW:0,baseH:0,autoDone:false}
+  top:{img:null,x:0,y:0,w:0,h:0,scale:1,baseW:0,baseH:0,autoDone:false,orig:null},
+  bot:{img:null,x:0,y:0,w:0,h:0,scale:1,baseW:0,baseH:0,autoDone:false,orig:null}
 };
 let active = 'top';
 let landmarks = null;
@@ -364,6 +390,7 @@ function loadGarment(key, file){
   rd.onload=e=>{
     const im=new Image();
     im.onload=()=>{
+      layers[key].orig = downscale(im, 1280, 'image/jpeg');
       const useRm = $(key==='top'?'rmTop':'rmBot').checked;
       const finish = finalImg=>{
         layers[key].img=finalImg; layers[key].autoDone=false;
@@ -377,6 +404,65 @@ function loadGarment(key, file){
   };
   rd.readAsDataURL(file);
 }
+
+/* ---------- 縮圖 ---------- */
+function downscale(img, maxSide, type){
+  const s=Math.min(1, maxSide/Math.max(img.width,img.height));
+  const c=document.createElement('canvas'); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+  const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);} x.drawImage(img,0,0,c.width,c.height);
+  return c.toDataURL(type||'image/png', 0.9);
+}
+
+/* ---------- AI 真實合成 ---------- */
+const ai = {person:null, result:null, busy:false};
+function aiSetStatus(msg, bad){ const s=$('aiStatus'); s.textContent=msg; s.style.color=bad?'var(--bad)':''; }
+function aiEndpoint(){ return ($('aiEndpoint').value||'').trim() || AI_ENDPOINT_DEFAULT; }
+$('filePerson').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=ev=>{ const im=new Image(); im.onload=()=>{ ai.person=downscale(im,1280,'image/jpeg'); const pv=$('prevPerson'); pv.src=ai.person; pv.style.display='block'; aiSetStatus('全身照已就緒，選擇要合成的品項。'); }; im.src=ev.target.result; };
+  rd.readAsDataURL(f);
+};
+async function aiCall(person, garment, category){
+  const url=aiEndpoint();
+  if(!url) throw new Error('尚未設定合成服務網址（展開「進階」填入 Worker 網址）');
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({person,garment,category})});
+  let data; try{ data=await r.json(); }catch{ throw new Error('服務回應異常（'+r.status+'）'); }
+  if(!r.ok||data.error) throw new Error(data.error||('HTTP '+r.status));
+  return data.image;
+}
+async function toDataURL(url){
+  const b=await (await fetch(url)).blob();
+  return new Promise(res=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.readAsDataURL(b);});
+}
+async function aiRun(steps){
+  if(ai.busy) return;
+  if(!ai.person){ aiSetStatus('請先上傳全身照。', true); return; }
+  for(const s of steps){ if(!layers[s].orig){ aiSetStatus(s==='top'?'請先在上方放入上衣。':'請先在上方放入下身。', true); return; } }
+  ai.busy=true; const box=$('aiResult'); box.classList.add('busy');
+  ['aiTop','aiBot','aiBoth'].forEach(id=>$(id).disabled=true);
+  try{
+    let person=ai.person;
+    for(let i=0;i<steps.length;i++){
+      const k=steps[i];
+      aiSetStatus('AI 合成中（'+(i+1)+'/'+steps.length+'：'+(k==='top'?'上衣':'下身')+'）… 約 10–20 秒');
+      const out=await aiCall(person, layers[k].orig, k==='top'?'tops':'bottoms');
+      person=await toDataURL(out);
+    }
+    ai.result=person;
+    box.innerHTML='<img alt="合成結果">'; box.querySelector('img').src=person;
+    $('aiUseResult').style.display=''; $('aiDownload').style.display='';
+    aiSetStatus('合成完成。'); toast('AI 合成完成');
+  }catch(e){ aiSetStatus('合成失敗：'+e.message, true); }
+  finally{ ai.busy=false; box.classList.remove('busy'); ['aiTop','aiBot','aiBoth'].forEach(id=>$(id).disabled=false); }
+}
+$('aiTop').onclick=()=>aiRun(['top']);
+$('aiBot').onclick=()=>aiRun(['bot']);
+$('aiBoth').onclick=()=>aiRun(['top','bot']);
+$('aiUseResult').onclick=()=>{ if(!ai.result) return; ai.person=ai.result; const pv=$('prevPerson'); pv.src=ai.person; pv.style.display='block'; aiSetStatus('已把合成結果當作新的全身照，可以再疊穿其他衣服。'); };
+$('aiDownload').onclick=()=>{ if(!ai.result) return; const a=document.createElement('a'); a.download='AI試穿.png'; a.href=ai.result; a.click(); };
+try{ const saved=localStorage.getItem('fitroom.aiEndpoint'); if(saved) $('aiEndpoint').value=saved; }catch(e){}
+$('aiEndpoint').addEventListener('change',()=>{ try{ localStorage.setItem('fitroom.aiEndpoint',$('aiEndpoint').value.trim()); }catch(e){} });
 
 /* ---------- 合身度 ---------- */
 function fitTag(ease){
@@ -466,8 +552,8 @@ $('download').onclick=()=>{
 };
 $('fileTop').onchange=e=>loadGarment('top',e.target.files[0]);
 $('fileBot').onchange=e=>loadGarment('bot',e.target.files[0]);
-$('clearTop').onclick=()=>{layers.top.img=null;$('prevTop').style.display='none';$('fileTop').value='';render();};
-$('clearBot').onclick=()=>{layers.bot.img=null;$('prevBot').style.display='none';$('fileBot').value='';render();};
+$('clearTop').onclick=()=>{layers.top.img=null;layers.top.orig=null;$('prevTop').style.display='none';$('fileTop').value='';render();};
+$('clearBot').onclick=()=>{layers.bot.img=null;layers.bot.orig=null;$('prevBot').style.display='none';$('fileBot').value='';render();};
 ['rmTop','rmBot'].forEach(id=>$(id).onchange=()=>{const k=id==='rmTop'?'top':'bot'; const f=$(k==='top'?'fileTop':'fileBot').files[0]; if(f) loadGarment(k,f);});
 
 ['bHeight','bWeight','bShoulder','bBust','bWaist','bHip'].forEach(id=>$(id).addEventListener('input',()=>{readBody();['top','bot'].forEach(k=>{if(layers[k].img) autoPlace(k);});syncSeg();render();}));
