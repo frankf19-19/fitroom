@@ -4,7 +4,7 @@ on:
     inputs:
       engine:    { description: '引擎：gemini（免費金鑰）/ fal（付費）/ hf（完全免費，可能排隊）', required: true, default: 'gemini', type: choice, options: [gemini, fal, hf] }
       person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'https://www.pexels.com/photo/stylish-woman-in-pink-pants-10395698/' }
-      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'https://www.pexels.com/photo/studio-shoot-of-a-woman-in-striped-long-sleeve-and-denim-pants-8811247/' }
+      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'https://www.pexels.com/photo/a-black-shirt-hanging-on-the-wall-8532616/' }
       person_m:  { description: '男生全身照（留空則不做男生版）', required: false, default: 'https://www.pexels.com/photo/man-wearing-white-shirt-on-white-background-7561443/' }
       garment_m: { description: '男生要試穿的衣服照', required: false, default: 'https://www.pexels.com/photo/portrait-of-a-man-in-navy-polo-shirt-35495782/' }
 permissions:
