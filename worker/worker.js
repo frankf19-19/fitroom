@@ -178,8 +178,8 @@ async function handleTryon(request, env, cors) {
     const order = ['dress', 'top', 'bottom', 'hair', 'hat', 'accessory', 'shoes'];
     const sorted = [...items].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
     for (const it of sorted) {
-      if (CLOTHING[it.type]) current = await fashnTryon(env, current, it.image, CLOTHING[it.type]);
-      else current = await geminiEdit(env, current, it);
+      if (CLOTHING[it.type]) current = await fashnTryon(env, current, it.image, CLOTHING[it.type], it.photo_type);
+      else current = await geminiEdit(env, current, it, person);
       steps.push(it.type);
     }
   } catch (e) {
@@ -208,11 +208,17 @@ async function handleTryon(request, env, cors) {
   return json({ image: current, image_url: publicUrl, charged: payCredits, free_used: useFree, credits: after.credits, free_left: Math.max(0, freeLeft - useFree) }, 200, cors);
 }
 
-async function fashnTryon(env, person, garment, category) {
+async function fashnTryon(env, person, garment, category, photoType) {
   const r = await fetchT(FAL_ENDPOINT, {
     method: 'POST',
     headers: { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model_image: person, garment_image: garment, category, mode: 'balanced', garment_photo_type: 'auto', num_samples: 1, output_format: 'png' })
+    body: JSON.stringify({
+      model_image: person, garment_image: garment, category,
+      mode: 'quality',                                   // 品質模式：衣服細節與版型更忠實
+      garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto',
+      num_samples: 1, output_format: 'png',
+      seed: Math.floor(Math.random() * 1e9)              // 每次不同種子，「再試一次」會得到不同結果
+    })
   }, '衣服試穿服務');
   const t = await r.text();
   if (!r.ok) { let m = t; try { const j = JSON.parse(t); m = j.detail ? JSON.stringify(j.detail) : (j.error || t); } catch {} throw new Error('衣服試穿服務：' + String(m).slice(0, 200)); }
@@ -222,22 +228,47 @@ async function fashnTryon(env, person, garment, category) {
   return await urlToDataUri(u);
 }
 
-async function geminiEdit(env, person, item) {
-  const model = env.GEMINI_IMAGE_MODEL || 'gemini-2.5-flash-image';
+const GEMINI_FALLBACKS = ['gemini-nano-banana-2.1', 'gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
+async function geminiEdit(env, person, item, identityRef) {
+  const preferred = env.GEMINI_IMAGE_MODEL || GEMINI_FALLBACKS[0];
+  const models = [preferred, ...GEMINI_FALLBACKS.filter(m => m !== preferred)];
   const parts = [];
   let prompt;
   if (item.type === 'hair' && !isDataImage(item.image)) prompt = EDIT_PROMPTS.hair_text.replace('{{desc}}', item.text.trim().slice(0, 200));
   else prompt = EDIT_PROMPTS[item.type];
+  const hasRef = isDataImage(item.image);
+  const hasId = identityRef && identityRef !== person;
+  prompt += hasId
+    ? ` The ${hasRef ? 'third' : 'second'} image is the same person (identity reference): the face, skin tone and body in the output must be identical to this person.`
+    : ' The face and identity of the person must remain exactly identical.';
   parts.push({ text: prompt });
   parts.push(inlinePart(person));
-  if (isDataImage(item.image)) parts.push(inlinePart(item.image));
-  const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${need(env, 'GEMINI_KEY')}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { responseModalities: ['IMAGE'] } })
-  }, '配件/髮型服務');
-  const t = await r.text();
-  if (!r.ok) { let m = t; try { m = JSON.parse(t).error.message; } catch {} throw new Error('配件/髮型服務：' + String(m).slice(0, 200)); }
-  const d = JSON.parse(t);
+  if (hasRef) parts.push(inlinePart(item.image));
+  if (hasId) parts.push(inlinePart(identityRef));
+
+  let lastErr = '';
+  let d = null;
+  for (const model of models) {
+    const isGen3 = !model.includes('2.5');
+    const cfgs = isGen3 ? [{ responseModalities: ['IMAGE'], imageConfig: { imageSize: '2K' } }, { responseModalities: ['IMAGE'] }] : [{ responseModalities: ['IMAGE'] }];
+    let ok = false;
+    for (const generationConfig of cfgs) {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${need(env, 'GEMINI_KEY')}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig })
+      }, '配件/髮型服務');
+      const t = await r.text();
+      if (r.ok) { d = JSON.parse(t); ok = true; break; }
+      let m = t; try { m = JSON.parse(t).error.message; } catch {}
+      lastErr = String(m).slice(0, 200);
+      if (r.status === 404 || /not found|not supported|does not exist/i.test(m)) break;       // 換下一個模型
+      if (r.status === 400 && /imageConfig|imageSize|image_size/i.test(m)) continue;        // 拿掉 2K 再試
+      if (r.status === 429 || r.status >= 500) continue;                                     // 暫時性錯誤
+      throw new Error('配件/髮型服務：' + lastErr);
+    }
+    if (ok) break;
+  }
+  if (!d) throw new Error('配件/髮型服務：' + (lastErr || '所有影像模型都無法使用'));
   const cand = d.candidates && d.candidates[0];
   const img = cand && cand.content && cand.content.parts && cand.content.parts.find(p => p.inlineData);
   if (!img) {

@@ -192,6 +192,17 @@
   .tips div{border-radius:12px;padding:10px;font-size:12px;line-height:1.5}
   .tips .ok{background:#e9f7ef;color:#1f6e47}.tips .no{background:#fdecec;color:#9b2c2c}
   .emailsent{background:#e9f7ef;color:#1f6e47;border-radius:12px;padding:12px;font-size:13px;line-height:1.6}
+  .crop{position:relative;display:inline-block;max-width:100%;touch-action:none;user-select:none;background:#222;border-radius:12px;overflow:hidden}
+  .crop img{display:block;max-width:100%;max-height:60vh}
+  .crop .sel{position:absolute;border:2px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.45);box-sizing:border-box}
+  .crop .sel::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3C/svg%3E")}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+  .chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:12px;cursor:pointer;font-weight:700;color:var(--ink2)}
+  .chip.on{background:var(--coral);border-color:var(--coral);color:#fff}
+  .opt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:10px 0;border-top:1px dashed var(--line);margin-top:10px}
+  .switch{position:relative;width:42px;height:24px;border-radius:999px;background:#ddd;cursor:pointer;flex:none;transition:.2s}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .switch.on{background:var(--ok)}.switch.on::after{left:21px}
   .guestbar{background:var(--coral-s);color:var(--coral-d);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 </style>
 </head>
@@ -263,6 +274,7 @@
             <span>本次 <b id="costN">0</b> 點 <span class="muted" id="costNote"></span></span>
             <span class="muted">每個品項 1 點</span>
           </div>
+          <div class="opt-row"><span>🔒 鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是妳本人）</span></span><div class="switch on" id="faceLock"></div></div>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
           <div class="progress hidden" id="prog"><i></i></div>
           <div class="muted" id="runStatus" style="margin-top:8px"></div>
@@ -279,6 +291,7 @@
             <button class="btn primary" id="btnDownload">下載</button>
             <button class="btn" id="btnShare">分享</button>
             <button class="btn" id="btnContinue">用這張繼續搭</button>
+            <button class="btn ghost" id="btnRetry" title="換一組隨機結果，會再扣一次點數">🔁 不滿意，再試一次</button>
           </div>
         </div>
       </div>
@@ -338,6 +351,14 @@
 <div class="lightbox" id="lightbox"><img alt=""><div class="row"><button class="btn primary" id="lbDownload">下載</button><button class="btn" id="lbUse">當作底圖</button><button class="btn" id="lbDelete">刪除</button><button class="btn ghost" id="lbClose" style="color:#fff">關閉</button></div></div>
 
 <div class="toast" id="toast"></div>
+<div class="pickmenu" id="cropmenu"><div class="sheet">
+  <h2><span>裁切單品</span><button class="btn ghost sm" id="cropSkip">不裁切</button></h2>
+  <div class="muted" style="margin-bottom:8px">用手指或滑鼠框出「只有這件商品」的範圍。框得越乾淨，合成越準。</div>
+  <div style="text-align:center"><div class="crop" id="cropBox"><img id="cropImg" alt=""><div class="sel" id="cropSel"></div></div></div>
+  <div id="cropTypeWrap"><div class="muted" style="margin-top:10px">這張是哪一種照片？</div>
+  <div class="chips" id="cropType"><span class="chip on" data-v="auto">自動判斷</span><span class="chip" data-v="flat-lay">平拍商品照</span><span class="chip" data-v="model">模特兒穿著照</span></div></div>
+  <button class="btn primary block" id="cropOk">確定</button>
+</div></div>
 <footer>試穿吧 TryOn · v<span id="ver"></span> · 合成結果為 AI 生成示意，實際商品以賣場為準<br><a href="#" data-doc="privacy">隱私權政策</a>·<a href="#" data-doc="terms">服務條款</a>·<a href="#" data-doc="tips">拍照指引</a></footer>
 
 <script>
@@ -349,8 +370,8 @@ const CONFIG = {
   SUPABASE_ANON_KEY: '',   // Supabase → Settings → API → anon public
   WORKER_URL: ''           // 例 https://tryon-api.xxx.workers.dev（結尾不要加斜線）
 };
-const APP_VERSION = '1.1.0';
-const BUILD = '2026-10-28-04';
+const APP_VERSION = '1.2.0';
+const BUILD = '2026-10-28-05';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -520,12 +541,73 @@ function openSlotMenu(type){
     <div class="opt" id="optWardrobe"><span class="ic">👚</span><div>從衣櫃選<small>之前存過的${def.label}</small></div></div>`;
   if (type==='hair') html += `<div class="opt" id="optHairText"><span class="ic">✍️</span><div>用文字描述<small>例：及肩微捲、奶茶棕</small></div></div>`;
   openPick(def.ic+' '+def.label, html);
-  $('optUpload').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const im=await fileToImage(f); state.slots[type]={image:downscale(im,1024,'image/jpeg',0.9)}; renderSlots(); closePick(); offerSave(type); }catch{ toast('讀取失敗'); } }; inp.click(); };
+  $('optUpload').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const im=await fileToImage(f); closePick(); const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); state.slots[type]={image:out.image, photo_type:out.photoType}; renderSlots(); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }; inp.click(); };
   $('optWardrobe').onclick=async()=>{ await loadWardrobe(); const list=state.wardrobe.filter(w=>w.type===type); if(!list.length){ toast('衣櫃裡還沒有'+def.label); return; }
     openPick('從衣櫃選 '+def.label, `<div class="wgrid">${list.map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${w.name||''}</span></div>`).join('')}</div>`);
     $('pickBody').querySelectorAll('.witem').forEach(el=>el.onclick=async()=>{ const w=list.find(x=>String(x.id)===el.dataset.id); closePick(); try{ state.slots[type]={image:await urlToDataUri(w.image_url), name:w.name}; renderSlots(); }catch{ toast('載入失敗'); } }); };
   const ht=$('optHairText'); if(ht) ht.onclick=()=>{ openPick('描述想要的髮型', `<input type="text" id="hairText" placeholder="例：及肩微捲、奶茶棕色、空氣瀏海" maxlength="100"><div class="row" style="margin-top:10px"><button class="btn primary" id="hairOk">確定</button></div>`); $('hairOk').onclick=()=>{ const t=$('hairText').value.trim(); if(!t) return; state.slots[type]={text:t}; renderSlots(); closePick(); }; };
 }
+/* ---------- 裁切單品 ---------- */
+function cropSheet(img, askType){
+  return new Promise((resolve,reject)=>{
+    const menu=$('cropmenu'), box=$('cropBox'), ci=$('cropImg'), sel=$('cropSel');
+    ci.src=img.src; menu.classList.add('on'); $('cropTypeWrap').style.display=askType?'':'none';
+    let photoType='auto'; $('cropType').querySelectorAll('.chip').forEach(c=>{ c.classList.toggle('on',c.dataset.v==='auto'); c.onclick=()=>{ $('cropType').querySelectorAll('.chip').forEach(x=>x.classList.remove('on')); c.classList.add('on'); photoType=c.dataset.v; }; });
+    let r={x:0.05,y:0.05,w:0.9,h:0.9}; const draw=()=>{ sel.style.left=(r.x*100)+'%'; sel.style.top=(r.y*100)+'%'; sel.style.width=(r.w*100)+'%'; sel.style.height=(r.h*100)+'%'; };
+    draw();
+    let start=null;
+    const pos=e=>{ const b=box.getBoundingClientRect(); return {x:Math.max(0,Math.min(1,(e.clientX-b.left)/b.width)), y:Math.max(0,Math.min(1,(e.clientY-b.top)/b.height))}; };
+    box.onpointerdown=e=>{ start=pos(e); box.setPointerCapture(e.pointerId); r={x:start.x,y:start.y,w:0,h:0}; draw(); };
+    box.onpointermove=e=>{ if(!start) return; const q=pos(e); r={x:Math.min(start.x,q.x),y:Math.min(start.y,q.y),w:Math.abs(q.x-start.x),h:Math.abs(q.y-start.y)}; draw(); };
+    box.onpointerup=box.onpointercancel=()=>{ start=null; if(r.w<0.05||r.h<0.05){ r={x:0.05,y:0.05,w:0.9,h:0.9}; draw(); } };
+    const finish=(doCrop)=>{
+      menu.classList.remove('on'); box.onpointerdown=box.onpointermove=box.onpointerup=null;
+      const c=document.createElement('canvas');
+      const sx=doCrop?Math.round(r.x*img.width):0, sy=doCrop?Math.round(r.y*img.height):0, sw=doCrop?Math.round(r.w*img.width):img.width, sh=doCrop?Math.round(r.h*img.height):img.height;
+      const sc=Math.min(1,1024/Math.max(sw,sh)); c.width=Math.round(sw*sc); c.height=Math.round(sh*sc);
+      const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(img,sx,sy,sw,sh,0,0,c.width,c.height);
+      resolve({image:c.toDataURL('image/jpeg',0.92), photoType});
+    };
+    $('cropOk').onclick=()=>finish(true); $('cropSkip').onclick=()=>finish(false);
+    menu.onclick=e=>{ if(e.target===menu){ menu.classList.remove('on'); reject('cancel'); } };
+  });
+}
+
+/* ---------- 臉部鎖定（把原本的臉貼回合成結果） ---------- */
+let faceDetector=null;
+async function getFaceDetector(){
+  if(faceDetector) return faceDetector;
+  const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
+  const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  faceDetector=await vision.FaceDetector.createFromOptions(files,{ baseOptions:{ modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' }, runningMode:'IMAGE', minDetectionConfidence:0.5 });
+  return faceDetector;
+}
+function loadImg(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
+async function faceLock(originalUri, resultUri){
+  const det=await getFaceDetector();
+  const [o,r]=await Promise.all([loadImg(originalUri), loadImg(resultUri)]);
+  const fo=det.detect(o).detections[0], fr=det.detect(r).detections[0];
+  if(!fo||!fr) throw new Error('偵測不到臉');
+  const bo=fo.boundingBox, br=fr.boundingBox;
+  // 兩張臉的相對位置要接近，否則不貼（避免貼錯地方）
+  const no={x:bo.originX/o.width,y:bo.originY/o.height,w:bo.width/o.width,h:bo.height/o.height};
+  const nr={x:br.originX/r.width,y:br.originY/r.height,w:br.width/r.width,h:br.height/r.height};
+  if(Math.abs(no.x-nr.x)>0.08||Math.abs(no.y-nr.y)>0.08||Math.abs(no.w-nr.w)>0.06) throw new Error('臉部位置差異太大');
+  const c=document.createElement('canvas'); c.width=r.width; c.height=r.height; const x=c.getContext('2d'); x.drawImage(r,0,0);
+  // 取原圖臉部（略縮一點，避免貼到髮際線）並做羽化橢圓遮罩
+  const ex=bo.originX+bo.width*0.08, ey=bo.originY+bo.height*0.05, ew=bo.width*0.84, eh=bo.height*0.92;
+  const tx=br.originX+br.width*0.08, ty=br.originY+br.height*0.05, tw=br.width*0.84, th=br.height*0.92;
+  const f=document.createElement('canvas'); f.width=Math.round(tw); f.height=Math.round(th); const fx=f.getContext('2d');
+  fx.drawImage(o, ex,ey,ew,eh, 0,0,f.width,f.height);
+  fx.globalCompositeOperation='destination-in';
+  const g=fx.createRadialGradient(f.width/2,f.height/2,Math.min(f.width,f.height)*0.28, f.width/2,f.height/2,Math.min(f.width,f.height)*0.5);
+  g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  fx.fillStyle=g; fx.save(); fx.translate(f.width/2,f.height/2); fx.scale(1,f.height/f.width); fx.beginPath(); fx.arc(0,0,f.width/2,0,Math.PI*2); fx.fill(); fx.restore();
+  x.drawImage(f, tx, ty);
+  return c.toDataURL('image/png');
+}
+$('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
+
 function offerSave(type){
   if(!supa||!state.user) return;
   const v=state.slots[type]; if(!v||!v.image) return;
@@ -541,7 +623,7 @@ let busy=false;
 $('btnRun').onclick=async()=>{
   if (busy) return;
   if (!state.person) return toast('請先上傳全身照');
-  const items = Object.entries(state.slots).map(([type,v])=>({type, image:v.image, text:v.text}));
+  const items = Object.entries(state.slots).map(([type,v])=>({type, image:v.image, text:v.text, photo_type:v.photo_type}));
   if (!items.length) return toast('請至少放一個單品');
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
@@ -552,9 +634,13 @@ $('btnRun').onclick=async()=>{
   let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; }, 800);
   try{
     const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items }) });
-    clearInterval(tick); bar.style.width='100%';
-    state.result = d.image;
-    renderCompare(state.personOrig, d.image);
+    clearInterval(tick); bar.style.width='96%';
+    let finalImg = d.image;
+    const needLock = $('faceLock').classList.contains('on') && items.some(i=>!['top','bottom','dress'].includes(i.type));
+    if (needLock) { $('runStatus').textContent='鎖定臉部中…'; try{ finalImg = await faceLock(state.personOrig, d.image); }catch(e){ /* 偵測失敗就用原結果 */ } }
+    bar.style.width='100%';
+    state.result = finalImg;
+    renderCompare(state.personOrig, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
     $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`;
     if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
@@ -582,6 +668,7 @@ function renderCompare(before, after){
 }
 $('btnDownload').onclick=()=>{ if(!state.result) return; const a=document.createElement('a'); a.download='試穿吧_'+Date.now()+'.png'; a.href=state.result; a.click(); };
 $('btnShare').onclick=async()=>{ if(!state.result) return; try{ const file=new File([dataUriToBlob(state.result)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else toast('此裝置不支援分享，請用下載'); }catch{} };
+$('btnRetry').onclick=()=>{ if(busy) return; if(!confirm('會用同一組單品再合成一次（隨機不同結果），再扣一次點數。確定？')) return; $('btnRun').click(); };
 $('btnContinue').onclick=()=>{ if(!state.result) return; setPerson(state.result); state.slots={}; renderSlots(); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */
