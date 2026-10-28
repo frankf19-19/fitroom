@@ -5,6 +5,8 @@
   "description": "試穿吧 TryOn iOS / Android App（Capacitor，打包網站）",
   "scripts": {
     "web": "bash prepare-web.sh",
+    "sync:android": "bash prepare-web.sh && npx cap sync android && node patch-native.js",
+    "sync:ios": "bash prepare-web.sh && npx cap sync ios && node patch-native.js",
     "sync": "bash prepare-web.sh && npx cap sync && node patch-native.js",
     "assets": "npx @capacitor/assets generate --iconBackgroundColor '#e8657a' --iconBackgroundColorDark '#e8657a' --splashBackgroundColor '#fff8f5' --splashBackgroundColorDark '#241b1e'"
   },

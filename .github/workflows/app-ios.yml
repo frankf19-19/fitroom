@@ -15,7 +15,7 @@ jobs:
         working-directory: app
         run: |
           npm ci --no-audit --no-fund
-          npm run sync
+          npm run sync:ios
       - name: 模擬器建置（確認專案可編譯，不需 Apple 憑證）
         working-directory: app/ios/App
         run: |

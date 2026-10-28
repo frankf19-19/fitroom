@@ -17,7 +17,7 @@ jobs:
         working-directory: app
         run: |
           npm ci --no-audit --no-fund
-          npm run sync
+          npm run sync:android
       - name: 建置測試版 APK（可直接安裝到 Android 手機）
         working-directory: app/android
         run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
