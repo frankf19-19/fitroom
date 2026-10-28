@@ -1,0 +1,45 @@
+name: 產生首頁真人範例圖
+on:
+  workflow_dispatch:
+    inputs:
+      person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'demo/person-f.jpg' }
+      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'demo/garment-f.jpg' }
+      person_m:  { description: '男生全身照（留空則不做男生版）', required: false, default: 'demo/person-m.jpg' }
+      garment_m: { description: '男生要試穿的衣服照', required: false, default: 'demo/garment-m.jpg' }
+permissions:
+  contents: write
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 合成女生範例
+        env: { FAL_KEY: "${{ secrets.FAL_KEY }}" }
+        run: python3 demo/generate.py --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f
+      - name: 合成男生範例（有提供才做）
+        if: ${{ inputs.person_m != '' && inputs.garment_m != '' }}
+        env: { FAL_KEY: "${{ secrets.FAL_KEY }}" }
+        run: python3 demo/generate.py --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m || echo "男生版略過"
+      - name: 縮圖並寫入清單
+        run: |
+          pip install -q pillow
+          python3 - <<'PY'
+          import json, os
+          from PIL import Image, ImageOps
+          man = {}
+          for g in ("f", "m"):
+              b, a = f"demo/{g}-before.jpg", f"demo/{g}-after.jpg"
+              if os.path.exists(b) and os.path.exists(a):
+                  for p in (b, a):
+                      im = ImageOps.exif_transpose(Image.open(p)).convert("RGB")
+                      im.thumbnail((900, 1125)); im.save(p, quality=88, optimize=True)
+                  man[g] = {"before": b, "after": a}
+          json.dump(man, open("demo/manifest.json", "w"))
+          print(man)
+          PY
+      - name: 提交到 main（網站會自動重新部署）
+        run: |
+          git config user.name "demo-bot"; git config user.email "demo-bot@users.noreply.github.com"
+          git add demo/
+          git commit -m "更新首頁真人範例圖" || echo "沒有變更"
+          git push

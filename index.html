@@ -97,6 +97,11 @@
   .demo svg{position:absolute;inset:0;width:100%;height:100%}
   .demo .after{position:absolute;inset:0;width:55%;overflow:hidden}
   .demo .after svg{width:auto;height:100%;aspect-ratio:4/5}
+  .demo img.ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+  .demo .after img.ph{width:auto;height:100%;max-width:none;aspect-ratio:4/5;object-fit:cover}
+  .demo.photo svg{display:none !important}
+  .demo.photo img.ph{display:block}
+  .demo .after{z-index:1} .demo .hd,.demo .tag,.demo .cap,.demo .gsw{z-index:2} .demo>img.ph{z-index:0}
   .demo .hd{position:absolute;top:0;bottom:0;left:55%;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(224,85,122,.3)}
   .demo .hd::after{content:"";position:absolute;top:50%;left:50%;width:40px;height:40px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 4px 16px rgba(224,85,122,.35);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0557a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 7l-5 5 5 5M15 7l5 5-5 5'/%3E%3C/svg%3E");background-size:20px;background-repeat:no-repeat;background-position:center}
   .demo .tag{position:absolute;top:12px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(58,38,48,.6);color:#fff;pointer-events:none;backdrop-filter:blur(4px)}
@@ -456,10 +461,11 @@
           <path d="M184 130q16 10 32 0" fill="none" stroke="#3a2630" stroke-width="1.6" stroke-linecap="round"/>
           <path d="M164 262h72l6 160c0 3-2 5-5 5h-16c-3 0-5-2-5-5l-16-120-16 120c0 3-2 5-5 5h-16c-3 0-5-2-5-5z" fill="#8fa6c9" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
           <path d="M170 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5zM200 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5z" fill="#fff" stroke="#3a2630" stroke-width="1.6"/>
-        </svg></div>
+        </svg><img class="ph" id="demoPhBefore" alt="試穿前"></div>
+        <img class="ph" id="demoPhAfter" alt="試穿後">
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
-        <div class="cap">拖曳中線看看差別（示意圖，正式結果是你的真實照片）</div>
+        <div class="cap" id="demoCap">拖曳中線看看差別（示意圖，正式結果是你的真實照片）</div>
         <div class="gsw" id="demoGender"><button class="on" data-g="f">女生</button><button data-g="m">男生</button></div>
       </div>
     </div>
@@ -642,8 +648,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '2.6.0';
-const BUILD = '2026-10-28-14';
+const APP_VERSION = '2.7.0';
+const BUILD = '2026-10-28-15';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1298,8 +1304,18 @@ document.querySelectorAll('[data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefau
 $('btnTips').onclick=()=>openDoc('tips');
 
 function petals(){ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; const cols=['#f7b9c9','#fde0e7','#ffd6c2','#ece2fb']; for(let i=0;i<22;i++){ const p=document.createElement('i'); p.className='petal'; p.style.left=Math.random()*100+'vw'; p.style.background=cols[i%cols.length]; p.style.animationDelay=(Math.random()*.8)+'s'; p.style.animationDuration=(2+Math.random()*1.5)+'s'; p.style.transform='scale('+(.6+Math.random())+')'; document.body.appendChild(p); setTimeout(()=>p.remove(),4000); } }
-/* 首頁示範男女切換 */
-(function(){ const g=$('demoGender'); if(!g) return; g.querySelectorAll('button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); document.querySelectorAll('#demo svg[data-g]').forEach(sv=>sv.style.display=sv.dataset.g===b.dataset.g?'':'none'); }); g.onpointerdown=e=>e.stopPropagation(); })();
+/* 首頁示範男女切換 + 真人照片模式（demo/manifest.json 存在時自動啟用） */
+let demoPhotos=null, demoG='f';
+function applyDemo(){
+  const d=$('demo'); if(!d) return;
+  const ph=demoPhotos&&demoPhotos[demoG];
+  d.classList.toggle('photo',!!ph);
+  if(ph){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; const sync=()=>{ $('demoPhBefore').style.width=d.clientWidth+'px'; }; sync(); window.addEventListener('resize',sync); }
+  else { $('demoCap').textContent='拖曳中線看看差別（示意圖，正式結果是你的真實照片）'; document.querySelectorAll('#demo svg[data-g]').forEach(sv=>sv.style.display=sv.dataset.g===demoG?'':'none'); }
+  const gsw=$('demoGender'); if(gsw){ const hasM=!demoPhotos||demoPhotos.m; gsw.style.display=hasM?'':'none'; }
+}
+(function(){ const g=$('demoGender'); if(!g) return; g.querySelectorAll('button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); demoG=b.dataset.g; g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); applyDemo(); }); g.onpointerdown=e=>e.stopPropagation(); })();
+fetch('demo/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(m=>{ if(m&&(m.f||m.m)){ demoPhotos=m; if(!m.f&&m.m) demoG='m'; applyDemo(); } }).catch(()=>{});
 /* 首頁示範滑桿 */
 (function(){ const d=$('demo'); if(!d) return; const a=$('demoAfter'), h=$('demoHd'); const set=x=>{ const r=d.getBoundingClientRect(); const pct=Math.max(4,Math.min(96,(x-r.left)/r.width*100)); a.style.width=pct+'%'; h.style.left=pct+'%'; }; let dr=false; d.addEventListener('pointerdown',e=>{ dr=true; d.setPointerCapture(e.pointerId); set(e.clientX); }); d.addEventListener('pointermove',e=>{ if(dr) set(e.clientX); }); d.addEventListener('pointerup',()=>dr=false); d.addEventListener('pointercancel',()=>dr=false); })();
 
