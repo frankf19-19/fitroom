@@ -2,6 +2,7 @@ name: 產生首頁真人範例圖
 on:
   workflow_dispatch:
     inputs:
+      engine:    { description: '引擎：gemini（免費金鑰）/ fal（付費）/ hf（完全免費，可能排隊）', required: true, default: 'gemini', type: choice, options: [gemini, fal, hf] }
       person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'demo/person-f.jpg' }
       garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'demo/garment-f.jpg' }
       person_m:  { description: '男生全身照（留空則不做男生版）', required: false, default: 'demo/person-m.jpg' }
@@ -13,16 +14,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: 安裝相依
+        run: pip install -q pillow gradio_client
       - name: 合成女生範例
-        env: { FAL_KEY: "${{ secrets.FAL_KEY }}" }
-        run: python3 demo/generate.py --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f
+        env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
+        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f
       - name: 合成男生範例（有提供才做）
         if: ${{ inputs.person_m != '' && inputs.garment_m != '' }}
-        env: { FAL_KEY: "${{ secrets.FAL_KEY }}" }
-        run: python3 demo/generate.py --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m || echo "男生版略過"
+        env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
+        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m || echo "男生版略過"
       - name: 縮圖並寫入清單
         run: |
-          pip install -q pillow
           python3 - <<'PY'
           import json, os
           from PIL import Image, ImageOps

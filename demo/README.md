@@ -1,16 +1,30 @@
 # 首頁真人範例圖
 
-首頁的「試穿前／試穿後」示範，有真實照片就會自動改用真人照片，沒有時顯示插畫。
+首頁的「試穿前／試穿後」示範，只要 `demo/manifest.json` 存在就會自動改用真人照片，沒有時顯示插畫。
 
-## 怎麼產生（一次約 2 分鐘，費用約 NT$5）
-1. GitHub → Settings → Secrets and variables → Actions → New repository secret：`FAL_KEY` = 你的 fal.ai 金鑰
-2. 準備照片（二選一）：
-   - 把檔案放進這個資料夾：`person-f.jpg`（女生全身照）、`garment-f.jpg`（她要試的衣服照）；男生版 `person-m.jpg`、`garment-m.jpg`
-   - 或直接用網址（例如 Pexels 的免費圖片：在 pexels.com 搜「full body」→ 右鍵「複製圖片網址」）
-3. GitHub → Actions → **產生首頁真人範例圖** → Run workflow → 填網址或留預設路徑 → Run
-4. 跑完會自動把 `demo/f-before.jpg`、`demo/f-after.jpg`（與男生版）推上 main，網站約 1 分鐘後換成真人範例
+## 免費做法（約 10 分鐘）
+
+### 1. 拿一把免費的 Google AI Studio 金鑰
+https://aistudio.google.com → 登入 Google → **Get API key** → Create。免費額度足夠做範例，不需要信用卡。
+GitHub 專案 → Settings → Secrets and variables → Actions → New repository secret：名稱 `GEMINI_KEY`。
+
+### 2. 挑免費授權的照片（Pexels，可商用、免署名）
+- 全身照：到 https://www.pexels.com 搜「full body standing」或「woman standing white background」，挑一張**正面站立、素色貼身衣服、背景乾淨、直式**的，複製瀏覽器網址列（像 `https://www.pexels.com/photo/woman-in-white-shirt-1234567/`）
+- 衣服照：搜「dress flat lay」「t-shirt product」「blouse on hanger」之類，挑一張只有一件衣服的，複製網址
+- 男生版同樣再挑一組（可省略）
+
+### 3. 執行
+GitHub → Actions → **產生首頁真人範例圖** → Run workflow：
+- engine 選 `gemini`
+- 把四個網址貼上（男生版可留空）→ Run
+
+約 2 分鐘後會自動推上 main，網站 1 分鐘後首頁就是真人範例，拖曳中線比較前後。
+
+## 其他引擎
+- `fal`：正式上線用的 FASHN 模型（需 `FAL_KEY`，每張約 NT$2.4），衣服版型最準
+- `hf`：Hugging Face 免費 Space（IDM-VTON），不用金鑰但可能排隊或暫停，失敗就換 gemini
 
 ## 照片建議
-- 全身照：正面站立、素色貼身衣服、乾淨背景、直式 3:4
-- 衣服照：商品平拍或模特兒正面照，只有這一件
-- 肖像權：用自己、朋友（取得同意）或 Pexels / Unsplash 授權照片；不要用網拍模特兒照
+- 人：正面、手臂微張不遮身體、乾淨背景、不要太寬鬆的外套
+- 衣服：平拍或正面、只有一件、背景乾淨
+- 不要用網拍模特兒照（肖像權）；Pexels / Unsplash / 自己拍的都可以
