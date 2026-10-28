@@ -2,6 +2,7 @@ GEMINI_KEY set: yes
 嘗試 Space: Nymbo/Virtual-Try-On
 Loaded as API: https://nymbo-virtual-try-on.hf.space
 完成 Space: Nymbo/Virtual-Try-On 遮罩圖： 有
+臉部偵測略過： module 'cv2' has no attribute 'CascadeClassifier'
 saved demo/f-before.jpg demo/f-after.jpg
 略過 side
 略過 back
