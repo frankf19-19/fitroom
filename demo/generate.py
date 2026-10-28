@@ -104,6 +104,25 @@ def run_fal(person, garment, category):
     res = http_json(job["response_url"], h)
     return urllib.request.urlopen(res["images"][0]["url"], timeout=120).read()
 
+def composite_keep_identity(person_bytes, after_bytes, masked_bytes):
+    """只保留 AI 畫的衣服區域，其餘（臉、髮、手腳、背景）用原圖，確保人一致。"""
+    from PIL import Image, ImageFilter, ImageChops
+    import numpy as np
+    orig = Image.open(io.BytesIO(person_bytes)).convert("RGB")
+    after = Image.open(io.BytesIO(after_bytes)).convert("RGB").resize(orig.size)
+    if not masked_bytes:
+        return after
+    masked = Image.open(io.BytesIO(masked_bytes)).convert("RGB").resize(orig.size)
+    o = np.asarray(orig).astype(int); m = np.asarray(masked).astype(int)
+    # 遮罩區：masked_img 被塗成灰色且與原圖差異大
+    gray = (np.abs(m - 128).sum(axis=2) < 60)
+    diff = (np.abs(m - o).sum(axis=2) > 60)
+    mask = (gray & diff).astype(np.uint8) * 255
+    if mask.sum() == 0:
+        return after
+    mk = Image.fromarray(mask, "L").filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.GaussianBlur(6))
+    return Image.composite(after, orig, mk)
+
 def run_hf(person, garment, category):
     from gradio_client import Client, handle_file
     pp, gp = "/tmp/_person.jpg", "/tmp/_garment.jpg"
@@ -123,10 +142,16 @@ def run_hf(person, garment, category):
                 try: print(client.view_api(return_format="str")[:1500], flush=True)
                 except Exception: pass
                 raise
-            path = out[0] if isinstance(out, (list, tuple)) else out
-            if isinstance(path, dict): path = path.get("path") or path.get("value")
-            print("完成 Space:", sp, flush=True)
-            return open(path, "rb").read()
+            def rd(x):
+                if isinstance(x, dict): x = x.get("path") or x.get("value")
+                return open(x, "rb").read() if isinstance(x, str) and os.path.exists(x) else None
+            if isinstance(out, (list, tuple)):
+                after_b = rd(out[0]); masked_b = rd(out[1]) if len(out) > 1 else None
+            else:
+                after_b, masked_b = rd(out), None
+            print("完成 Space:", sp, "遮罩圖：", "有" if masked_b else "無", flush=True)
+            img = composite_keep_identity(person, after_b, masked_b)
+            buf = io.BytesIO(); img.save(buf, "JPEG", quality=92); return buf.getvalue()
         except Exception as e:
             last = e; print("Space 失敗：", sp, str(e)[:300], flush=True)
     sys.exit("Hugging Face 全部失敗：" + str(last)[:300])

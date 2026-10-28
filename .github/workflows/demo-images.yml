@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 安裝相依
-        run: pip install -q pillow gradio_client
+        run: pip install -q pillow numpy gradio_client
       - name: 合成女生範例
         continue-on-error: true
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
