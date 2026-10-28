@@ -17,8 +17,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="demo/f-after.jpg?v=20261028-19" fetchpriority="high">
-<link rel="preload" as="image" href="demo/f-before.jpg?v=20261028-19">
+<link rel="preload" as="image" href="demo/f-after.jpg?v=20261029-02" fetchpriority="high">
+<link rel="preload" as="image" href="demo/f-before.jpg?v=20261029-02">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <style>
@@ -49,6 +49,7 @@
   @media(min-width:900px){.topnav{display:flex}}
   .topnav button{border:none;background:transparent;padding:6px 14px;font-size:12px;letter-spacing:2px;color:var(--ink2);cursor:pointer;border-bottom:1px solid transparent}
   .topnav button.on{color:var(--ink);border-bottom-color:var(--ink)}
+  #userArea{display:flex;align-items:center;gap:12px}
   .userchip{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:1px;color:var(--ink2);background:transparent;border:1px solid var(--ink);padding:7px 12px;cursor:pointer;white-space:nowrap}
   .userchip .dot{display:none}
   .userchip b{color:var(--ink);font-weight:500}
@@ -106,7 +107,7 @@
   .demo .after{position:absolute;inset:0;width:55%;overflow:hidden}
   .demo .after svg{width:auto;height:100%;aspect-ratio:4/5}
   .demo img.ph{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:var(--bg2)}
-  .demo .after img.ph{width:auto;height:100%;max-width:none;object-fit:contain}
+  .demo .after img.ph{width:calc(100% / var(--pct,.55));height:100%;max-width:none;object-fit:contain}
   .demo.photo svg{display:none !important}
   .demo.photo img.ph{display:block}
   .demo .after{z-index:1} .demo .hd,.demo .tag,.demo .cap,.demo .gsw{z-index:2} .demo>img.ph{z-index:0}
@@ -133,8 +134,8 @@
   .why span{font-size:13px;color:var(--ink2);line-height:1.8}
   .why i{display:none}
   .login{max-width:420px;border:1px solid var(--line);padding:24px;border-bottom:1px solid var(--line)}
-  .login .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;letter-spacing:2px;margin:14px 0}
-  .login .or::before,.login .or::after{content:"";flex:1;height:1px;background:var(--line)}
+  .or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;letter-spacing:2px;margin:14px 0}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
   .gbtn{display:flex;align-items:center;justify-content:center;gap:10px}
   .gbtn svg{width:16px;height:16px}
   .abtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#000;color:#fff;border-color:#000}
@@ -160,7 +161,8 @@
   .person .tip .ic svg{width:22px;height:22px;stroke:var(--ink);fill:none;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
   .person input{position:absolute;inset:0;opacity:0;cursor:pointer}
   .person .change{position:absolute;right:10px;bottom:10px}
-  .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+  .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#fff;border:1px solid var(--line)}
+  .slot{box-shadow:0 0 0 1px var(--line)}
   .slot{position:relative;border:0;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;overflow:hidden;background:#fff;transition:background .15s}
   .slot:hover{background:var(--bg2)}
   .slot .ic{width:28px;height:28px}
@@ -186,7 +188,8 @@
   .sheet .opt .ic{width:34px;height:34px;border:1px solid var(--line);display:grid;place-items:center;flex:none}
   .sheet .opt .ic svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
   .sheet .opt small{display:block;color:var(--muted);font-size:11px}
-  .wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line)}
+  .wgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#fff;border:1px solid var(--line)}
+  .witem{box-shadow:0 0 0 1px var(--line)}
   @media(min-width:700px){.wgrid{grid-template-columns:repeat(5,1fr)}}
   .witem{position:relative;aspect-ratio:3/4;overflow:hidden;border:0;cursor:pointer;background:#fff}
   .witem img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s}
@@ -350,6 +353,7 @@
   .skel i{display:block;aspect-ratio:3/4;background:linear-gradient(90deg,#f1f0ed 25%,#faf9f7 50%,#f1f0ed 75%);background-size:200% 100%;animation:sh 1.2s infinite}
   .filt{display:flex;gap:0;overflow-x:auto;padding-bottom:2px;margin-bottom:16px;scrollbar-width:none}
   .filt::-webkit-scrollbar{display:none}
+  .filt .chip,.chips .chip{flex:none;white-space:nowrap}
   .petal{display:none}
 </style>
 </head>
@@ -389,9 +393,9 @@
         </div>
       </div>
       <div class="demo photo" id="demo" aria-label="拖曳比較試穿前後">
-        <img class="ph" id="demoPhAfter" src="demo/f-after.jpg?v=20261028-19" alt="試穿後" width="900" height="1350" decoding="async">
+        <img class="ph" id="demoPhAfter" src="demo/f-after.jpg?v=20261029-02" alt="試穿後" width="900" height="1350" decoding="async">
         <div class="gcard" id="demoGcard"><img id="demoGimg" alt="要試的衣服"><span>想試這件</span></div>
-        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.jpg?v=20261028-19" alt="試穿前" width="900" height="1350" decoding="async"></div>
+        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.jpg?v=20261029-02" alt="試穿前" width="900" height="1350" decoding="async"></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
         <div class="cap" id="demoCap">拖曳中線看看差別（真實 AI 合成結果）</div>
@@ -585,8 +589,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.4.0';
-const BUILD = '2026-10-29-02';
+const APP_VERSION = '3.5.0';
+const BUILD = '2026-10-29-03';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -646,15 +650,16 @@ if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = w
 const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings'];
 const NEED_LOGIN=['wardrobe','history','credits','admin','settings'];
 const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=magiclink|type=recovery)=?/;
-function go(v){
+function go(v, keepHash){
   if (window.__pickResolve) window.__pickResolve();
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
-  if (NEED_LOGIN.includes(v) && !state.user) { if(!document.querySelector('.view.on')) go('home'); openLogin(); return; }
+  if (NEED_LOGIN.includes(v) && !state.user) { if(!document.querySelector('.view.on')) go('home', true); if(state.authReady) openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
   document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.toggle('slide', on); });
   haptic();
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v));
-  if(!AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want) history.replaceState(null,'',location.pathname+location.search+want); }
+  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want) history.replaceState(null,'',location.pathname+location.search+want); }
+  if(v==='home') setTimeout(applyDemo,0);
   window.scrollTo({top:0});
   if (v==='wardrobe') loadWardrobe();
   if (v==='history') loadHistory();
@@ -666,23 +671,26 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 
 /* ---------- 登入 ---------- */
 async function initAuth(){
-  if (!supa) { renderUser(); showSetup(); return; }
+  if (!supa) { state.authReady=true; renderUser(); showSetup(); return; }
   const { data } = await supa.auth.getSession();
+  state.authReady=true;
   setSession(data.session);
+  if(!state.user && NEED_LOGIN.includes(bootHash)) openLogin();
   supa.auth.onAuthStateChange((e, s)=>{ if(e==='SIGNED_IN') track('login'); setSession(s); });
 }
 function setSession(s){
   const was = !!state.user;
   state.session = s; state.user = s ? s.user : null;
   renderUser();
-  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
+  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=location.hash.replace('#','')||bootHash; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
   if (!state.user && was) go('home');
   if (state.user) { if (new URLSearchParams(location.search).get('paid')==='1') { toast('付款完成，點數已入帳'); history.replaceState(null,'',location.pathname+location.hash); } }
 }
 function renderUser(){
   const a=$('userArea');
-  if (!state.user) { a.innerHTML='<button class="btn sm primary" data-go="home">登入</button>'; a.firstChild.onclick=()=>go('home'); return; }
+  if (!state.user) { a.innerHTML='<button class="btn sm primary" data-go="home">登入</button>'; a.firstChild.onclick=()=>go('home'); const lc=$('loginCard'); if(lc) lc.classList.remove('hidden'); return; }
   const em = state.user.email || '';
+  const lc=$('loginCard'); if(lc) lc.classList.add('hidden');
   a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
   a.querySelectorAll('.free,.userchip').forEach(el=>el.onclick=()=>go('credits'));
 }
@@ -744,7 +752,7 @@ function openLogin(){
   if(!supa) return showSetup(true);
   openPick('登入後繼續', `<div class="muted" style="margin-bottom:10px">登入後才能合成、使用衣櫃與紀錄。每天送免費額度。</div>
     <button class="btn block gbtn" id="sheetGoogle">使用 Google 登入</button>
-    <div class="login" style="max-width:none"><div class="or">或用 Email</div></div>
+    <div class="or">或用 Email</div>
     <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄驗證碼</button></div>
     <div class="emailsent hidden" id="sheetSent" style="margin-top:10px"></div>`);
   if (IS_APP) { if(PLATFORM==='ios'){ $('sheetGoogle').insertAdjacentHTML('beforebegin','<button class="btn block abtn" id="sheetApple" style="margin-bottom:8px">使用 Apple 登入</button>'); $('sheetApple').onclick=()=>nativeLogin('apple'); } if(!CONFIG.GOOGLE_WEB_CLIENT_ID) $('sheetGoogle').classList.add('hidden'); else $('sheetGoogle').onclick=()=>nativeLogin('google'); }
@@ -778,7 +786,7 @@ async function api(path, opts={}){
 async function refreshMe(){
   if (!state.user) return;
   try { state.me = await api('/api/me'); } catch(e){ state.me=null; }
-  renderUser(); renderCredits();
+  renderUser(); renderCredits(); renderSlots();
 }
 
 /* ---------- 圖片工具 ---------- */
@@ -1042,7 +1050,7 @@ $('btnRun').onclick=async()=>{
   $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
   const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
-  state.views=null; stopSpin();
+  state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
   const order=['dress','top','bottom','hair','hat','accessory','shoes'];
   const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫你'+verbs[i.type]+'…');
   if($('wantViews').classList.contains('on')) seq.push('轉個身，生成側面與背面…');
@@ -1064,14 +1072,14 @@ $('btnRun').onclick=async()=>{
       const side = await pick(v.side, vu.side), back = await pick(v.back, vu.back);
       if (side || back) state.views = { side, back };
     }
-    if (d.views_error) toast('多角度生成失敗，已退回 2 點');
+
     clearInterval(tick); bar.style.width='96%';
     let imgs = imgsResolved.filter(Boolean);
     if (!imgs.length) throw new Error('沒有收到合成結果');
     const needLock = $('faceLock').classList.contains('on') && items.some(i=>!['top','bottom','dress'].includes(i.type));
     if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(state.personOrig, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
-    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`;
+    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。` + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '');
     if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
     busy=false; $('btnRun').disabled=false;
     let finalImg = imgs[0];
@@ -1100,6 +1108,7 @@ function renderCompare(before, after){
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   const v=state.views||{};
   box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>${v.side?`<img class="view-img" data-v="side" src="${v.side}" alt="側面">`:''}${v.back?`<img class="view-img" data-v="back" src="${v.back}" alt="背面">`:''}<div class="cap"><span>${items}</span><small id="capAngle">${date}</small></div></div>`;
+  $('angles').querySelectorAll('[data-v]').forEach(b=>{ b.style.display=(b.dataset.v==='front'||v[b.dataset.v])?'':'none'; });
   $('angles').classList.toggle('hidden', !(v.side||v.back)); setAngle('front');
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
   const sync=()=>{ const w=cmp.clientWidth; aft.querySelector('img').style.width=w+'px'; };
@@ -1264,8 +1273,8 @@ $('btnTips').onclick=()=>openDoc('tips');
 
 function petals(){ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; const cols=['#f7b9c9','#fde0e7','#ffd6c2','#ece2fb']; for(let i=0;i<22;i++){ const p=document.createElement('i'); p.className='petal'; p.style.left=Math.random()*100+'vw'; p.style.background=cols[i%cols.length]; p.style.animationDelay=(Math.random()*.8)+'s'; p.style.animationDuration=(2+Math.random()*1.5)+'s'; p.style.transform='scale('+(.6+Math.random())+')'; document.body.appendChild(p); setTimeout(()=>p.remove(),4000); } }
 /* 首頁示範男女切換 + 真人照片模式（demo/manifest.json 存在時自動啟用） */
-const DEMO_V='20261028-20';
-(function(){ const a=$('demoPhAfter'); if(!a) return; const fit=()=>{ if(a.naturalWidth&&a.naturalHeight){ const r=a.naturalWidth/a.naturalHeight; $('demo').style.aspectRatio=Math.max(0.55,Math.min(0.8,r)).toFixed(3); const sync=()=>{ $('demoPhBefore').style.width=$('demo').clientWidth+'px'; }; sync(); } }; a.addEventListener('load',fit); if(a.complete) fit(); })();
+const DEMO_V='20261029-02';
+(function(){ const a=$('demoPhAfter'); if(!a) return; const fit=()=>{ if(a.naturalWidth&&a.naturalHeight){ const r=a.naturalWidth/a.naturalHeight; $('demo').style.aspectRatio=Math.max(0.55,Math.min(0.8,r)).toFixed(3); } }; a.addEventListener('load',fit); if(a.complete) fit(); })();
 let demoPhotos={ f:{before:'demo/f-before.jpg?v='+DEMO_V, after:'demo/f-after.jpg?v='+DEMO_V}, m:{before:'demo/m-before.jpg?v='+DEMO_V, after:'demo/m-after.jpg?v='+DEMO_V} }, demoG='f';
 function applyDemo(){
   const d=$('demo'); if(!d) return;
@@ -1273,8 +1282,8 @@ function applyDemo(){
   const pending=!!(ph&&ph.before&&!ph.after);
   d.classList.toggle('pending',pending);
   d.classList.toggle('photo',!!(ph&&ph.after));
-  if(pending){ $('demoPhAfter').src=ph.before; $('demoPhBefore').src=ph.before; if(ph.garment){ $('demoGimg').src=ph.garment; } $('demoCap').textContent='真人示範照（Pexels）· 右下是要試的衣服，合成結果產生後會變成前後比較'; $('demoAngle').classList.add('hidden'); const gsw=$('demoGender'); if(gsw) gsw.style.display=''; return; }
-  if(ph&&ph.after){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; const sync=()=>{ $('demoPhBefore').style.width=d.clientWidth+'px'; }; sync(); window.addEventListener('resize',sync);
+  if(pending){ $('demoPhAfter').src=ph.before; $('demoPhBefore').src=ph.before; if(ph.garment){ $('demoGimg').src=ph.garment; } $('demoCap').textContent='右下是要試的衣服，合成後會變成前後比較'; $('demoAngle').classList.add('hidden'); const gsw=$('demoGender'); if(gsw) gsw.style.display=''; return; }
+  if(ph&&ph.after){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; 
     const ang=$('demoAngle'); const hasV=ph.side||ph.back; ang.classList.toggle('hidden',!hasV); ang.querySelectorAll('button').forEach(b=>{ b.style.display=(b.dataset.a==='front'||ph[b.dataset.a])?'':'none'; b.classList.toggle('on',b.dataset.a==='front'); b.onclick=e=>{ e.stopPropagation(); ang.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); const front=b.dataset.a==='front'; $('demoPhAfter').src=front?ph.after:ph[b.dataset.a]; $('demoAfter').style.display=front?'':'none'; $('demoHd').style.display=front?'':'none'; $('demoCap').textContent=front?'拖曳中線看看差別（真實 AI 合成結果）':({side:'側面',back:'背面'})[b.dataset.a]+'（AI 依正面結果生成）'; }; }); ang.onpointerdown=e=>e.stopPropagation(); }
   else { $('demoAngle').classList.add('hidden'); $('demoAfter').style.display=''; $('demoHd').style.display=''; }
   const gsw=$('demoGender'); if(gsw){ const hasM=!demoPhotos||demoPhotos.m; gsw.style.display=hasM?'':'none'; }
@@ -1283,7 +1292,7 @@ function applyDemo(){
 fetch('demo/manifest.json?v='+DEMO_V,{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(m=>{ if(m&&(m.f||m.m)){ const bust=u=>(u&&u.startsWith('demo/'))?u+'?v='+DEMO_V:u; for(const g of ['f','m']){ if(m[g]) for(const k of ['before','after','side','back']) m[g][k]=bust(m[g][k]); } demoPhotos=m; if(!m.f&&m.m) demoG='m'; applyDemo(); } }).catch(()=>{});
 document.querySelectorAll('.why').forEach(w=>{});
 /* 首頁示範滑桿 */
-(function(){ const d=$('demo'); if(!d) return; const a=$('demoAfter'), h=$('demoHd'); const set=x=>{ const r=d.getBoundingClientRect(); const pct=Math.max(4,Math.min(96,(x-r.left)/r.width*100)); a.style.width=pct+'%'; h.style.left=pct+'%'; }; let dr=false; d.addEventListener('pointerdown',e=>{ dr=true; d.setPointerCapture(e.pointerId); set(e.clientX); }); d.addEventListener('pointermove',e=>{ if(dr) set(e.clientX); }); d.addEventListener('pointerup',()=>dr=false); d.addEventListener('pointercancel',()=>dr=false); })();
+(function(){ const d=$('demo'); if(!d) return; const a=$('demoAfter'), h=$('demoHd'); const set=x=>{ const r=d.getBoundingClientRect(); const pct=Math.max(4,Math.min(96,(x-r.left)/r.width*100)); a.style.width=pct+'%'; a.style.setProperty('--pct',(pct/100).toFixed(4)); h.style.left=pct+'%'; }; let dr=false; d.addEventListener('pointerdown',e=>{ dr=true; d.setPointerCapture(e.pointerId); set(e.clientX); }); d.addEventListener('pointermove',e=>{ if(dr) set(e.clientX); }); d.addEventListener('pointerup',()=>dr=false); d.addEventListener('pointercancel',()=>dr=false); })();
 
 /* ---------- 多角度切換與自動旋轉 ---------- */
 let spinT=null, curAngle='front';
@@ -1297,7 +1306,7 @@ function setAngle(a){
 }
 function stopSpin(){ if(spinT){ clearInterval(spinT); spinT=null; } const b=$('spinBtn'); if(b) b.classList.remove('on'); }
 $('angles').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ stopSpin(); setAngle(b.dataset.v); haptic(); });
-$('spinBtn').onclick=()=>{ if(spinT){ stopSpin(); return; } const order=['front','side','back','side']; let i=0; $('spinBtn').classList.add('on'); spinT=setInterval(()=>{ i=(i+1)%order.length; setAngle(order[i]); },1100); };
+$('spinBtn').onclick=()=>{ if(spinT){ stopSpin(); return; } const v=state.views||{}; const order=['front',...(v.side?['side']:[]),...(v.back?['back']:[]),...(v.side&&v.back?['side']:[])]; if(order.length<2) return; let i=0; $('spinBtn').classList.add('on'); spinT=setInterval(()=>{ i=(i+1)%order.length; setAngle(order[i]); },1100); };
 function currentResultImage(){ if(curAngle!=='front' && state.views && state.views[curAngle]) return state.views[curAngle]; return state.result; }
 
 /* ---------- 離線、安裝、原生事件 ---------- */
@@ -1328,7 +1337,8 @@ renderSlots();
 loadPrefs();
 initAuth();
 window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h); });
-(function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();
+const bootHash=location.hash.replace('#','');
+(function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } go(VIEWS.includes(bootHash)&&bootHash!=='home' ? bootHash : 'home'); })();
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',__tryonBoot); else __tryonBoot();
 </script>
