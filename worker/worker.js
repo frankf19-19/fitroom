@@ -18,7 +18,9 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
+const RUNNING_STALE_MS = 10 * 60 * 1000;   // 進行中超過 10 分鐘視為失敗並退點
+const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 const PACKS = { // 點數包
   p10: { name: '10', credits: 10, price: 99 },
@@ -74,9 +76,9 @@ export default {
 function corsHeaders(request, env) {
   const origin = request.headers.get('Origin') || '';
   const allowed = (env.SITE_URL || '').split(',').map(s => { try { return new URL(s.trim()).origin; } catch { return ''; } }).filter(Boolean);
-  const ok = allowed.length === 0 || allowed.includes(origin) || APP_ORIGINS.includes(origin);
+  const ok = (allowed.length > 0 && allowed.includes(origin)) || APP_ORIGINS.includes(origin);
   return {
-    'Access-Control-Allow-Origin': ok ? origin : 'null',
+    ...(ok ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
@@ -88,8 +90,8 @@ function json(obj, status = 200, headers = {}) {
 }
 function need(env, k) { if (!env[k]) throw new Error('伺服器尚未完成設定（' + k + '）'); return env[k]; }
 function siteUrl(env, request) { return (env.SITE_URL || '').split(',')[0].trim() || new URL(request.url).origin; }
-async function fetchT(url, opts, label) {
-  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), UPSTREAM_TIMEOUT_MS);
+async function fetchT(url, opts, label, maxMs) {
+  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), Math.max(1000, Math.min(UPSTREAM_TIMEOUT_MS, maxMs || UPSTREAM_TIMEOUT_MS)));
   try { return await fetch(url, { ...opts, signal: ctl.signal }); }
   catch (e) { throw new Error((label || '服務') + (e.name === 'AbortError' ? '逾時，請稍後再試' : '連線失敗')); }
   finally { clearTimeout(t); }
@@ -150,7 +152,7 @@ async function handleMe(request, env, cors) {
   const freeDaily = Number(env.FREE_DAILY || 2);
   const used = await freeUsedToday(env, user.id);
   const packs = Object.fromEntries(Object.entries(PACKS).map(([k, v]) => [k, { name: v.name + ' 點', credits: v.credits, price: v.price }]));
-  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user) }, 200, cors);
+  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), views_available: !!env.GEMINI_KEY, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
 }
 
 /* ---------------- /api/tryon ---------------- */
@@ -160,7 +162,9 @@ async function handleTryon(request, env, cors) {
   let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
   const { person, items } = body || {};
   const variants = Number(body.variants) === 2 ? 2 : 1;
-  const wantViews = body.views === true;
+  const wantViews = body.views === true && !!env.GEMINI_KEY;
+  const started = Date.now();
+  const left = () => TRYON_BUDGET_MS - (Date.now() - started);
   if (!isDataImage(person)) return json({ error: '請提供全身照（檔案太大或格式不支援）' }, 400, cors);
   if (!Array.isArray(items) || !items.length || items.length > 7) return json({ error: '請至少選一個要試穿的品項（最多 7 個）' }, 400, cors);
   for (const it of items) {
@@ -170,9 +174,16 @@ async function handleTryon(request, env, cors) {
   }
   const types = items.map(i => i.type);
 
-  // 防濫用：進行中的不得超過 1 個；60 秒內最多 3 次
-  const recent = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=in.(ok,running,failed)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 60000).toISOString())}&select=status`);
-  if (recent.some(r => r.status === 'running')) return json({ error: '上一張還在合成中，請稍候' }, 429, cors);
+  // 清理卡住的「進行中」（Worker 中途被終止時）：標記失敗並退點
+  try {
+    const stale = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&created_at=lt.${encodeURIComponent(new Date(Date.now() - RUNNING_STALE_MS).toISOString())}`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ status: 'failed', error: '逾時（系統自動標記）' }) });
+    for (const g of (Array.isArray(stale) ? stale : [])) {
+      if (g.cost > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: g.cost }).catch(() => {});
+      await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}`, { cost: 0, free_used: 0 }).catch(() => {});
+    }
+  } catch { /* ignore */ }
+  // 防濫用：60 秒內最多 3 次正式合成（進行中由資料庫唯一索引鎖住）
+  const recent = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&or=(status.eq.running,cost.gt.0,free_used.gt.0)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 60000).toISOString())}&select=status`);
   if (recent.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors);
 
   // 扣點：每個品項 1 點 × 張數；先用今日免費點數，不足再扣點數
@@ -187,7 +198,9 @@ async function handleTryon(request, env, cors) {
     return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
   }
   // 先登記進行中（鎖住免費額度與限流），再扣點，失敗再退
-  const gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: payCredits, free_used: useFree, status: 'running', variants });
+  let gen;
+  try { gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: payCredits, free_used: useFree, status: 'running', variants }); }
+  catch (e) { if (/409|duplicate|unique/i.test(String(e.message))) return json({ error: '上一張還在合成中，請稍候' }, 429, cors); throw e; }
   if (payCredits > 0) {
     const ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits });
     if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '扣點失敗' }); return json({ error: '扣點失敗，請重試' }, 500, cors); }
@@ -203,17 +216,26 @@ async function handleTryon(request, env, cors) {
     }
     return current;
   };
-  let results, views = null;
+  let results, views = null, viewsError = null;
   try {
     results = await Promise.all(Array.from({ length: variants }, runPipeline));
-    if (wantViews) {
-      const [side, back] = await Promise.all([geminiView(env, results[0], 'side'), geminiView(env, results[0], 'back')]);
-      views = { side, back };
-    }
   } catch (e) {
     if (payCredits > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
     await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: String(e.message).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
     return json({ error: '合成失敗（已退回點數）：' + e.message }, 502, cors);
+  }
+  // 多角度獨立處理：失敗只退 2 點，主圖照常回傳
+  let finalPay = payCredits, finalFree = useFree;
+  if (wantViews) {
+    try {
+      const [side, back] = await Promise.all([geminiView(env, results[0], 'side', left()), geminiView(env, results[0], 'back', left())]);
+      views = { side, back };
+    } catch (e) {
+      viewsError = String(e.message).slice(0, 160);
+      const refund = Math.min(2, payCredits);
+      if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
+      finalPay = payCredits - refund; finalFree = useFree - (2 - refund);
+    }
   }
 
   // 存結果到 Storage；第一張更新原列，其餘各新增一列（不計免費額度）
@@ -232,7 +254,7 @@ async function handleTryon(request, env, cors) {
     } catch { /* 圖片存檔失敗不影響回傳 */ }
     urls.push(u);
     try {
-      if (i === 0) await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'ok', image_url: u });
+      if (i === 0) await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'ok', image_url: u, cost: finalPay, free_used: finalFree, error: viewsError });
       else await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: 0, free_used: 0, status: 'ok', image_url: u, variants });
     } catch { /* ignore */ }
   }
@@ -250,9 +272,11 @@ async function handleTryon(request, env, cors) {
     }
     try { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { views: viewUrls }); } catch { /* ignore */ }
   }
-  let creditsNow = profile.credits - payCredits;
+  let creditsNow = profile.credits - finalPay;
   try { creditsNow = (await getProfile(env, user)).credits; } catch { /* 用估算值 */ }
-  return json({ image: results[0], images: results, image_urls: urls, views, view_urls: viewUrls, charged: payCredits, free_used: useFree, credits: creditsNow, free_left: Math.max(0, freeLeft - useFree) }, 200, cors);
+  // 圖片已上傳成功的只回 URL，省下回應體積；上傳失敗的才回 base64
+  const imagesOut = results.map((r, i) => urls[i] ? null : r);
+  return json({ images: imagesOut, image_urls: urls, views: views ? { side: viewUrls.side ? null : views.side, back: viewUrls.back ? null : views.back } : null, view_urls: viewUrls, views_error: viewsError, charged: finalPay, free_used: finalFree, credits: creditsNow, free_left: Math.max(0, freeLeft - finalFree) }, 200, cors);
 }
 
 /* ---- FASHN（queue 模式：送出 → 輪詢 → 取結果） ---- */
@@ -272,14 +296,15 @@ async function fashnTryon(env, person, garment, category, photoType) {
   const statusUrl = job.status_url, responseUrl = job.response_url;
   if (!statusUrl || !responseUrl) throw new Error('衣服試穿服務沒有回應工作編號');
   const deadline = Date.now() + UPSTREAM_TIMEOUT_MS;
-  let delay = 1500;
+  let delay = 1500, done = false;
   while (Date.now() < deadline) {
     await new Promise(r => setTimeout(r, delay)); delay = Math.min(4000, delay + 500);
-    const sr = await fetchT(statusUrl, { headers }, '衣服試穿服務');
+    const sr = await fetchT(statusUrl, { headers }, '衣服試穿服務', 30000);
     const sd = await sr.json().catch(() => ({}));
-    if (sd.status === 'COMPLETED') break;
+    if (sd.status === 'COMPLETED') { done = true; break; }
     if (sd.status === 'FAILED' || sr.status >= 400 && sr.status !== 202) throw new Error('衣服試穿服務：' + (sd.error || sd.detail || '處理失敗'));
   }
+  if (!done) throw new Error('衣服試穿服務逾時，請稍後再試');
   const rr = await fetchT(responseUrl, { headers }, '衣服試穿服務');
   const rt = await rr.text();
   if (!rr.ok) throw new Error('衣服試穿服務：' + extractErr(rt));
@@ -330,7 +355,8 @@ async function geminiEdit(env, person, item, identityRef) {
 }
 
 /* ---- 多角度：從正面結果生成側面／背面 ---- */
-async function geminiView(env, front, which) {
+async function geminiView(env, front, which, maxMs) {
+  if (maxMs !== undefined && maxMs < 15000) throw new Error('多角度服務：時間不足');
   const parts = [{ text: VIEW_PROMPTS[which] }, inlinePart(front)];
   const preferred = env.GEMINI_IMAGE_MODEL || GEMINI_FALLBACKS[0];
   const models = [preferred, ...GEMINI_FALLBACKS.filter(m => m !== preferred)];
@@ -339,7 +365,7 @@ async function geminiView(env, front, which) {
     const isGen3 = !model.includes('2.5');
     const cfgs = isGen3 ? [{ responseModalities: ['IMAGE'], imageConfig: { imageSize: '2K' } }, { responseModalities: ['IMAGE'] }] : [{ responseModalities: ['IMAGE'] }];
     for (const generationConfig of cfgs) {
-      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': need(env, 'GEMINI_KEY') }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig }) }, '多角度服務');
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': need(env, 'GEMINI_KEY') }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig }) }, '多角度服務', maxMs);
       const t = await r.text();
       if (r.ok) {
         const d = JSON.parse(t); const cand = d.candidates && d.candidates[0];
@@ -427,7 +453,9 @@ async function handleDeleteAccount(request, env, cors) {
 
 /* ---------------- 綠界金流 ---------------- */
 function ecpayCfg(env) {
-  if (env.ECPAY_MERCHANT_ID && env.ECPAY_HASH_KEY && env.ECPAY_HASH_IV) return { merchant: env.ECPAY_MERCHANT_ID, key: env.ECPAY_HASH_KEY, iv: env.ECPAY_HASH_IV, url: ECPAY_PROD_URL, test: false };
+  const n = [env.ECPAY_MERCHANT_ID, env.ECPAY_HASH_KEY, env.ECPAY_HASH_IV].filter(Boolean).length;
+  if (n === 3) return { merchant: env.ECPAY_MERCHANT_ID, key: env.ECPAY_HASH_KEY, iv: env.ECPAY_HASH_IV, url: ECPAY_PROD_URL, test: false };
+  if (n > 0) throw new Error('綠界設定不完整（需同時設定 MERCHANT_ID、HASH_KEY、HASH_IV）');
   return { ...ECPAY_TEST, test: true };
 }
 async function handleCheckout(request, env, cors) {
@@ -466,7 +494,9 @@ async function handleEcpayNotify(request, env) {
     // 只有從 pending 改成 paid 的那一次才加點（防重送/併發）
     const upd = await sbPatch(env, `/rest/v1/orders?trade_no=eq.${encodeURIComponent(p.MerchantTradeNo)}&status=eq.pending`, { status: 'paid', ecpay_trade_no: p.TradeNo || null, paid_at: new Date().toISOString() }, true);
     if (Array.isArray(upd) && upd.length && o.user_id) {
-      await rpc(env, 'add_credits', { p_user: o.user_id, p_amount: o.credits });
+      await getProfile(env, { id: o.user_id, email: o.user_email }).catch(() => {});
+      const ok = await rpc(env, 'add_credits', { p_user: o.user_id, p_amount: o.credits }).catch(() => false);
+      if (ok !== true) await sbPatch(env, `/rest/v1/orders?trade_no=eq.${encodeURIComponent(p.MerchantTradeNo)}`, { status: 'paid_uncredited' }).catch(() => {});
       await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: o.user_id, name: 'paid', props: { pack: o.pack, amount: o.amount }, platform: 'ecpay' }) }).catch(() => {});
     }
   }

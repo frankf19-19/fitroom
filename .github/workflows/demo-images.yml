@@ -15,11 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 安裝相依
-        run: pip install -q pillow numpy opencv-python-headless gradio_client
+        run: pip install -q pillow numpy gradio_client
       - name: 合成女生範例
         continue-on-error: true
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
         run: |
+          set -o pipefail
           echo "GEMINI_KEY set: $([ -n "$GEMINI_KEY" ] && echo yes || echo NO)" | tee demo/log-f.txt
           python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f --views 2>&1 | tee -a demo/log-f.txt
       - name: 合成男生範例（有提供才做）

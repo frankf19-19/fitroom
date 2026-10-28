@@ -120,18 +120,11 @@ def composite_keep_identity(person_bytes, after_bytes, masked_bytes):
     mask = (gray & diff).astype(np.uint8) * 255
     if mask.sum() == 0:
         return after
-    # 排除臉部（含頭髮上緣）：臉框往上與左右各擴 60%，確保臉與髮際線用原圖
-    try:
-        import cv2
-        gray_img = cv2.cvtColor(np.asarray(orig), cv2.COLOR_RGB2GRAY)
-        cas = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-        faces = cas.detectMultiScale(gray_img, 1.1, 5, minSize=(40, 40))
-        for (x, y, w, h) in faces:
-            x0, y0 = max(0, int(x - w * 0.6)), max(0, int(y - h * 0.9)); x1, y1 = min(mask.shape[1], int(x + w * 1.6)), min(mask.shape[0], int(y + h * 1.15))
-            mask[y0:y1, x0:x1] = 0
-        print("臉部排除：", len(faces), "張臉", flush=True)
-    except Exception as e:
-        print("臉部偵測略過：", str(e)[:120], flush=True)
+    # 不畫遮罩上緣以上：衣領以上（臉、髮際線、頸）一律用原圖
+    rows = np.where(mask.any(axis=1))[0]
+    if len(rows):
+        y_top = rows[0] + int(mask.shape[0] * 0.03)
+        mask[:y_top, :] = 0
     mk = Image.fromarray(mask, "L").filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(5))
     return Image.composite(after, orig, mk)
 

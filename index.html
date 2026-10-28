@@ -585,8 +585,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.3.0';
-const BUILD = '2026-10-29-01';
+const APP_VERSION = '3.4.0';
+const BUILD = '2026-10-29-02';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -848,6 +848,7 @@ function renderSlots(){
   const nItems=Object.keys(state.slots).length;
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0); $('costN').textContent=n;
   if (state.me){ const free=Math.min(state.me.free_left,n); $('costNote').textContent = n? `（免費額度抵 ${free} 點，點數扣 ${n-free} 點）`:''; }
+  if (state.me && state.me.views_available===false){ $('wantViews').classList.remove('on'); $('wantViews').closest('.opt-row').classList.add('hidden'); }
   renderFit();
   $('btnRun').disabled = !n || busy;
 }
@@ -1053,9 +1054,20 @@ $('btnRun').onclick=async()=>{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
     const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views }) });
-    state.views = d.views || null;
+    // 伺服器已上傳成功的圖只回 URL，轉成 data URI 供後續（臉部鎖定、分享、繼續搭）使用
+    const pick = async (data, url) => data || (url ? await urlToDataUri(url) : null);
+    const n = Math.max((d.images||[]).length, (d.image_urls||[]).length, 1);
+    const imgsResolved = []; for (let i=0;i<n;i++) imgsResolved.push(await pick((d.images||[])[i], (d.image_urls||[])[i]));
+    state.views = null;
+    if (d.views || (d.view_urls && (d.view_urls.side || d.view_urls.back))) {
+      const v = d.views || {}, vu = d.view_urls || {};
+      const side = await pick(v.side, vu.side), back = await pick(v.back, vu.back);
+      if (side || back) state.views = { side, back };
+    }
+    if (d.views_error) toast('多角度生成失敗，已退回 2 點');
     clearInterval(tick); bar.style.width='96%';
-    let imgs = d.images && d.images.length ? d.images : [d.image];
+    let imgs = imgsResolved.filter(Boolean);
+    if (!imgs.length) throw new Error('沒有收到合成結果');
     const needLock = $('faceLock').classList.contains('on') && items.some(i=>!['top','bottom','dress'].includes(i.type));
     if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(state.personOrig, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
