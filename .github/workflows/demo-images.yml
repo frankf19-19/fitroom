@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       engine:    { description: '引擎：gemini（免費金鑰）/ fal（付費）/ hf（完全免費，可能排隊）', required: true, default: 'gemini', type: choice, options: [gemini, fal, hf] }
-      person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'demo/person-f.jpg' }
-      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'demo/garment-f.jpg' }
-      person_m:  { description: '男生全身照（留空則不做男生版）', required: false, default: 'demo/person-m.jpg' }
-      garment_m: { description: '男生要試穿的衣服照', required: false, default: 'demo/garment-m.jpg' }
+      person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'https://www.pexels.com/photo/lady-in-jacket-and-bodysuit-on-white-background-in-studio-6856000/' }
+      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'https://www.pexels.com/photo/a-woman-in-white-dress-standing-on-the-edge-of-the-roof-9638207/' }
+      person_m:  { description: '男生全身照（留空則不做男生版）', required: false, default: 'https://www.pexels.com/photo/man-wearing-white-shirt-on-white-background-7561443/' }
+      garment_m: { description: '男生要試穿的衣服照', required: false, default: 'https://www.pexels.com/photo/portrait-of-a-man-in-navy-polo-shirt-35495782/' }
 permissions:
   contents: write
 jobs:
@@ -28,18 +28,23 @@ jobs:
           python3 - <<'PY'
           import json, os
           from PIL import Image, ImageOps
+          old = json.load(open("demo/manifest.json")) if os.path.exists("demo/manifest.json") else {}
           man = {}
           for g in ("f", "m"):
               b, a = f"demo/{g}-before.jpg", f"demo/{g}-after.jpg"
               if os.path.exists(b) and os.path.exists(a):
                   entry = {"before": b, "after": a}
+                  for k in ("garment", "credit"):
+                      if old.get(g, {}).get(k): entry[k] = old[g][k]
                   for k in ("side", "back"):
                       if os.path.exists(f"demo/{g}-{k}.jpg"): entry[k] = f"demo/{g}-{k}.jpg"
                   for p in entry.values():
                       im = ImageOps.exif_transpose(Image.open(p)).convert("RGB")
                       im.thumbnail((900, 1125)); im.save(p, quality=88, optimize=True)
                   man[g] = entry
-          json.dump(man, open("demo/manifest.json", "w"))
+          for g in old:
+              if g not in man: man[g] = old[g]
+          json.dump(man, open("demo/manifest.json", "w"), ensure_ascii=False)
           print(man)
           PY
       - name: 提交到 main（網站會自動重新部署）

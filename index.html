@@ -112,6 +112,13 @@
   .demo .tag{position:absolute;top:12px;font-size:10px;letter-spacing:2px;padding:5px 9px;background:#fff;color:var(--ink);pointer-events:none}
   .demo .tag.l{left:12px}.demo .tag.r{right:12px}
   .demo .cap{position:absolute;left:0;right:0;bottom:0;font-size:11px;letter-spacing:.5px;color:var(--ink2);background:rgba(255,255,255,.92);padding:8px 12px;text-align:center;pointer-events:none}
+  .demo .gcard{position:absolute;right:12px;bottom:46px;z-index:2;width:96px;background:#fff;border:1px solid var(--line);padding:6px;display:none}
+  .demo .gcard img{width:100%;aspect-ratio:3/4;object-fit:cover;display:block}
+  .demo .gcard span{display:block;font-size:9px;letter-spacing:1.5px;color:var(--ink);text-align:center;margin-top:5px}
+  .demo.pending .gcard{display:block}
+  .demo.pending .after,.demo.pending .hd,.demo.pending .tag{display:none !important}
+  .demo.pending svg{display:none !important}
+  .demo.pending img.ph{display:block}
   .gsw{position:absolute;left:12px;bottom:46px;display:inline-flex;background:#fff;border:1px solid var(--line)}
   .gsw button{border:none;background:transparent;padding:6px 12px;font-size:11px;letter-spacing:1px;color:var(--muted);cursor:pointer}
   .gsw button.on{background:var(--ink);color:#fff}
@@ -455,6 +462,7 @@
           <path d="M170 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5zM200 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5z" fill="#fff" stroke="#3a2630" stroke-width="1.6"/>
         </svg><img class="ph" id="demoPhBefore" alt="試穿前"></div>
         <img class="ph" id="demoPhAfter" alt="試穿後">
+        <div class="gcard" id="demoGcard"><img id="demoGimg" alt="要試的衣服"><span>想試這件</span></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
         <div class="cap" id="demoCap">拖曳中線看看差別（示意圖，正式結果是你的真實照片）</div>
@@ -647,8 +655,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.0.0';
-const BUILD = '2026-10-28-17';
+const APP_VERSION = '3.1.0';
+const BUILD = '2026-10-28-18';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1318,14 +1326,18 @@ let demoPhotos=null, demoG='f';
 function applyDemo(){
   const d=$('demo'); if(!d) return;
   const ph=demoPhotos&&demoPhotos[demoG];
-  d.classList.toggle('photo',!!ph);
-  if(ph){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; const sync=()=>{ $('demoPhBefore').style.width=d.clientWidth+'px'; }; sync(); window.addEventListener('resize',sync);
+  const pending=!!(ph&&ph.before&&!ph.after);
+  d.classList.toggle('pending',pending);
+  d.classList.toggle('photo',!!(ph&&ph.after));
+  if(pending){ $('demoPhAfter').src=ph.before; $('demoPhBefore').src=ph.before; if(ph.garment){ $('demoGimg').src=ph.garment; } $('demoCap').textContent='真人示範照（Pexels）· 右下是要試的衣服，合成結果產生後會變成前後比較'; $('demoAngle').classList.add('hidden'); const gsw=$('demoGender'); if(gsw) gsw.style.display=''; return; }
+  if(ph&&ph.after){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; const sync=()=>{ $('demoPhBefore').style.width=d.clientWidth+'px'; }; sync(); window.addEventListener('resize',sync);
     const ang=$('demoAngle'); const hasV=ph.side||ph.back; ang.classList.toggle('hidden',!hasV); ang.querySelectorAll('button').forEach(b=>{ b.style.display=(b.dataset.a==='front'||ph[b.dataset.a])?'':'none'; b.classList.toggle('on',b.dataset.a==='front'); b.onclick=e=>{ e.stopPropagation(); ang.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); const front=b.dataset.a==='front'; $('demoPhAfter').src=front?ph.after:ph[b.dataset.a]; $('demoAfter').style.display=front?'':'none'; $('demoHd').style.display=front?'':'none'; $('demoCap').textContent=front?'拖曳中線看看差別（真實 AI 合成結果）':({side:'側面',back:'背面'})[b.dataset.a]+'（AI 依正面結果生成）'; }; }); ang.onpointerdown=e=>e.stopPropagation(); }
   else { $('demoAngle').classList.add('hidden'); $('demoAfter').style.display=''; $('demoHd').style.display=''; $('demoCap').textContent='拖曳中線看看差別（示意圖，正式結果是你的真實照片）'; document.querySelectorAll('#demo svg[data-g]').forEach(sv=>sv.style.display=sv.dataset.g===demoG?'':'none'); }
   const gsw=$('demoGender'); if(gsw){ const hasM=!demoPhotos||demoPhotos.m; gsw.style.display=hasM?'':'none'; }
 }
 (function(){ const g=$('demoGender'); if(!g) return; g.querySelectorAll('button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); demoG=b.dataset.g; g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); applyDemo(); }); g.onpointerdown=e=>e.stopPropagation(); })();
 fetch('demo/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(m=>{ if(m&&(m.f||m.m)){ demoPhotos=m; if(!m.f&&m.m) demoG='m'; applyDemo(); } }).catch(()=>{});
+document.querySelectorAll('.why').forEach(w=>{});
 /* 首頁示範滑桿 */
 (function(){ const d=$('demo'); if(!d) return; const a=$('demoAfter'), h=$('demoHd'); const set=x=>{ const r=d.getBoundingClientRect(); const pct=Math.max(4,Math.min(96,(x-r.left)/r.width*100)); a.style.width=pct+'%'; h.style.left=pct+'%'; }; let dr=false; d.addEventListener('pointerdown',e=>{ dr=true; d.setPointerCapture(e.pointerId); set(e.clientX); }); d.addEventListener('pointermove',e=>{ if(dr) set(e.clientX); }); d.addEventListener('pointerup',()=>dr=false); d.addEventListener('pointercancel',()=>dr=false); })();
 
