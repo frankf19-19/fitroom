@@ -83,7 +83,7 @@
   input:focus,select:focus{outline:none;border-color:#f3a9bd;box-shadow:0 0 0 4px rgba(224,85,122,.12)}
   .toast{position:fixed;left:50%;bottom:calc(var(--nav) + 18px);transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:90vw;text-align:center;box-shadow:0 10px 30px rgba(58,38,48,.3)}
   @media(min-width:900px){.toast{bottom:24px}}
-  .toast.show{opacity:1;transform:translateX(-50%)}
+  .toast.show{opacity:1;transform:translateX(-50%);pointer-events:auto}
   .banner{background:#fff6dc;border:1px solid #f3dd9a;color:#6a4f08;border-radius:var(--r-m);padding:12px 14px;font-size:13px;margin-bottom:14px;line-height:1.6}
 
   /* 首頁 */
@@ -219,6 +219,7 @@
   .chip{padding:7px 13px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:12px;cursor:pointer;font-weight:700;color:var(--ink2)}
   .chip.on{background:var(--rose);border-color:var(--rose);color:#fff}
   .opt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:10px 0;border-top:1px dashed var(--line);margin-top:10px}
+  .switch:focus-visible{outline:3px solid #f7b9c9}
   .switch{position:relative;width:44px;height:26px;border-radius:999px;background:#e9dcdf;cursor:pointer;flex:none;transition:.2s}
   .switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
   .switch.on{background:var(--rose)}.switch.on::after{left:21px}
@@ -564,7 +565,7 @@
 </nav>
 
 <!-- 選擇來源的底部選單 -->
-<div class="pickmenu" id="pickmenu"><div class="sheet">
+<div class="pickmenu" id="pickmenu" role="dialog" aria-modal="true"><div class="sheet">
   <h2><span id="pickTitle">選擇單品</span><button class="btn ghost sm" id="pickClose">關閉</button></h2>
   <div id="pickBody"></div>
 </div></div>
@@ -603,8 +604,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '2.4.0';
-const BUILD = '2026-10-28-11';
+const APP_VERSION = '2.5.0';
+const BUILD = '2026-10-28-12';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -663,14 +664,15 @@ if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = w
 /* ---------- 導覽 ---------- */
 const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings'];
 const NEED_LOGIN=['wardrobe','history','credits','admin','settings'];
+const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=magiclink|type=recovery)=?/;
 function go(v){
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
-  if (NEED_LOGIN.includes(v) && !state.user) { openLogin(); return; }
+  if (NEED_LOGIN.includes(v) && !state.user) { if(!document.querySelector('.view.on')) go('home'); openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
   document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.toggle('slide', on); });
   haptic();
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v));
-  location.hash = v==='home' ? '' : v;
+  if(!AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want) history.replaceState(null,'',location.pathname+location.search+want); }
   window.scrollTo({top:0});
   if (v==='wardrobe') loadWardrobe();
   if (v==='history') loadHistory();
@@ -685,13 +687,13 @@ async function initAuth(){
   if (!supa) { renderUser(); showSetup(); return; }
   const { data } = await supa.auth.getSession();
   setSession(data.session);
-  supa.auth.onAuthStateChange((_e, s)=>{ setSession(s); });
+  supa.auth.onAuthStateChange((e, s)=>{ if(e==='SIGNED_IN') track('login'); setSession(s); });
 }
 function setSession(s){
   const was = !!state.user;
   state.session = s; state.user = s ? s.user : null;
   renderUser();
-  if (state.user && !was) { refreshMe(); closePick(); track('login'); loadPrefs(); const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
+  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
   if (!state.user && was) go('home');
   if (state.user) { if (new URLSearchParams(location.search).get('paid')==='1') { toast('付款完成，點數已入帳'); history.replaceState(null,'',location.pathname+location.hash); } }
 }
@@ -700,7 +702,7 @@ function renderUser(){
   if (!state.user) { a.innerHTML='<button class="btn sm primary" data-go="home">登入</button>'; a.firstChild.onclick=()=>go('home'); return; }
   const em = state.user.email || '';
   a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
-  a.firstChild.onclick=()=>go('credits');
+  a.querySelectorAll('.free,.userchip').forEach(el=>el.onclick=()=>go('credits'));
 }
 const Social = Plug('SocialLogin');
 let socialReady=false;
@@ -754,13 +756,14 @@ async function verifyOtp(email, code, btn){
 }
 $('otpVerify').onclick=()=>verifyOtp($('emailInput').value.trim(), $('otpCode').value, $('otpVerify'));
 $('otpCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('otpVerify').click(); });
-$('btnLogout').onclick=async()=>{ if(supa) await supa.auth.signOut(); state.me=null; toast('已登出'); };
+function resetUserState(){ state.me=null; state.wardrobe=[]; state.history=[]; state.result=null; state.person=null; state.personOrig=null; state.slots={}; try{ sessionStorage.removeItem('tryon.person'); sessionStorage.removeItem('tryon.slots'); }catch{} }
+$('btnLogout').onclick=async()=>{ if(!await ask('要登出嗎？','',{ok:'登出'})) return; if(supa) await supa.auth.signOut(); resetUserState(); location.replace(location.pathname); };
 function openLogin(){
   if(!supa) return showSetup(true);
   openPick('登入後繼續', `<div class="muted" style="margin-bottom:10px">登入後才能合成、使用衣櫃與紀錄。每天送免費額度。</div>
     <button class="btn block gbtn" id="sheetGoogle">使用 Google 登入</button>
     <div class="login" style="max-width:none"><div class="or">或用 Email</div></div>
-    <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄登入連結</button></div>
+    <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄驗證碼</button></div>
     <div class="emailsent hidden" id="sheetSent" style="margin-top:10px"></div>`);
   if (IS_APP) { if(PLATFORM==='ios'){ $('sheetGoogle').insertAdjacentHTML('beforebegin','<button class="btn block abtn" id="sheetApple" style="margin-bottom:8px">使用 Apple 登入</button>'); $('sheetApple').onclick=()=>nativeLogin('apple'); } if(!CONFIG.GOOGLE_WEB_CLIENT_ID) $('sheetGoogle').classList.add('hidden'); else $('sheetGoogle').onclick=()=>nativeLogin('google'); }
   else $('sheetGoogle').onclick=()=>$('btnGoogle').click();
@@ -836,6 +839,7 @@ function onPersonImage(im){
 async function onPersonFile(e){ const f=e.target.files[0]; if(!f) return; try{ onPersonImage(await fileToImage(f)); }catch{ toast('讀取照片失敗'); } }
 if (IS_APP && Plug('Camera')) { const inp=$('filePerson'); inp.remove(); $('personBox').onclick=()=>{ if(!$('personBox').classList.contains('has')) pickImage(onPersonImage); }; } else $('filePerson').onchange=onPersonFile;
 $('btnPersonFromHistory').onclick=async()=>{
+  if(!state.user) return openLogin();
   await loadHistory();
   if(!state.history.length) return toast('還沒有合成紀錄');
   openPick('選一張當底圖', `<div class="wgrid">${state.history.map(h=>`<div class="witem" data-url="${h.image_url}"><img src="${h.image_url}" loading="lazy"></div>`).join('')}</div>`);
@@ -852,9 +856,10 @@ function renderSlots(){
   $('slots').innerHTML = SLOT_DEFS.map(s=>{
     const v=state.slots[s.type];
     if (v && v.image) return `<div class="slot has" data-type="${s.type}"><img src="${v.image}"><span class="lb">${s.label}${v.name?' · '+v.name:''}</span><button class="x" data-x="${s.type}">✕</button></div>`;
-    if (v && v.text) return `<div class="slot hair-text" data-type="${s.type}"><span class="ic">${s.ic}</span><span class="lb">${s.label}：${v.text.slice(0,8)}…</span><button class="x" data-x="${s.type}" style="display:grid">✕</button></div>`;
+    if (v && v.text) return `<div class="slot hair-text" data-type="${s.type}"><span class="ic">${s.ic}</span><span class="lb">${s.label}：${v.text.length>8?v.text.slice(0,8)+'…':v.text}</span><button class="x" data-x="${s.type}" style="display:grid">✕</button></div>`;
     return `<div class="slot" data-type="${s.type}" style="--tint:${s.tint}"><span class="ic">${s.ic}</span><span class="lb">${s.label}</span></div>`;
   }).join('');
+  $('slots').querySelectorAll('.slot').forEach(el=>{ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }; });
   $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } openSlotMenu(el.dataset.type); });
   persistSlots();
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
@@ -888,8 +893,9 @@ function cropSheet(img, askType){
     box.onpointerdown=e=>{ start=pos(e); box.setPointerCapture(e.pointerId); r={x:start.x,y:start.y,w:0,h:0}; draw(); };
     box.onpointermove=e=>{ if(!start) return; const q=pos(e); r={x:Math.min(start.x,q.x),y:Math.min(start.y,q.y),w:Math.abs(q.x-start.x),h:Math.abs(q.y-start.y)}; draw(); };
     box.onpointerup=box.onpointercancel=()=>{ start=null; if(r.w<0.05||r.h<0.05){ r={x:0.05,y:0.05,w:0.9,h:0.9}; draw(); } };
+    window.__cropCancel=()=>{ menu.classList.remove('on'); window.__cropCancel=null; reject('cancel'); };
     const finish=(doCrop)=>{
-      menu.classList.remove('on'); box.onpointerdown=box.onpointermove=box.onpointerup=null;
+      menu.classList.remove('on'); window.__cropCancel=null; box.onpointerdown=box.onpointermove=box.onpointerup=null;
       const c=document.createElement('canvas');
       const sx=doCrop?Math.round(r.x*img.width):0, sy=doCrop?Math.round(r.y*img.height):0, sw=doCrop?Math.round(r.w*img.width):img.width, sh=doCrop?Math.round(r.h*img.height):img.height;
       const sc=Math.min(1,1024/Math.max(sw,sh)); c.width=Math.round(sw*sc); c.height=Math.round(sh*sc);
@@ -897,7 +903,7 @@ function cropSheet(img, askType){
       resolve({image:c.toDataURL('image/jpeg',0.92), photoType});
     };
     $('cropOk').onclick=()=>finish(true); $('cropSkip').onclick=()=>finish(false);
-    menu.onclick=e=>{ if(e.target===menu){ menu.classList.remove('on'); reject('cancel'); } };
+    menu.onclick=e=>{ if(e.target===menu && window.__cropCancel) window.__cropCancel(); };
   });
 }
 
@@ -932,7 +938,7 @@ async function faceLock(originalUri, resultUri){
   g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
   fx.fillStyle=g; fx.save(); fx.translate(f.width/2,f.height/2); fx.scale(1,f.height/f.width); fx.beginPath(); fx.arc(0,0,f.width/2,0,Math.PI*2); fx.fill(); fx.restore();
   x.drawImage(f, tx, ty);
-  return c.toDataURL('image/png');
+  return c.toDataURL('image/jpeg',0.92);
 }
 $('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
 $('twoVariants').onclick=()=>{ $('twoVariants').classList.toggle('on'); renderSlots(); };
@@ -1029,6 +1035,7 @@ function closePick(){ $('pickmenu').classList.remove('on'); }
 $('pickClose').onclick=closePick; $('pickmenu').addEventListener('click',e=>{ if(e.target===$('pickmenu')) closePick(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('pickmenu').classList.contains('on')) closePick(); if($('lightbox').classList.contains('on')) $('lightbox').classList.remove('on'); } });
 document.querySelectorAll('.bottomnav button').forEach(b=>b.setAttribute('aria-label',b.textContent.trim()));
+document.querySelectorAll('.switch').forEach(sw=>{ sw.setAttribute('role','switch'); sw.setAttribute('tabindex','0'); sw.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); sw.click(); } }); const obs=new MutationObserver(()=>sw.setAttribute('aria-checked',sw.classList.contains('on'))); obs.observe(sw,{attributes:true,attributeFilter:['class']}); sw.setAttribute('aria-checked',sw.classList.contains('on')); });
 
 /* ---------- 執行試穿 ---------- */
 let busy=false;
@@ -1039,7 +1046,7 @@ $('btnRun').onclick=async()=>{
   if (!items.length) return toast('請至少放一個單品');
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
-  track('tryon_start',{n:items.length}); busy=true; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
+  track('tryon_start',{n:items.length}); busy=true; state.result=null; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='8%';
   $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫妳換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
@@ -1058,6 +1065,9 @@ $('btnRun').onclick=async()=>{
     const needLock = $('faceLock').classList.contains('on') && items.some(i=>!['top','bottom','dress'].includes(i.type));
     if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(state.personOrig, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
+    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`;
+    if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
+    busy=false; $('btnRun').disabled=false;
     let finalImg = imgs[0];
     if (imgs.length > 1) {
       finalImg = await new Promise(res=>{ $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選妳比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>res(imgs[+el.dataset.i])); });
@@ -1065,8 +1075,7 @@ $('btnRun').onclick=async()=>{
     state.result = finalImg;
     renderCompare(state.personOrig, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
-    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`; renderFit();
-    if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
+    renderFit();
     toast('完成，看看妳穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
   }catch(e){
     clearInterval(tick);
@@ -1075,18 +1084,18 @@ $('btnRun').onclick=async()=>{
     const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
   }finally{
     busy=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
-    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>再試一次，或換一張更清楚的照片</div>'; }
+    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>再試一次，或換一張更清楚的照片</div>'; }
   }
 };
 function renderCompare(before, after){
   const box=$('result');
   const items=Object.keys(state.slots).map(t=>TYPE_LABEL[t]).join('＋')||'穿搭';
   const date=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
-  box.style.background='transparent'; box.style.border='none';
+  box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div><div class="cap"><span>${items}</span><small>${date}</small></div></div>`;
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
   const sync=()=>{ const w=cmp.clientWidth; aft.querySelector('img').style.width=w+'px'; };
-  $('cmpAfterFull').onload=sync; sync(); window.addEventListener('resize',sync);
+  $('cmpAfterFull').onload=sync; sync(); if(window.__cmpResize) window.removeEventListener('resize',window.__cmpResize); window.__cmpResize=sync; window.addEventListener('resize',sync);
   const set=x=>{ const r=cmp.getBoundingClientRect(); const pct=Math.max(2,Math.min(98,(x-r.left)/r.width*100)); aft.style.width=pct+'%'; hd.style.left=pct+'%'; };
   set(cmp.getBoundingClientRect().left + cmp.getBoundingClientRect().width*0.35);
   let dragging=false;
@@ -1099,7 +1108,7 @@ async function shareImage(dataUri){
   if (IS_APP && Plug('Filesystem') && Plug('Share')) {
     try{ const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.png', data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
   }
-  try{ const file=new File([dataUriToBlob(dataUri)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else toast('此裝置不支援分享，請用下載'); }catch{}
+  try{ const file=new File([dataUriToBlob(dataUri)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else { toast('此裝置不支援分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); } }catch(e){ if(e&&e.name==='AbortError') return; toast('無法分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); }
 }
 async function saveImage(dataUri, name){
   if (IS_APP && Plug('Filesystem')) {
@@ -1121,7 +1130,7 @@ async function storyImage(before, after){
   x.fillStyle='#6f5a62'; x.font='400 32px "Noto Sans TC", sans-serif'; x.fillText('買之前，先看看穿在妳身上的樣子', W/2, 1760);
   return c.toDataURL('image/jpeg',0.92);
 }
-$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ await document.fonts.ready; const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
+$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在妳身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
 $('btnContinue').onclick=()=>{ if(!state.result) return; setPerson(state.result); state.slots={}; renderSlots(); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
@@ -1202,17 +1211,17 @@ function renderCredits(){
 async function buy(pack){
   track('buy_click',{pack});
   try{
-    const w=window.open('','_blank');
+    var w=window.open('','_blank');
     const d=await api('/api/checkout',{method:'POST',body:JSON.stringify({pack})});
     if(d.test) toast('目前為綠界測試環境');
     if(w){ w.document.open(); w.document.write(d.html); w.document.close(); } else { document.open(); document.write(d.html); document.close(); }
-  }catch(e){ toast('無法建立訂單：'+e.message); }
+  }catch(e){ try{ if(w) w.close(); }catch{} toast('無法建立訂單：'+e.message); }
 }
 
 $('btnDeleteAcc').onclick=async()=>{
   if(!await ask('刪除帳號？','所有照片、衣櫃、紀錄與剩餘點數都會永久刪除，無法復原。',{ok:'繼續',danger:true})) return;
   if((await askText('最後確認','請輸入「刪除」兩個字'))!=='刪除') return;
-  try{ await api('/api/delete-account',{method:'POST',body:'{}'}); await supa.auth.signOut(); state.me=null; toast('帳號已刪除'); go('home'); }catch(e){ toast(e.message); }
+  try{ await api('/api/delete-account',{method:'POST',body:'{}'}); await supa.auth.signOut(); resetUserState(); await ask('帳號已刪除','所有資料與圖片都已永久刪除。',{cancel:null}); location.replace(location.pathname); }catch(e){ toast(e.message); }
 };
 const DOCS={
   tips:{title:'📷 怎麼拍，合成效果最好', html:`<div class="doc"><div class="tips">
@@ -1256,7 +1265,9 @@ if (IS_APP) {
   try{ const SB=Plug('StatusBar'); if(SB){ SB.setStyle({style:'LIGHT'}); if(PLATFORM==='android') SB.setBackgroundColor({color:'#fff8f5'}); } }catch{}
   try{ const SS=Plug('SplashScreen'); if(SS) setTimeout(()=>SS.hide(),300); }catch{}
   try{ const App=Plug('App'); if(App){ App.addListener('backButton',()=>{
-    if($('cropmenu').classList.contains('on')){ $('cropmenu').classList.remove('on'); return; }
+    if($('dlg').classList.contains('on')){ $('dlgNo').click(); return; }
+    if($('onb').classList.contains('on')){ return; }
+    if($('cropmenu').classList.contains('on')){ if(window.__cropCancel) window.__cropCancel(); return; }
     if($('pickmenu').classList.contains('on')){ closePick(); return; }
     if($('lightbox').classList.contains('on')){ $('lightbox').classList.remove('on'); return; }
     const cur=document.querySelector('.view.on'); const id=cur?cur.id.replace('view-',''):'';
@@ -1270,8 +1281,8 @@ restoreSession();
 renderSlots();
 loadPrefs();
 initAuth();
-window.addEventListener('hashchange',()=>{ const h=location.hash.replace('#',''); if(VIEWS.includes(h)) go(h); });
-(function(){ const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();
+window.addEventListener('hashchange',()=>{ const h=location.hash.replace('#',''); const cur=document.querySelector('.view.on'); if(VIEWS.includes(h) && (!cur||cur.id!=='view-'+h)) go(h); });
+(function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();
 })();
 </script>
 </body>
