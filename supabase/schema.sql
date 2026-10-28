@@ -104,3 +104,8 @@ create policy "public read images" on storage.objects for select using (bucket_i
 alter table public.generations add column if not exists status text not null default 'ok';
 alter table public.generations add column if not exists error text;
 alter table public.generations add column if not exists variants integer not null default 1;
+
+-- v2.2：收藏
+alter table public.generations add column if not exists favorite boolean not null default false;
+drop policy if exists "update own generations" on public.generations;
+create policy "update own generations" on public.generations for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
