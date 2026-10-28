@@ -1,0 +1,45 @@
+name: App Android
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'icon*.png', 'icon.svg', 'manifest.json', 'app/**', '.github/workflows/app-android.yml']
+  workflow_dispatch:
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: app/package-lock.json }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21 }
+      - uses: android-actions/setup-android@v3
+      - name: 安裝相依並同步網站到 App
+        working-directory: app
+        run: |
+          npm ci --no-audit --no-fund
+          npm run sync
+      - name: 建置測試版 APK（可直接安裝到 Android 手機）
+        working-directory: app/android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with: { name: tryon-debug-apk, path: app/android/app/build/outputs/apk/debug/app-debug.apk }
+      - name: 建置正式版 AAB（上架 Google Play 用；需設定簽章 Secrets）
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        working-directory: app/android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > release.keystore
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=$PWD/release.keystore \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.KEYSTORE_B64 != '' }}
+        env: { KEYSTORE_B64: "${{ secrets.ANDROID_KEYSTORE_B64 }}" }
+        with: { name: tryon-release-aab, path: app/android/app/build/outputs/bundle/release/app-release.aab }

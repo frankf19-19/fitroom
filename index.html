@@ -222,6 +222,20 @@
   .stat .v{font-size:26px;font-weight:900;color:var(--coral-d)}.stat .l{font-size:12px;color:var(--muted)}
   table.tb{width:100%;border-collapse:collapse;font-size:12px}
   table.tb td,table.tb th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  .offline{position:fixed;top:0;left:0;right:0;z-index:60;background:#241b1e;color:#fff;font-size:12px;text-align:center;padding:6px;display:none}
+  .offline.on{display:block}
+  .installbar{position:fixed;left:12px;right:12px;bottom:calc(var(--nav) + 12px);z-index:30;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(60,20,30,.15);display:none;align-items:center;gap:10px;font-size:13px}
+  .installbar.on{display:flex}
+  @media(min-width:900px){.installbar{display:none !important}}
+  html.app .topbar .in{padding-top:calc(12px + env(safe-area-inset-top))}
+  html.app .offline{padding-top:calc(6px + env(safe-area-inset-top))}
+  html.app .topnav{display:none !important}
+  html.app .hidden-app,html.app .installbar{display:none !important}
+  html.app body{-webkit-user-select:none;user-select:none;overscroll-behavior-y:none}
+  html.app input,html.app textarea{-webkit-user-select:text;user-select:text}
+  html.app .hero .art{display:none}
+  .otp{display:flex;gap:8px;margin-top:10px}
+  .otp input{flex:1;font-size:20px;letter-spacing:6px;text-align:center}
   .guestbar{background:var(--coral-s);color:var(--coral-d);border-radius:12px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 </style>
 </head>
@@ -251,7 +265,8 @@
           <button class="btn block gbtn" id="btnGoogle"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.9l-7.8 6C6.5 42.6 14.6 48 24 48z"/></svg>使用 Google 登入</button>
           <div class="or">或用 Email</div>
           <div class="row" style="flex-wrap:nowrap"><input type="email" id="emailInput" placeholder="你的 Email"><button class="btn" id="btnEmail">寄登入連結</button></div>
-          <div class="emailsent hidden" id="emailSent">✉️ 登入連結已寄到 <b id="emailSentTo"></b>，請到信箱點開（找不到請看垃圾郵件）。</div>
+          <div class="emailsent hidden" id="emailSent">✉️ 已寄到 <b id="emailSentTo"></b>。輸入信中的驗證碼，或直接點信裡的連結（找不到請看垃圾郵件）。
+            <div class="otp"><input type="text" inputmode="numeric" autocomplete="one-time-code" id="otpCode" placeholder="驗證碼"><button class="btn primary" id="otpVerify">登入</button></div></div>
           <div class="muted" style="margin-top:8px">免註冊、免密碼，點開信裡的連結即登入。每天送免費合成額度。</div>
           <div style="margin-top:10px;text-align:center"><button class="btn ghost sm" data-go="tryon">先不登入，逛逛試衣間 →</button></div>
         </div>
@@ -357,7 +372,7 @@
     </div>
     <h2>購買點數包</h2>
     <div class="packs" id="packs"></div>
-    <div class="muted" style="margin-top:12px">付款由綠界 ECPay 處理，支援信用卡、ATM、超商。付款完成後點數自動入帳。</div>
+    <div class="muted hidden-app" style="margin-top:12px">付款由綠界 ECPay 處理，支援信用卡、ATM、超商。付款完成後點數自動入帳。</div>
     <div class="card" style="margin-top:18px">
       <h3>帳號</h3>
       <div class="row" style="justify-content:space-between"><span id="accEmail" class="muted"></span><span class="row"><button class="btn sm" id="btnLogout">登出</button><button class="btn sm ghost" id="btnDeleteAcc" style="color:var(--bad)">刪除帳號</button></span></div>
@@ -386,6 +401,8 @@
 
 <div class="lightbox" id="lightbox"><img alt=""><div class="row"><button class="btn primary" id="lbDownload">下載</button><button class="btn" id="lbUse">當作底圖</button><button class="btn" id="lbDelete">刪除</button><button class="btn ghost" id="lbClose" style="color:#fff">關閉</button></div></div>
 
+<div class="offline" id="offline">目前離線中，合成需要網路連線</div>
+<div class="installbar" id="installbar"><span>📱 加到主畫面，像 App 一樣使用</span><span class="row" style="margin-left:auto"><button class="btn sm primary" id="installYes">安裝</button><button class="btn sm ghost" id="installNo">✕</button></span></div>
 <div class="toast" id="toast"></div>
 <div class="pickmenu" id="cropmenu"><div class="sheet">
   <h2><span>裁切單品</span><button class="btn ghost sm" id="cropSkip">不裁切</button></h2>
@@ -406,11 +423,17 @@ const CONFIG = {
   SUPABASE_ANON_KEY: '',   // Supabase → Settings → API → anon public
   WORKER_URL: ''           // 例 https://tryon-api.xxx.workers.dev（結尾不要加斜線）
 };
-const APP_VERSION = '1.3.0';
-const BUILD = '2026-10-28-06';
+const APP_VERSION = '2.0.0';
+const BUILD = '2026-10-28-07';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
+const CAP = window.Capacitor;
+const IS_APP = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
+const PLATFORM = IS_APP ? CAP.getPlatform() : 'web';
+if (IS_APP) document.documentElement.classList.add('app', PLATFORM);
+const Plug = name => (CAP && CAP.Plugins && CAP.Plugins[name]) || null;
+function haptic(kind){ try{ const H=Plug('Haptics'); if(!H) return; if(kind==='success') H.notification({type:'SUCCESS'}); else if(kind==='error') H.notification({type:'ERROR'}); else H.impact({style:'LIGHT'}); }catch{} }
 const SLOT_DEFS = [
   {type:'top', label:'上衣', ic:'👚'},
   {type:'bottom', label:'褲子 / 裙子', ic:'👖'},
@@ -471,6 +494,7 @@ function renderUser(){
   a.innerHTML = `<div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
   a.firstChild.onclick=()=>go('credits');
 }
+if (IS_APP) { $('btnGoogle').classList.add('hidden'); document.querySelector('#loginCard .or').textContent='用 Email 登入'; }
 $('btnGoogle').onclick=async()=>{
   if(!supa) return showSetup(true);
   const { error } = await supa.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
@@ -482,8 +506,17 @@ $('btnEmail').onclick=async()=>{
   $('btnEmail').disabled=true;
   const { error } = await supa.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } });
   $('btnEmail').disabled=false;
-  if (error) toast('寄送失敗：'+error.message); else { $('emailSentTo').textContent=email; $('emailSent').classList.remove('hidden'); toast('登入連結已寄出'); }
+  if (error) toast('寄送失敗：'+error.message); else { $('emailSentTo').textContent=email; $('emailSent').classList.remove('hidden'); toast('驗證信已寄出'); $('otpCode').focus(); }
 };
+async function verifyOtp(email, code, btn){
+  if(!code) return toast('請輸入驗證碼');
+  if(btn) btn.disabled=true;
+  const { error } = await supa.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
+  if(btn) btn.disabled=false;
+  if (error) { toast('驗證碼錯誤或已過期'); haptic('error'); } else { haptic('success'); }
+}
+$('otpVerify').onclick=()=>verifyOtp($('emailInput').value.trim(), $('otpCode').value, $('otpVerify'));
+$('otpCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('otpVerify').click(); });
 $('btnLogout').onclick=async()=>{ if(supa) await supa.auth.signOut(); state.me=null; toast('已登出'); };
 function openLogin(){
   if(!supa) return showSetup(true);
@@ -492,10 +525,10 @@ function openLogin(){
     <div class="login" style="max-width:none"><div class="or">或用 Email</div></div>
     <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄登入連結</button></div>
     <div class="emailsent hidden" id="sheetSent" style="margin-top:10px"></div>`);
-  $('sheetGoogle').onclick=()=>$('btnGoogle').click();
+  if (IS_APP) $('sheetGoogle').classList.add('hidden'); else $('sheetGoogle').onclick=()=>$('btnGoogle').click();
   $('sheetEmailBtn').onclick=async()=>{ const email=$('sheetEmail').value.trim(); if(!email) return toast('請輸入 Email'); $('sheetEmailBtn').disabled=true;
     const { error } = await supa.auth.signInWithOtp({ email, options:{ emailRedirectTo: location.origin + location.pathname } }); $('sheetEmailBtn').disabled=false;
-    if(error) toast('寄送失敗：'+error.message); else { const b=$('sheetSent'); b.classList.remove('hidden'); b.textContent='✉️ 登入連結已寄到 '+email+'，點開信裡的連結就會回到這裡。'; } };
+    if(error) toast('寄送失敗：'+error.message); else { const b=$('sheetSent'); b.classList.remove('hidden'); b.innerHTML='✉️ 已寄到 '+email+'，輸入信中的驗證碼：<div class="otp"><input type="text" inputmode="numeric" autocomplete="one-time-code" id="sheetOtp" placeholder="驗證碼"><button class="btn primary" id="sheetOtpBtn">登入</button></div>'; $('sheetOtp').focus(); $('sheetOtpBtn').onclick=()=>verifyOtp(email,$('sheetOtp').value,$('sheetOtpBtn')); $('sheetOtp').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('sheetOtpBtn').click(); }); } };
 }
 $('guestLogin').onclick=openLogin;
 function showSetup(flash){
@@ -520,6 +553,15 @@ async function refreshMe(){
 }
 
 /* ---------- 圖片工具 ---------- */
+async function pickImageNative(){
+  const Cam=Plug('Camera'); if(!Cam) return null;
+  try{ const r=await Cam.getPhoto({ resultType:'dataUrl', source:'PROMPT', quality:92, width:1600, correctOrientation:true, promptLabelHeader:'選擇照片', promptLabelPhoto:'從相簿選', promptLabelPicture:'拍照', promptLabelCancel:'取消' }); return r && r.dataUrl ? await loadImg(r.dataUrl) : null; }
+  catch(e){ return null; }
+}
+function pickImage(onImage){
+  if (IS_APP && Plug('Camera')) { pickImageNative().then(im=>{ if(im) onImage(im); }); return; }
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ onImage(await fileToImage(f)); }catch{ toast('讀取失敗'); } }; inp.click();
+}
 function fileToImage(file){ return new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=e=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=e.target.result; }; rd.onerror=rej; rd.readAsDataURL(file); }); }
 function downscale(img, maxSide, type, q){
   const s=Math.min(1, maxSide/Math.max(img.width,img.height));
@@ -535,17 +577,18 @@ function setPerson(dataUri){
   state.person = dataUri; state.personOrig = dataUri;
   try{ sessionStorage.setItem('tryon.person', dataUri); }catch{}
   const box=$('personBox'); box.classList.add('has');
-  box.innerHTML = `<img src="${dataUri}" alt="全身照"><label class="btn sm change">更換<input type="file" accept="image/*" id="filePerson" style="display:none"></label>`;
-  $('filePerson').onchange=onPersonFile;
+  box.innerHTML = `<img src="${dataUri}" alt="全身照"><button class="btn sm change" id="personChange">更換</button>`;
+  $('personChange').onclick=e=>{ e.stopPropagation(); pickImage(onPersonImage); };
 }
-async function onPersonFile(e){ const f=e.target.files[0]; if(!f) return; try{ const im=await fileToImage(f);
+function onPersonImage(im){
   const short=Math.min(im.width,im.height);
-  setPerson(downscale(im,1280,'image/jpeg'));
+  setPerson(downscale(im,1280,'image/jpeg')); haptic();
   if(short<600) toast('照片解析度偏低，合成細節可能較差');
   else if(im.width>im.height) toast('直式全身照效果最好，橫式也可以試試');
   else toast('全身照已就緒');
-}catch{ toast('讀取照片失敗'); } }
-$('filePerson').onchange=onPersonFile;
+}
+async function onPersonFile(e){ const f=e.target.files[0]; if(!f) return; try{ onPersonImage(await fileToImage(f)); }catch{ toast('讀取照片失敗'); } }
+if (IS_APP && Plug('Camera')) { const inp=$('filePerson'); inp.remove(); $('personBox').onclick=()=>{ if(!$('personBox').classList.contains('has')) pickImage(onPersonImage); }; } else $('filePerson').onchange=onPersonFile;
 $('btnPersonFromHistory').onclick=async()=>{
   await loadHistory();
   if(!state.history.length) return toast('還沒有合成紀錄');
@@ -580,7 +623,7 @@ function openSlotMenu(type){
     <div class="opt" id="optWardrobe"><span class="ic">👚</span><div>從衣櫃選<small>之前存過的${def.label}</small></div></div>`;
   if (type==='hair') html += `<div class="opt" id="optHairText"><span class="ic">✍️</span><div>用文字描述<small>例：及肩微捲、奶茶棕</small></div></div>`;
   openPick(def.ic+' '+def.label, html);
-  $('optUpload').onclick=()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const im=await fileToImage(f); closePick(); const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); state.slots[type]={image:out.image, photo_type:out.photoType}; renderSlots(); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }; inp.click(); };
+  $('optUpload').onclick=()=>{ closePick(); pickImage(async im=>{ try{ const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); state.slots[type]={image:out.image, photo_type:out.photoType}; renderSlots(); haptic(); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }); };
   $('optWardrobe').onclick=async()=>{ await loadWardrobe(); const list=state.wardrobe.filter(w=>w.type===type); if(!list.length){ toast('衣櫃裡還沒有'+def.label); return; }
     openPick('從衣櫃選 '+def.label, `<div class="wgrid">${list.map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${w.name||''}</span></div>`).join('')}</div>`);
     $('pickBody').querySelectorAll('.witem').forEach(el=>el.onclick=async()=>{ const w=list.find(x=>String(x.id)===el.dataset.id); closePick(); try{ state.slots[type]={image:await urlToDataUri(w.image_url), name:w.name}; renderSlots(); }catch{ toast('載入失敗'); } }); };
@@ -729,9 +772,10 @@ $('btnRun').onclick=async()=>{
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
     $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。`; renderFit();
     if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
-    toast('合成完成 ✨');
+    toast('合成完成 ✨'); haptic('success');
   }catch(e){
     clearInterval(tick);
+    haptic('error');
     $('runStatus').innerHTML = '<span style="color:var(--bad)">'+e.message+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
     const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
   }finally{
@@ -751,8 +795,21 @@ function renderCompare(before, after){
   cmp.addEventListener('pointermove',e=>{ if(dragging) set(e.clientX); });
   cmp.addEventListener('pointerup',()=>dragging=false); cmp.addEventListener('pointercancel',()=>dragging=false);
 }
-$('btnDownload').onclick=()=>{ if(!state.result) return; const a=document.createElement('a'); a.download='試穿吧_'+Date.now()+'.png'; a.href=state.result; a.click(); };
-$('btnShare').onclick=async()=>{ if(!state.result) return; try{ const file=new File([dataUriToBlob(state.result)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else toast('此裝置不支援分享，請用下載'); }catch{} };
+$('btnDownload').onclick=()=>{ if(state.result) saveImage(state.result,'試穿吧_'+Date.now()+'.png'); };
+async function shareImage(dataUri){
+  if (IS_APP && Plug('Filesystem') && Plug('Share')) {
+    try{ const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.png', data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
+  }
+  try{ const file=new File([dataUriToBlob(dataUri)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else toast('此裝置不支援分享，請用下載'); }catch{}
+}
+async function saveImage(dataUri, name){
+  if (IS_APP && Plug('Filesystem')) {
+    try{ await Plug('Filesystem').writeFile({ path:name, data:dataUri.split(',')[1], directory:'DOCUMENTS' }); toast('已儲存到手機'); haptic('success'); }catch{ shareImage(dataUri); }
+    return;
+  }
+  const a=document.createElement('a'); a.download=name; a.href=dataUri; a.click();
+}
+$('btnShare').onclick=()=>{ if(state.result) shareImage(state.result); };
 $('btnRetry').onclick=()=>{ if(busy) return; if(!confirm('會用同一組單品再合成一次（隨機不同結果），再扣一次點數。確定？')) return; $('btnRun').click(); };
 $('btnContinue').onclick=()=>{ if(!state.result) return; setPerson(state.result); state.slots={}; renderSlots(); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
@@ -788,7 +845,7 @@ async function saveToWardrobe(type, dataUri, name){
 }
 $('btnWardrobeAdd').onclick=()=>{
   openPick('新增單品', `<div class="muted" style="margin-bottom:8px">這是什麼？</div>${SLOT_DEFS.filter(s=>s.type!=='hair').map(s=>`<div class="opt" data-t="${s.type}"><span class="ic">${s.ic}</span><div>${s.label}</div></div>`).join('')}`);
-  $('pickBody').querySelectorAll('.opt').forEach(o=>o.onclick=()=>{ const type=o.dataset.t; const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.onchange=async e=>{ const f=e.target.files[0]; if(!f) return; closePick(); try{ const im=await fileToImage(f); const name=prompt('幫它取個名字（可留空）','')||''; await saveToWardrobe(type, downscale(im,1024,'image/jpeg',0.9), name); loadWardrobe(); }catch{ toast('讀取失敗'); } }; inp.click(); });
+  $('pickBody').querySelectorAll('.opt').forEach(o=>o.onclick=()=>{ const type=o.dataset.t; closePick(); pickImage(async im=>{ try{ const name=prompt('幫它取個名字（可留空）','')||''; await saveToWardrobe(type, downscale(im,1024,'image/jpeg',0.9), name); loadWardrobe(); }catch{ toast('讀取失敗'); } }); });
 };
 
 /* ---------- 紀錄 ---------- */
@@ -807,7 +864,7 @@ function renderHistory(){
 let lbItem=null;
 function openLightbox(h){ lbItem=h; const lb=$('lightbox'); lb.querySelector('img').src=h.image_url; lb.classList.add('on'); }
 $('lbClose').onclick=()=>$('lightbox').classList.remove('on');
-$('lbDownload').onclick=async()=>{ if(!lbItem) return; const a=document.createElement('a'); a.download='試穿吧_'+lbItem.id+'.png'; a.href=await urlToDataUri(lbItem.image_url); a.click(); };
+$('lbDownload').onclick=async()=>{ if(!lbItem) return; saveImage(await urlToDataUri(lbItem.image_url),'試穿吧_'+lbItem.id+'.png'); };
 $('lbUse').onclick=async()=>{ if(!lbItem) return; try{ setPerson(await urlToDataUri(lbItem.image_url)); $('lightbox').classList.remove('on'); go('tryon'); toast('已設為底圖'); }catch{ toast('載入失敗'); } };
 $('lbDelete').onclick=async()=>{ if(!lbItem||!confirm('刪除這張紀錄？')) return; await supa.from('generations').delete().eq('id',lbItem.id); $('lightbox').classList.remove('on'); loadHistory(); };
 
@@ -818,6 +875,7 @@ function renderCredits(){
   $('accEmail').textContent=state.me.email||'';
   if (state.me.is_admin && !document.querySelector('.topnav [data-go=admin]')) { const b=document.createElement('button'); b.textContent='管理'; b.dataset.go='admin'; b.onclick=()=>go('admin'); document.querySelector('.topnav').appendChild(b); const c=document.createElement('button'); c.className='btn sm'; c.textContent='管理後台'; c.onclick=()=>go('admin'); $('accEmail').after(c); }
   const packs=state.me.packs||{};
+  if (IS_APP) { $('packs').innerHTML='<div class="card" style="grid-column:1/-1"><b>點數購買請至網站</b><div class="muted" style="margin-top:6px">依 App 商店規定，App 內暫不提供購買。請用瀏覽器開啟 frankf19-19.github.io/fitroom 登入同一個帳號購買，點數會同步到 App。</div></div>'; return; }
   $('packs').innerHTML=Object.entries(packs).map(([k,p],i)=>`<div class="pack ${i===1?'hot':''}">${i===1?'<span class="pill">最划算</span>':''}<div class="cr">${p.credits} 點</div><div class="pr">NT$ ${p.price}</div><div class="each">每點約 NT$ ${(p.price/p.credits).toFixed(1)}</div><button class="btn ${i===1?'primary':''} block" data-pack="${k}" style="margin-top:10px">購買</button></div>`).join('');
   $('packs').querySelectorAll('[data-pack]').forEach(b=>b.onclick=()=>buy(b.dataset.pack));
 }
@@ -861,6 +919,25 @@ const DOCS={
 function openDoc(k){ const d=DOCS[k]; if(d) openPick(d.title, d.html); }
 document.querySelectorAll('[data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefault(); openDoc(a.dataset.doc); });
 $('btnTips').onclick=()=>openDoc('tips');
+
+/* ---------- 離線、安裝、原生事件 ---------- */
+function setOffline(){ $('offline').classList.toggle('on', !navigator.onLine); }
+window.addEventListener('online',setOffline); window.addEventListener('offline',setOffline); setOffline();
+let installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; try{ if(!localStorage.getItem('tryon.installDismissed')) $('installbar').classList.add('on'); }catch{} });
+$('installYes').onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); await installEvt.userChoice; $('installbar').classList.remove('on'); };
+$('installNo').onclick=()=>{ $('installbar').classList.remove('on'); try{ localStorage.setItem('tryon.installDismissed','1'); }catch{} };
+if (IS_APP) {
+  try{ const SB=Plug('StatusBar'); if(SB){ SB.setStyle({style:'LIGHT'}); if(PLATFORM==='android') SB.setBackgroundColor({color:'#fff8f5'}); } }catch{}
+  try{ const SS=Plug('SplashScreen'); if(SS) setTimeout(()=>SS.hide(),300); }catch{}
+  try{ const App=Plug('App'); if(App){ App.addListener('backButton',()=>{
+    if($('cropmenu').classList.contains('on')){ $('cropmenu').classList.remove('on'); return; }
+    if($('pickmenu').classList.contains('on')){ closePick(); return; }
+    if($('lightbox').classList.contains('on')){ $('lightbox').classList.remove('on'); return; }
+    const cur=document.querySelector('.view.on'); const id=cur?cur.id.replace('view-',''):'';
+    if(id==='tryon'||id==='home') App.exitApp(); else go('tryon');
+  }); } }catch{}
+}
 
 /* ---------- 啟動 ---------- */
 restoreSession();

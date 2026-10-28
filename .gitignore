@@ -1,0 +1,11 @@
+app/node_modules/
+app/www/
+app/android/.gradle/
+app/android/app/build/
+app/android/build/
+app/android/local.properties
+app/android/.idea/
+app/ios/App/build/
+app/ios/App/Pods/
+app/ios/App/App.xcworkspace/xcuserdata/
+app/ios/DerivedData/

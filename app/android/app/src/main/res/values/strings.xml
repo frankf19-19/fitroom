@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">試穿吧</string>
+    <string name="title_activity_main">試穿吧</string>
+    <string name="package_name">tw.tryon.app</string>
+    <string name="custom_url_scheme">tw.tryon.app</string>
+</resources>

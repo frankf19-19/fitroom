@@ -1,0 +1,48 @@
+name: App iOS
+on:
+  push:
+    branches: [main]
+    paths: ['index.html', 'icon*.png', 'icon.svg', 'manifest.json', 'app/**', '.github/workflows/app-ios.yml']
+  workflow_dispatch:
+jobs:
+  ios:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: app/package-lock.json }
+      - name: 安裝相依並同步網站到 App
+        working-directory: app
+        run: |
+          npm ci --no-audit --no-fund
+          npm run sync
+      - name: 模擬器建置（確認專案可編譯，不需 Apple 憑證）
+        working-directory: app/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tail -20
+      - name: 上傳 TestFlight（需設定 Apple Secrets 後才會執行）
+        if: ${{ env.ASC_KEY_ID != '' }}
+        working-directory: app/ios/App
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_B64: ${{ secrets.ASC_KEY_B64 }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_B64" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
+            -archivePath build/App.xcarchive archive \
+            -allowProvisioningUpdates -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID \
+            DEVELOPMENT_TEAM=$TEAM_ID CODE_SIGN_STYLE=Automatic | tail -20
+          cat > ExportOptions.plist <<PL
+          <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict>
+          <key>method</key><string>app-store-connect</string><key>destination</key><string>upload</string>
+          <key>teamID</key><string>$TEAM_ID</string><key>signingStyle</key><string>automatic</string></dict></plist>
+          PL
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath build/out \
+            -allowProvisioningUpdates -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID | tail -20
