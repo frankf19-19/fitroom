@@ -355,6 +355,22 @@
   .filt::-webkit-scrollbar{display:none}
   .filt .chip,.chips .chip{flex:none;white-space:nowrap}
   .petal{display:none}
+  .pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:#fff;border:1px solid var(--line)}
+  @media(min-width:700px){.pgrid{grid-template-columns:repeat(4,1fr)}}
+  .pitem{box-shadow:0 0 0 1px var(--line);background:#fff;display:flex;flex-direction:column}
+  .pitem .img{aspect-ratio:3/4;overflow:hidden;background:var(--bg2);position:relative}
+  .pitem .img img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s}
+  .pitem:hover .img img{opacity:.9}
+  .pitem .img .feat{position:absolute;top:8px;left:8px;background:#fff;font-size:9px;letter-spacing:2px;padding:4px 8px}
+  .pitem .info{padding:10px 10px 12px;font-size:12px;line-height:1.6;flex:1;display:flex;flex-direction:column}
+  .pitem .brand{font-size:10px;letter-spacing:2px;color:var(--muted)}
+  .pitem .name{color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pitem .price{margin-top:4px;font-size:12px;letter-spacing:.5px}
+  .pitem .acts{display:flex;gap:1px;margin-top:auto;padding-top:10px}
+  .pitem .acts .btn{flex:1;padding:9px 0;font-size:11px;letter-spacing:1.5px}
+  .shopbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .shopbar input[type=text]{flex:1;min-width:160px}
+  .admin-import textarea{width:100%;min-height:120px;border:1px solid var(--line);padding:10px;font-family:monospace;font-size:12px}
   .bodycard{display:grid;grid-template-columns:1fr;gap:12px}
   @media(min-width:700px){.bodycard{grid-template-columns:1fr 1fr}}
   .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px;letter-spacing:.3px}
@@ -376,6 +392,7 @@
   <div class="logo" data-go="home"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 4a2 2 0 0 1 2 2c0 1-1 1.5-2 2.5v1.5l8 5v2H4v-2l8-5"/></svg></span>試穿<em>吧</em> <small>TRYON</small></div>
   <nav class="topnav" aria-label="主選單">
     <button data-go="tryon">試衣間</button>
+    <button data-go="shop">商店</button>
     <button data-go="wardrobe">我的衣櫃</button>
     <button data-go="history">合成紀錄</button>
     <button data-go="credits">點數</button>
@@ -419,7 +436,7 @@
     <div class="row" style="justify-content:center;margin:18px 0 6px"><button class="btn primary lg" data-go="tryon">用自己的照片試穿</button></div>
     <div class="why">
       <div><i style="background:var(--mint)"></i><b>不用猜版型</b><span>網拍只看到模特兒穿，你穿起來不一樣。先合成再決定要不要下單。</span></div>
-      <div><i style="background:var(--butter)"></i><b>整套一起搭</b><span>上衣、裙子、鞋子、帽子、飾品一次放上去，連髮型都能換，看整體效果。</span></div>
+      <div><i style="background:var(--butter)"></i><b>整套一起搭</b><span>從商店挑品牌單品，或上傳網拍截圖；上衣、鞋子、帽子、飾品一次放上去，連髮型都能換。</span></div>
       <div><i style="background:var(--lilac)"></i><b>照片只屬於你</b><span>照片只用來做你要的合成，不拿去訓練、不給別人，隨時可以一鍵刪除。</span></div>
     </div>
   </section>
@@ -529,6 +546,25 @@
       <div class="muted" style="margin-top:8px">刪除帳號會一併刪除你所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
     </div>
   </section>
+  <!-- ===== 商店 ===== -->
+  <section class="view" id="view-shop">
+    <h1 style="font-size:24px;margin:0 0 6px">商店</h1>
+    <div class="muted" style="margin-bottom:14px">挑一件直接放進試衣間試穿，喜歡再點購買到品牌官網下單。</div>
+    <div class="shopbar">
+      <input type="text" id="shopQ" placeholder="搜尋品牌或商品">
+      <div class="chips" id="shopGender" style="margin:0"><span class="chip on" data-g="">全部</span><span class="chip" data-g="f">女</span><span class="chip" data-g="m">男</span></div>
+    </div>
+    <div class="filt" id="shopType"></div>
+    <div id="shopList"><div class="skel"><i></i><i></i><i></i><i></i></div></div>
+    <div class="row" style="justify-content:center;margin-top:14px"><button class="btn hidden" id="shopMore">載入更多</button></div>
+    <div class="card admin-import hidden" id="shopAdmin" style="margin-top:24px">
+      <h3>管理：匯入商品</h3>
+      <div class="muted" style="margin-bottom:8px">貼 JSON（陣列）或 CSV（標題列：source,external_id,brand,name,type,gender,price,image_url,buy_url,tags；tags 用 | 分隔；type 為 top/bottom/dress/shoes/hat/accessory/hair）。有 external_id 的會覆寫同來源同編號的舊資料。</div>
+      <textarea id="importText" placeholder='[{"brand":"UNIQLO","name":"U 系列圓領 T 恤","type":"top","gender":"u","price":390,"image_url":"https://…","buy_url":"https://…"}]'></textarea>
+      <div class="row" style="margin-top:8px"><button class="btn primary" id="importBtn">匯入</button><span class="muted" id="importStatus"></span></div>
+    </div>
+  </section>
+
   <!-- ===== 我的身形 ===== -->
   <section class="view" id="view-body">
     <h1 style="font-size:24px;margin:0 0 6px">我的身形</h1>
@@ -583,6 +619,7 @@
 
 <nav class="bottomnav">
   <button data-go="tryon"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 3H19l1 5-3 1v9H7v-9l-3-1 1-5h4.5z"/></svg>試衣間</button>
+  <button data-go="shop"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>商店</button>
   <button data-go="wardrobe"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M9 11h.01M15 11h.01"/></svg>衣櫃</button>
   <button data-go="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>紀錄</button>
   <button data-go="credits"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-5 0c0 2.5 5 2.5 5 5a2.5 2.5 0 0 1-5 0M12 6v1.5M12 16.5V18"/></svg>點數</button>
@@ -628,8 +665,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.6.0';
-const BUILD = '2026-10-29-04';
+const APP_VERSION = '3.7.0';
+const BUILD = '2026-10-29-05';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -686,7 +723,7 @@ let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- 導覽 ---------- */
-const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings','body'];
+const VIEWS=['home','tryon','shop','wardrobe','history','credits','admin','settings','body'];
 const NEED_LOGIN=['wardrobe','history','credits','admin','settings','body'];
 const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=magiclink|type=recovery)=?/;
 function go(v, keepHash){
@@ -706,6 +743,7 @@ function go(v, keepHash){
   if (v==='admin') loadAdmin();
   if (v==='settings') renderSettings();
   if (v==='body') renderBody();
+  if (v==='shop') loadShop(true);
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 
@@ -902,10 +940,12 @@ function renderSlots(){
 }
 function openSlotMenu(type){
   const def=SLOT_DEFS.find(s=>s.type===type);
-  let html = `<div class="opt" id="optUpload"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><div>上傳照片<small>商品照、網拍截圖都可以</small></div></div>
+  let html = `<div class="opt" id="optShop"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></span><div>從商店選<small>品牌商品，可直接試穿</small></div></div>
+    <div class="opt" id="optUpload"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><div>上傳照片<small>商品照、網拍截圖都可以</small></div></div>
     <div class="opt" id="optWardrobe"><span class="ic">${ICON.top}</span><div>從衣櫃選<small>之前存過的${def.label}</small></div></div>`;
   if (type==='hair') html += `<div class="opt" id="optHairText"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M13 7l3 3"/></svg></span><div>用文字描述<small>例：及肩微捲、奶茶棕</small></div></div>`;
   openPick(def.label, html);
+  $('optShop').onclick=()=>{ closePick(); shopFilterType=type; go('shop'); };
   $('optUpload').onclick=()=>{ closePick(); pickImage(async im=>{ try{ const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); state.slots[type]={image:out.image, photo_type:out.photoType}; renderSlots(); haptic(); track('item',{type}); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }); };
   $('optWardrobe').onclick=async()=>{ await loadWardrobe(); const list=state.wardrobe.filter(w=>w.type===type); if(!list.length){ toast('衣櫃裡還沒有'+def.label); return; }
     openPick('從衣櫃選 '+def.label, `<div class="wgrid">${list.map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${w.name||''}</span></div>`).join('')}</div>`);
@@ -1037,6 +1077,45 @@ $('onbNext').onclick=()=>{ haptic(); if(onbI<ONB.length-1) showOnb(onbI+1); else
 $('onbSkip').onclick=closeOnb;
 $('onbAgain').onclick=e=>{ e.preventDefault(); showOnb(0); };
 try{ if(!localStorage.getItem('tryon.onb') && (IS_APP || matchMedia('(max-width:899px)').matches)) setTimeout(()=>showOnb(0),400); }catch{}
+
+/* ---------- 商店 ---------- */
+let shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false;
+function shopTypeChips(){ const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
+$('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopGender=c.dataset.g; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); loadShop(true); });
+let shopQT; $('shopQ').addEventListener('input',()=>{ clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
+async function loadShop(reset){
+  if(shopBusy) return; shopBusy=true;
+  if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
+  try{
+    if(!CONFIG.WORKER_URL) throw new Error('商店尚未設定');
+    const qs=new URLSearchParams({page:shopPage}); if(shopFilterType) qs.set('type',shopFilterType); if(shopGender) qs.set('gender',shopGender); const q=$('shopQ').value.trim(); if(q) qs.set('q',q);
+    const d=await api('/api/products?'+qs.toString());
+    shopItems=shopItems.concat(d.products||[]); renderShop(); $('shopMore').classList.toggle('hidden',!d.has_more); shopPage++;
+  }catch(e){ $('shopList').innerHTML=`<div class="empty-note">${e.message}</div>`; }
+  finally{ shopBusy=false; $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin)); }
+}
+$('shopMore').onclick=()=>loadShop(false);
+function renderShop(){
+  const box=$('shopList');
+  if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
+  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" alt="${p.name}">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${p.brand||''}</span><span class="name">${p.name}</span><span class="price">${p.price!=null?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
+  box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
+}
+async function tryProduct(p){
+  if(!p) return;
+  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null}; renderSlots(); haptic(); toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); go('tryon'); }
+  catch{ toast('商品圖載入失敗，請改用截圖上傳'); }
+}
+function buyProduct(p){ if(!p||!p.buy_url) return; fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'buy',anon_id:anonId}),keepalive:true}).catch(()=>{}); track('buy_click',{product:p.id}); if(IS_APP&&Plug('Browser')) Plug('Browser').open({url:p.buy_url}); else window.open(p.buy_url,'_blank','noopener'); }
+$('importBtn').onclick=async()=>{
+  const t=$('importText').value.trim(); if(!t) return;
+  $('importStatus').textContent='匯入中…';
+  try{ let body; try{ const j=JSON.parse(t); body={products:Array.isArray(j)?j:[j]}; }catch{ body={csv:t}; } const d=await api('/api/admin/products/import',{method:'POST',body:JSON.stringify(body)}); $('importStatus').textContent=`已匯入 ${d.imported} 筆${d.skipped?`，略過 ${d.skipped} 筆（缺欄位）`:''}`; $('importText').value=''; loadShop(true); }
+  catch(e){ $('importStatus').textContent=e.message; }
+};
+// 合成結果區：若單品來自商店，顯示購買連結
+function renderBuyLinks(){ const items=Object.values(state.slots).filter(v=>v&&v.buy_url); const host=$('resultActions'); let bar=$('buyBar'); if(!items.length){ if(bar) bar.remove(); return; } if(!bar){ bar=document.createElement('div'); bar.id='buyBar'; bar.className='row'; bar.style.marginTop='10px'; host.after(bar); } bar.innerHTML='<span class="muted" style="letter-spacing:1px">喜歡嗎？</span>'+items.map(v=>`<button class="btn sm" data-buyurl="${v.buy_url}" data-pid="${v.product_id||''}">購買 ${v.name||''}</button>`).join(''); bar.querySelectorAll('[data-buyurl]').forEach(b=>b.onclick=()=>buyProduct({id:Number(b.dataset.pid)||null,buy_url:b.dataset.buyurl})); }
 
 /* ---------- 我的身形 ---------- */
 const SHAPE_LABEL={hourglass:'沙漏型',pear:'梨型',inverted_triangle:'倒三角型',rectangle:'H 型',apple:'蘋果型',athletic:'運動型'};
@@ -1188,7 +1267,7 @@ $('btnRun').onclick=async()=>{
     }
     state.result = finalImg;
     renderCompare(state.personOrig, finalImg);
-    $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
+    $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks();
     renderFit();
     toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
   }catch(e){
@@ -1250,7 +1329,7 @@ async function storyImage(before, after){
 $('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
-function resetResult(){ state.result=null; state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
+function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); state.result=null; state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
 $('btnContinue').onclick=()=>{ if(!state.result) return; const img=state.result; resetResult(); setPerson(img); state.slots={}; renderSlots(); setStep(2); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */
@@ -1363,6 +1442,7 @@ const DOCS={
     <li>你保證上傳的照片為本人或已取得當事人同意，且不上傳未成年人、他人或侵權圖片。</li>
     <li>每個品項合成一次扣 1 點；合成失敗自動退點。已購買的點數不可轉讓、不可兌現；除法律規定外不退費。</li>
     <li>禁止用本服務產生色情、仇恨、冒充他人或違法內容，違者停權且不退點。</li>
+    <li>商店內的商品由合作品牌與聯盟平台提供，購買在品牌網站完成；本服務可能因此獲得佣金，但不影響你的價格。商品資訊以品牌頁為準。</li>
     <li>本服務得視營運狀況調整免費額度、價格與功能，重大變更會公告。</li>
     <li>準據法為中華民國法律，爭議以臺灣臺北地方法院為第一審管轄法院。</li></ul>
     <p class="muted">最後更新：2026-10-28</p></div>`}

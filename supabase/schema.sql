@@ -186,3 +186,39 @@ alter table public.profiles add column if not exists body jsonb;          -- {he
 alter table public.profiles add column if not exists analysis jsonb;      -- AI 分析結果（見 worker analyzeBody）
 alter table public.profiles add column if not exists analysis_at timestamptz;
 grant update (prefs, body) on public.profiles to authenticated;
+
+-- v1.9：商品櫥窗（聯盟商品 / 自家商品）
+create table if not exists public.products (
+  id bigint generated always as identity primary key,
+  source text not null default 'own',          -- own | shopee | momo | rakuten | awin | amazon | manual
+  external_id text,
+  brand text,
+  name text not null,
+  type text not null check (type in ('top','bottom','dress','shoes','hat','accessory','hair')),
+  gender text default 'u' check (gender in ('f','m','u')),
+  price integer,
+  currency text default 'TWD',
+  image_url text not null,                      -- 商品圖（平拍或乾淨正面照，供合成）
+  buy_url text,                                 -- 聯盟追蹤連結
+  tags text[] default '{}',
+  active boolean not null default true,
+  featured boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists products_source_ext on public.products (source, external_id) where external_id is not null;
+create index if not exists products_type_active on public.products (type, active, featured desc, created_at desc);
+alter table public.products enable row level security;
+drop policy if exists "public read products" on public.products;
+create policy "public read products" on public.products for select using (active = true);
+
+-- 點擊追蹤（抽佣對帳用）
+create table if not exists public.product_clicks (
+  id bigint generated always as identity primary key,
+  product_id bigint references public.products(id) on delete set null,
+  user_id uuid,
+  anon_id text,
+  action text not null default 'try',          -- try（放進試衣間）| buy（點購買）
+  created_at timestamptz not null default now()
+);
+alter table public.product_clicks enable row level security;

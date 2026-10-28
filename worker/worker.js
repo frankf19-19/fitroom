@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '1.8.0';
+const VERSION = '1.9.0';
 const RUNNING_STALE_MS = 10 * 60 * 1000;   // 進行中超過 10 分鐘視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -59,6 +59,12 @@ export default {
       if (p === '/api/me' && m === 'GET') return handleMe(request, env, cors);
       if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors);
       if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors);
+      if (p === '/api/products' && m === 'GET') return handleProducts(request, env, cors, url);
+      if (p === '/api/img' && m === 'GET') return handleImgProxy(request, env, cors, url);
+      if (p === '/api/product-click' && m === 'POST') return handleProductClick(request, env, cors);
+      if (p === '/api/admin/products/import' && m === 'POST') return handleProductImport(request, env, cors);
+      if (p === '/api/admin/products' && m === 'POST') return handleProductUpsert(request, env, cors);
+      if (p === '/api/admin/products' && m === 'DELETE') return handleProductDelete(request, env, cors, url);
       if (p === '/api/checkout' && m === 'POST') return handleCheckout(request, env, cors);
       if (p === '/api/ecpay/notify' && m === 'POST') return handleEcpayNotify(request, env);
       if (p === '/api/ecpay/return') return handleEcpayReturn(request, env);
@@ -459,6 +465,73 @@ async function urlToDataUri(u) {
   const CH = 0x8000; let s = '';
   for (let i = 0; i < buf.length; i += CH) s += String.fromCharCode.apply(null, buf.subarray(i, i + CH));
   return `data:${mime};base64,${btoa(s)}`;
+}
+
+/* ---------------- 商品櫥窗 ---------------- */
+async function handleProducts(request, env, cors, url) {
+  const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').trim().slice(0, 40);
+  const page = Math.max(0, Number(url.searchParams.get('page') || 0)), size = 24;
+  let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
+  if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
+  if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)`;
+  if (q) qs += `&or=(name.ilike.*${encodeURIComponent(q)}*,brand.ilike.*${encodeURIComponent(q)}*)`;
+  const rows = await sb(env, qs);
+  return json({ products: rows, page, has_more: rows.length === size }, 200, { ...cors, 'Cache-Control': 'public, max-age=60' });
+}
+async function handleProductClick(request, env, cors) {
+  let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }
+  const user = await optionalUser(request, env);
+  const action = body.action === 'buy' ? 'buy' : 'try';
+  await sb(env, '/rest/v1/product_clicks', { method: 'POST', body: JSON.stringify({ product_id: Number(body.product_id) || null, user_id: user ? user.id : null, anon_id: String(body.anon_id || '').slice(0, 64) || null, action }) }).catch(() => {});
+  return json({ ok: true }, 200, cors);
+}
+async function requireAdmin(request, env) { const u = await requireUser(request, env); if (!isAdmin(env, u)) throw Object.assign(new Error('沒有權限'), { status: 403 }); return u; }
+function normProduct(x) {
+  const t = String(x.type || '').toLowerCase();
+  if (!['top','bottom','dress','shoes','hat','accessory','hair'].includes(t)) return null;
+  if (!x.name || !x.image_url) return null;
+  return { source: String(x.source || 'manual').slice(0, 20), external_id: x.external_id ? String(x.external_id).slice(0, 80) : null, brand: x.brand ? String(x.brand).slice(0, 60) : null, name: String(x.name).slice(0, 120), type: t, gender: ['f','m','u'].includes(x.gender) ? x.gender : 'u', price: x.price != null ? Math.round(Number(x.price)) : null, currency: String(x.currency || 'TWD').slice(0, 5), image_url: String(x.image_url).slice(0, 500), buy_url: x.buy_url ? String(x.buy_url).slice(0, 800) : null, tags: Array.isArray(x.tags) ? x.tags.slice(0, 10).map(s => String(s).slice(0, 20)) : [], active: x.active !== false, featured: !!x.featured, updated_at: new Date().toISOString() };
+}
+// 批次匯入：body = { products:[...] }（JSON）或 { csv:"..." }（欄位：source,external_id,brand,name,type,gender,price,image_url,buy_url,tags）
+async function handleProductImport(request, env, cors) {
+  try { await requireAdmin(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
+  let list = Array.isArray(body.products) ? body.products : [];
+  if (typeof body.csv === 'string') {
+    const lines = body.csv.split(/\r?\n/).filter(l => l.trim()); const head = lines.shift().split(',').map(h => h.trim());
+    for (const l of lines) { const cells = l.match(/("([^"]|"")*"|[^,]*)(,|$)/g).map(c => c.replace(/,$/, '').replace(/^"|"$/g, '').replace(/""/g, '"')); const o = {}; head.forEach((h, i) => o[h] = cells[i]); if (o.tags) o.tags = String(o.tags).split('|'); list.push(o); }
+  }
+  const rows = list.map(normProduct).filter(Boolean).slice(0, 500);
+  if (!rows.length) return json({ error: '沒有可匯入的商品（需要 name、image_url、type）' }, 400, cors);
+  const withExt = rows.filter(r => r.external_id), noExt = rows.filter(r => !r.external_id);
+  let n = 0;
+  if (withExt.length) { const r = await sb(env, '/rest/v1/products?on_conflict=source,external_id', { method: 'POST', headers: { 'Prefer': 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(withExt) }); n += Array.isArray(r) ? r.length : 0; }
+  if (noExt.length) { const r = await sb(env, '/rest/v1/products', { method: 'POST', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify(noExt) }); n += Array.isArray(r) ? r.length : 0; }
+  return json({ ok: true, imported: n, skipped: list.length - rows.length }, 200, cors);
+}
+async function handleProductUpsert(request, env, cors) {
+  try { await requireAdmin(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
+  const row = normProduct(body); if (!row) return json({ error: '需要 name、image_url、type' }, 400, cors);
+  if (body.id) { await sbPatch(env, `/rest/v1/products?id=eq.${Number(body.id)}`, row); return json({ ok: true, id: Number(body.id) }, 200, cors); }
+  const r = await sbInsert(env, 'products', row); return json({ ok: true, id: r && r.id }, 200, cors);
+}
+async function handleProductDelete(request, env, cors, url) {
+  try { await requireAdmin(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  const id = Number(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
+  await sbPatch(env, `/rest/v1/products?id=eq.${id}`, { active: false }); return json({ ok: true }, 200, cors);
+}
+
+// 商品圖代理：只允許代理資料庫裡的商品圖（防止被當成開放代理）
+async function handleImgProxy(request, env, cors, url) {
+  const id = Number(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
+  const rows = await sb(env, `/rest/v1/products?id=eq.${id}&active=eq.true&select=image_url`);
+  if (!rows.length) return json({ error: '找不到商品' }, 404, cors);
+  const r = await fetchT(rows[0].image_url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TryOnBot/1.0)' } }, '商品圖', 20000);
+  if (!r.ok) return json({ error: '商品圖載入失敗' }, 502, cors);
+  const ct = (r.headers.get('Content-Type') || 'image/jpeg').split(';')[0];
+  if (!ct.startsWith('image/')) return json({ error: '不是圖片' }, 502, cors);
+  return new Response(r.body, { status: 200, headers: { ...cors, 'Content-Type': ct, 'Cache-Control': 'public, max-age=86400' } });
 }
 
 /* ---------------- 事件與錯誤回報 ---------------- */
