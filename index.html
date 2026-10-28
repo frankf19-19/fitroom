@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>試穿吧 TryOn — 買之前，先看看穿在妳身上的樣子</title>
-<meta name="description" content="上傳一張全身照，再放入想試的上衣、褲裙、洋裝、鞋子、帽子、飾品或髮型，AI 直接合成穿上身的真實照片。">
+<title>試穿吧 TryOn — 買之前，先看看穿在你身上的樣子</title>
+<meta name="description" content="女生男生都能用：上傳一張全身照，放入想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品或髮型，AI 直接合成穿上身的真實照片。">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src * data: blob:; worker-src 'self' blob:; frame-src 'none'; base-uri 'self'; form-action 'self' https://payment.ecpay.com.tw https://payment-stage.ecpay.com.tw">
 <meta name="theme-color" content="#fff7f3">
 <meta property="og:title" content="試穿吧 TryOn — 一張照片，先看穿上身的樣子再買">
@@ -101,6 +101,9 @@
   .demo .hd::after{content:"";position:absolute;top:50%;left:50%;width:40px;height:40px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 4px 16px rgba(224,85,122,.35);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23e0557a' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 7l-5 5 5 5M15 7l5 5-5 5'/%3E%3C/svg%3E");background-size:20px;background-repeat:no-repeat;background-position:center}
   .demo .tag{position:absolute;top:12px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;background:rgba(58,38,48,.6);color:#fff;pointer-events:none;backdrop-filter:blur(4px)}
   .demo .tag.l{left:12px}.demo .tag.r{right:12px}
+  .gsw{position:absolute;left:12px;bottom:52px;display:inline-flex;border-radius:999px;background:rgba(255,255,255,.9);padding:3px;box-shadow:var(--sh-s)}
+  .gsw button{border:none;background:transparent;padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
+  .gsw button.on{background:var(--ink);color:#fff}
   .demo .cap{position:absolute;left:12px;right:12px;bottom:12px;font-size:12px;color:var(--ink2);background:rgba(255,255,255,.85);border-radius:999px;padding:6px 12px;text-align:center;pointer-events:none}
   .why{display:grid;grid-template-columns:1fr;gap:10px;margin:22px 0}
   @media(min-width:700px){.why{grid-template-columns:repeat(3,1fr)}}
@@ -363,15 +366,15 @@
   <section class="view" id="view-home">
     <div class="hero">
       <div>
-        <div class="kicker">AI 虛擬試穿</div>
-        <h1>買之前，<br>先看看穿在妳身上的樣子</h1>
-        <p class="sub">一張全身照，放進想試的上衣、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照。</p>
+        <div class="kicker">AI 虛擬試穿 · 女生男生都能用</div>
+        <h1>買之前，<br>先看看穿在你身上的樣子</h1>
+        <p class="sub">一張全身照，放進想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照。</p>
         <div class="card login" id="loginCard">
           <h2>登入開始試穿</h2>
           <button class="btn block abtn hidden" id="btnApple"><svg viewBox="0 0 24 24"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM13.9 4.9c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>使用 Apple 登入</button>
           <button class="btn block gbtn" id="btnGoogle"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.9l-7.8 6C6.5 42.6 14.6 48 24 48z"/></svg>使用 Google 登入</button>
           <div class="or">或用 Email</div>
-          <div class="row" style="flex-wrap:nowrap"><input type="email" id="emailInput" placeholder="妳的 Email"><button class="btn" id="btnEmail">寄驗證碼</button></div>
+          <div class="row" style="flex-wrap:nowrap"><input type="email" id="emailInput" placeholder="你的 Email"><button class="btn" id="btnEmail">寄驗證碼</button></div>
           <div class="emailsent hidden" id="emailSent">已寄到 <b id="emailSentTo"></b>。輸入信中的驗證碼，或直接點信裡的連結（找不到請看垃圾郵件）。
             <div class="otp"><input type="text" inputmode="numeric" autocomplete="one-time-code" id="otpCode" placeholder="驗證碼"><button class="btn primary" id="otpVerify">登入</button></div></div>
           <div class="muted" style="margin-top:8px">免註冊、免密碼。每天送免費合成額度。</div>
@@ -379,7 +382,7 @@
         </div>
       </div>
       <div class="demo" id="demo" aria-label="拖曳比較試穿前後">
-        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" data-g="f">
           <defs>
             <linearGradient id="bgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3ee"/><stop offset="1" stop-color="#ffe4ec"/></linearGradient>
             <pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="2.4" fill="#fff" opacity=".85"/></pattern>
@@ -409,7 +412,31 @@
           <path d="M176 64h48" stroke="#e0557a" stroke-width="5" stroke-linecap="round"/>
           <path d="M184 128q16 16 32 0" fill="none" stroke="#e0b64a" stroke-width="2"/><circle cx="200" cy="138" r="3" fill="#e0b64a"/>
         </svg>
-        <div class="after" id="demoAfter"><svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" data-g="m" style="display:none">
+          <defs>
+            <linearGradient id="bgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef3ff"/><stop offset="1" stop-color="#e3ecff"/></linearGradient>
+            <g id="figureM">
+              <path d="M200 56c-16 0-28 12-28 30 0 11 5 20 12 26v12c-30 7-52 24-56 54l-7 42c-1 4 2 7 6 7h10c3 0 5-2 6-5l10-34v110c0 6 5 11 11 11h72c6 0 11-5 11-11V188l10 34c1 3 3 5 6 5h10c4 0 7-3 6-7l-7-42c-4-30-26-47-56-54v-12c7-6 12-15 12-26 0-18-12-30-28-30z" fill="#f3dcc9" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M164 300h72l-2 122c0 4-3 7-7 7h-12c-3 0-5-2-6-5l-9-80-9 80c-1 3-3 5-6 5h-12c-4 0-7-3-7-7z" fill="#f3dcc9" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M172 80c-1-16 11-28 28-28s29 12 28 28c-6-8-16-12-28-12s-22 4-28 12z" fill="#3a2a2a"/>
+              <path d="M188 98q4 6 8 6M204 98q4 6 8 6" fill="none" stroke="#3a2630" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M194 114q6 3 12 0" fill="none" stroke="#3a2630" stroke-width="1.6" stroke-linecap="round"/>
+            </g>
+          </defs>
+          <rect width="400" height="500" fill="url(#bgB)"/>
+          <circle cx="330" cy="90" r="60" fill="#d9e4ff" opacity=".6"/><circle cx="70" cy="420" r="46" fill="#e5f0ff" opacity=".8"/>
+          <ellipse cx="200" cy="462" rx="110" ry="12" fill="#c7d3ea" opacity=".5"/>
+          <use href="#figureM"/>
+          <path d="M186 140h28v120h-28z" fill="#fbf7f4" stroke="#3a2630" stroke-width="1.4"/>
+          <path d="M150 140c14-8 30-12 50-12s36 4 50 12l6 36-14 6-2-20v120h-80V162l-2 20-14-6z" fill="#2f3f6e" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M200 128l-14 22 14 110 14-110z" fill="#fbf7f4" stroke="#3a2630" stroke-width="1.4"/>
+          <path d="M186 150l-14-10M214 150l14-10" fill="none" stroke="#3a2630" stroke-width="1.4"/>
+          <path d="M164 282h72l6 140c0 3-2 5-5 5h-16c-3 0-5-2-5-5l-16-110-16 110c0 3-2 5-5 5h-16c-3 0-5-2-5-5z" fill="#d9c3a0" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M170 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5zM200 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5z" fill="#fff" stroke="#3a2630" stroke-width="1.6"/>
+          <path d="M172 72c0-14 12-24 28-24s28 10 28 24c0 3-12 5-28 5s-28-2-28-5z" fill="#2f3f6e" stroke="#3a2630" stroke-width="1.6"/>
+          <path d="M226 70h26c3 0 4 3 2 5l-28 4z" fill="#2f3f6e" stroke="#3a2630" stroke-width="1.6"/>
+        </svg>
+        <div class="after" id="demoAfter"><svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" data-g="f">
           <rect width="400" height="500" fill="url(#bgA)"/>
           <circle cx="330" cy="90" r="60" fill="#ffd9e3" opacity=".6"/><circle cx="70" cy="420" r="46" fill="#ffe9d6" opacity=".7"/>
           <ellipse cx="200" cy="462" rx="110" ry="12" fill="#e9c6d0" opacity=".5"/>
@@ -420,16 +447,26 @@
           <path d="M172 266h56l4 150c0 3-2 5-5 5h-14c-3 0-5-2-5-5l-8-100-8 100c0 3-2 5-5 5h-14c-3 0-5-2-5-5z" fill="#9fb6d6" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
           <path d="M172 272h56" stroke="#3a2630" stroke-width="1.2" opacity=".5"/>
           <path d="M180 420h22v12c0 3-2 5-5 5h-14c-3 0-5-2-5-5zM198 420h22v12c0 3-2 5-5 5h-14c-3 0-5-2-5-5z" fill="#fff" stroke="#3a2630" stroke-width="1.6"/>
+        </svg><svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg" data-g="m" style="display:none">
+          <rect width="400" height="500" fill="url(#bgB)"/>
+          <circle cx="330" cy="90" r="60" fill="#d9e4ff" opacity=".6"/><circle cx="70" cy="420" r="46" fill="#e5f0ff" opacity=".8"/>
+          <ellipse cx="200" cy="462" rx="110" ry="12" fill="#c7d3ea" opacity=".5"/>
+          <use href="#figureM"/>
+          <path d="M150 140c14-8 30-12 50-12s36 4 50 12l6 36-14 6-2-20v100h-80V162l-2 20-14-6z" fill="#e6e1dc" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M184 130q16 10 32 0" fill="none" stroke="#3a2630" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M164 262h72l6 160c0 3-2 5-5 5h-16c-3 0-5-2-5-5l-16-120-16 120c0 3-2 5-5 5h-16c-3 0-5-2-5-5z" fill="#8fa6c9" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M170 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5zM200 426h30l2 10c0 3-2 5-5 5h-22c-3 0-5-2-5-5z" fill="#fff" stroke="#3a2630" stroke-width="1.6"/>
         </svg></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
-        <div class="cap">拖曳中線看看差別（示意圖，正式結果是妳的真實照片）</div>
+        <div class="cap">拖曳中線看看差別（示意圖，正式結果是你的真實照片）</div>
+        <div class="gsw" id="demoGender"><button class="on" data-g="f">女生</button><button data-g="m">男生</button></div>
       </div>
     </div>
     <div class="why">
-      <div><i style="background:var(--mint)"></i><b>不用猜版型</b><span>網拍只看到模特兒穿，妳穿起來不一樣。先合成再決定要不要下單。</span></div>
+      <div><i style="background:var(--mint)"></i><b>不用猜版型</b><span>網拍只看到模特兒穿，你穿起來不一樣。先合成再決定要不要下單。</span></div>
       <div><i style="background:var(--butter)"></i><b>整套一起搭</b><span>上衣、裙子、鞋子、帽子、飾品一次放上去，連髮型都能換，看整體效果。</span></div>
-      <div><i style="background:var(--lilac)"></i><b>照片只屬於妳</b><span>照片只用來做妳要的合成，不拿去訓練、不給別人，隨時可以一鍵刪除。</span></div>
+      <div><i style="background:var(--lilac)"></i><b>照片只屬於你</b><span>照片只用來做你要的合成，不拿去訓練、不給別人，隨時可以一鍵刪除。</span></div>
     </div>
   </section>
 
@@ -441,10 +478,10 @@
     <div class="tryon">
       <div>
         <div class="card">
-          <h2>1 · 妳的全身照</h2>
+          <h2>1 · 你的全身照</h2>
           <div class="person" id="personBox">
             <input type="file" accept="image/*" id="filePerson">
-            <div class="tip"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>放一張妳的全身照</b>正面站好、光線均勻、衣服貼身<br>手機拍的就可以</div>
+            <div class="tip"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>放一張你的全身照</b>正面站好、光線均勻、衣服貼身<br>手機拍的就可以</div>
           </div>
           <div class="row" style="margin-top:10px">
             <button class="btn sm" id="btnPersonFromHistory">從合成紀錄選底圖</button>
@@ -459,7 +496,7 @@
             <span class="muted">每個品項 1 點</span>
           </div>
           <div class="opt-row"><span>一次產 2 張挑一張 <span class="muted">（點數 ×2，更容易抽到滿意的）</span></span><div class="switch" id="twoVariants"></div></div>
-          <div class="opt-row" style="margin-top:0"><span>鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是妳本人）</span></span><div class="switch on" id="faceLock"></div></div>
+          <div class="opt-row" style="margin-top:0"><span>鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是你本人）</span></span><div class="switch on" id="faceLock"></div></div>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
           <div class="progress hidden" id="prog"><i></i></div>
           <div class="muted" id="runStatus" style="margin-top:8px"></div>
@@ -482,6 +519,7 @@
         </div>
         <div class="card">
           <h2>4 · 尺寸合身預估 <span class="muted" style="font-weight:400">（選填，不用 AI、不扣點）</span></h2>
+          <div class="chips" id="fitGender"><span class="chip on" data-g="f">女裝尺碼</span><span class="chip" data-g="m">男裝尺碼</span></div>
           <div class="fitgrid">
             <label>身高 cm<input type="number" id="fHeight" placeholder="162"></label>
             <label>胸圍 cm<input type="number" id="fBust" placeholder="84"></label>
@@ -489,7 +527,7 @@
             <label>臀圍 cm<input type="number" id="fHip" placeholder="90"></label>
           </div>
           <div id="fitRows" style="margin-top:10px"><div class="muted">放入上衣、下身或洋裝後，這裡可以選尺碼看合不合身。</div></div>
-          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">通用尺碼表與判斷方式</summary><div class="muted" style="margin-top:6px;line-height:1.7">胸圍／腰圍／臀圍（cm）：XS 80/60/84、S 84/64/88、M 88/68/92、L 92/72/96、XL 96/76/100、2XL 100/80/104。<br>鬆份＝衣服圍度−身體圍度：小於 0 偏緊、0–6 合身、6–14 寬鬆、超過 14 過大。各品牌版型不同，僅供參考；若賣場有提供平量尺寸，以平量×2 換算更準。</div></details>
+          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">通用尺碼表與判斷方式</summary><div class="muted" style="margin-top:6px;line-height:1.7">女裝（胸／腰／臀 cm）：XS 80/60/84、S 84/64/88、M 88/68/92、L 92/72/96、XL 96/76/100、2XL 100/80/104。男裝：XS 84/70/86、S 88/74/90、M 92/78/94、L 96/82/98、XL 100/86/102、2XL 104/90/106。<br>鬆份＝衣服圍度−身體圍度：小於 0 偏緊、0–6 合身、6–14 寬鬆、超過 14 過大。各品牌版型不同，僅供參考；若賣場有提供平量尺寸，以平量×2 換算更準。</div></details>
         </div>
       </div>
     </div>
@@ -528,7 +566,7 @@
     <div class="card" style="margin-top:18px">
       <h3>帳號</h3>
       <div class="row" style="justify-content:space-between"><span id="accEmail" class="muted"></span><span class="row"><button class="btn sm" data-go="settings">設定</button><button class="btn sm" id="btnLogout">登出</button><button class="btn sm ghost" id="btnDeleteAcc" style="color:var(--bad)">刪除帳號</button></span></div>
-      <div class="muted" style="margin-top:8px">刪除帳號會一併刪除妳所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
+      <div class="muted" style="margin-top:8px">刪除帳號會一併刪除你所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
     </div>
   </section>
   <!-- ===== 設定 ===== -->
@@ -604,8 +642,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '2.5.0';
-const BUILD = '2026-10-28-13';
+const APP_VERSION = '2.6.0';
+const BUILD = '2026-10-28-14';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -627,7 +665,7 @@ const ICON={
 const SLOT_DEFS = [
   {type:'top', label:'上衣', tint:'var(--mint)'},
   {type:'bottom', label:'褲子 / 裙子', tint:'var(--butter)'},
-  {type:'dress', label:'洋裝', tint:'var(--blush)'},
+  {type:'dress', label:'洋裝 / 連身', tint:'var(--blush)'},
   {type:'shoes', label:'鞋子', tint:'var(--lilac)'},
   {type:'hat', label:'帽子', tint:'var(--peach)'},
   {type:'accessory', label:'飾品 / 包', tint:'var(--sky)'},
@@ -945,7 +983,12 @@ $('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
 $('twoVariants').onclick=()=>{ $('twoVariants').classList.toggle('on'); renderSlots(); };
 
 /* ---------- 尺寸合身預估 ---------- */
-const SIZE_CHART={XS:{bust:80,waist:60,hip:84},S:{bust:84,waist:64,hip:88},M:{bust:88,waist:68,hip:92},L:{bust:92,waist:72,hip:96},XL:{bust:96,waist:76,hip:100},'2XL':{bust:100,waist:80,hip:104}};
+const SIZE_CHARTS={
+  f:{XS:{bust:80,waist:60,hip:84},S:{bust:84,waist:64,hip:88},M:{bust:88,waist:68,hip:92},L:{bust:92,waist:72,hip:96},XL:{bust:96,waist:76,hip:100},'2XL':{bust:100,waist:80,hip:104}},
+  m:{XS:{bust:84,waist:70,hip:86},S:{bust:88,waist:74,hip:90},M:{bust:92,waist:78,hip:94},L:{bust:96,waist:82,hip:98},XL:{bust:100,waist:86,hip:102},'2XL':{bust:104,waist:90,hip:106}}
+};
+let fitGender='f'; try{ fitGender=localStorage.getItem('tryon.fitGender')||'f'; }catch{}
+let SIZE_CHART=SIZE_CHARTS[fitGender];
 const fitSizes={};
 function fitTag(e){ if(e==null||isNaN(e)) return '<span class="tag na">填身材</span>'; if(e<0) return `<span class="tag bad">偏緊 ${e.toFixed(0)}</span>`; if(e<=6) return `<span class="tag ok">合身 +${e.toFixed(0)}</span>`; if(e<=14) return `<span class="tag warn">寬鬆 +${e.toFixed(0)}</span>`; return `<span class="tag bad">過大 +${e.toFixed(0)}</span>`; }
 function renderFit(){
@@ -960,6 +1003,7 @@ function renderFit(){
   box.querySelectorAll('[data-fit]').forEach(sel=>sel.onchange=()=>{ fitSizes[sel.dataset.fit]=sel.value; renderFit(); });
 }
 ['fHeight','fBust','fWaist','fHip'].forEach(id=>$(id).addEventListener('input',renderFit));
+$('fitGender').querySelectorAll('.chip').forEach(c=>{ c.classList.toggle('on',c.dataset.g===fitGender); c.onclick=()=>{ fitGender=c.dataset.g; SIZE_CHART=SIZE_CHARTS[fitGender]; try{ localStorage.setItem('tryon.fitGender',fitGender); }catch{} $('fitGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); renderFit(); }; });
 try{ const b=JSON.parse(localStorage.getItem('tryon.body')||'null'); if(b){ $('fHeight').value=b.height||''; $('fBust').value=b.bust||''; $('fWaist').value=b.waist||''; $('fHip').value=b.hip||''; } }catch{}
 
 /* ---------- 設定與偏好 ---------- */
@@ -1049,11 +1093,11 @@ $('btnRun').onclick=async()=>{
   if (!configured) return showSetup(true);
   track('tryon_start',{n:items.length}); busy=true; state.result=null; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='8%';
-  $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫妳換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
+  $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
   const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
   const order=['dress','top','bottom','hair','hat','accessory','shoes'];
-  const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫妳'+verbs[i.type]+'…');
+  const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫你'+verbs[i.type]+'…');
   seq.push('快好了，調整光線與細節…');
   let si=0; $('runStatus').textContent=seq[0];
   let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; const ni=Math.min(seq.length-1, Math.floor(pct/90*seq.length)); if(ni!==si){ si=ni; $('runStatus').textContent=seq[si]; const w=$('waitMsg'); if(w) w.textContent=seq[si]; } }, 800);
@@ -1071,13 +1115,13 @@ $('btnRun').onclick=async()=>{
     busy=false; $('btnRun').disabled=false;
     let finalImg = imgs[0];
     if (imgs.length > 1) {
-      finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選妳比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
+      finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
     state.result = finalImg;
     renderCompare(state.personOrig, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden');
     renderFit();
-    toast('完成，看看妳穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
+    toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
   }catch(e){
     clearInterval(tick);
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
@@ -1128,10 +1172,10 @@ async function storyImage(before, after){
   const draw=(img,bx,by,bw,bh)=>{ const [px,py,w,h]=fit(img,bx,by,bw,bh); x.save(); x.shadowColor='rgba(224,85,122,.25)'; x.shadowBlur=40; x.shadowOffsetY=16; x.fillStyle='#fff'; const r=28; x.beginPath(); x.roundRect(px-16,py-16,w+32,h+32,r); x.fill(); x.restore(); x.save(); x.beginPath(); x.roundRect(px,py,w,h,18); x.clip(); x.drawImage(img,px,py,w,h); x.restore(); };
   draw(b, 60, 280, 460, 1240); draw(a, 560, 280, 460, 1240);
   x.fillStyle='#e0557a'; x.font='700 40px "Noto Sans TC", sans-serif'; x.fillText('試穿吧 TryOn', W/2, 1700);
-  x.fillStyle='#6f5a62'; x.font='400 32px "Noto Sans TC", sans-serif'; x.fillText('買之前，先看看穿在妳身上的樣子', W/2, 1760);
+  x.fillStyle='#6f5a62'; x.font='400 32px "Noto Sans TC", sans-serif'; x.fillText('買之前，先看看穿在你身上的樣子', W/2, 1760);
   return c.toDataURL('image/jpeg',0.92);
 }
-$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在妳身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
+$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
 function resetResult(){ state.result=null; $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
@@ -1234,15 +1278,15 @@ const DOCS={
     <div class="ok">✅ 穿貼身、素色的衣服</div><div class="no">❌ 寬大外套、大圖案、層層疊穿</div>
     <div class="ok">✅ 單品圖：商品正面平拍或模特兒正面照</div><div class="no">❌ 單品圖被遮住、角度太斜、多件混在一起</div></div>
     <p>髮型用文字描述時，寫清楚「長度＋造型＋顏色」，例如「鎖骨長、外翹、冷棕色」。</p></div>`},
-  privacy:{title:'隱私權政策', html:`<div class="doc"><p>試穿吧 TryOn（以下稱本服務）重視妳的隱私。</p>
-    <h3>我們蒐集什麼</h3><ul><li>登入用的 Email 或 Google 帳號基本資料</li><li>妳上傳的全身照、單品圖與合成結果</li><li>點數與交易紀錄（付款資料由綠界處理，本服務不儲存卡號）</li></ul>
-    <h3>怎麼使用</h3><ul><li>照片僅用於產生妳要求的合成結果，會傳送給第三方 AI 模型服務（fal.ai、Google）處理，處理完即不保留於該服務</li><li>合成結果與衣櫃圖片儲存於妳的帳號內，只有妳能看到</li><li>我們不會把妳的照片用於訓練模型、廣告或提供給其他人</li></ul>
-    <h3>妳的權利</h3><ul><li>隨時可在「合成紀錄」與「衣櫃」刪除單筆資料</li><li>在「點數」頁可一鍵刪除帳號，所有資料與圖片立即永久刪除</li></ul>
+  privacy:{title:'隱私權政策', html:`<div class="doc"><p>試穿吧 TryOn（以下稱本服務）重視你的隱私。</p>
+    <h3>我們蒐集什麼</h3><ul><li>登入用的 Email 或 Google 帳號基本資料</li><li>你上傳的全身照、單品圖與合成結果</li><li>點數與交易紀錄（付款資料由綠界處理，本服務不儲存卡號）</li></ul>
+    <h3>怎麼使用</h3><ul><li>照片僅用於產生你要求的合成結果，會傳送給第三方 AI 模型服務（fal.ai、Google）處理，處理完即不保留於該服務</li><li>合成結果與衣櫃圖片儲存於你的帳號內，只有你能看到</li><li>我們不會把你的照片用於訓練模型、廣告或提供給其他人</li></ul>
+    <h3>你的權利</h3><ul><li>隨時可在「合成紀錄」與「衣櫃」刪除單筆資料</li><li>在「點數」頁可一鍵刪除帳號，所有資料與圖片立即永久刪除</li></ul>
     <h3>未成年</h3><p>本服務僅供 18 歲以上使用，請勿上傳未成年人照片。</p>
     <p class="muted">最後更新：2026-10-28</p></div>`},
   terms:{title:'服務條款', html:`<div class="doc"><ul>
     <li>合成結果由 AI 生成，僅供穿搭參考，與實際商品、版型、顏色可能有差異，不構成任何購買保證。</li>
-    <li>妳保證上傳的照片為本人或已取得當事人同意，且不上傳未成年人、他人或侵權圖片。</li>
+    <li>你保證上傳的照片為本人或已取得當事人同意，且不上傳未成年人、他人或侵權圖片。</li>
     <li>每個品項合成一次扣 1 點；合成失敗自動退點。已購買的點數不可轉讓、不可兌現；除法律規定外不退費。</li>
     <li>禁止用本服務產生色情、仇恨、冒充他人或違法內容，違者停權且不退點。</li>
     <li>本服務得視營運狀況調整免費額度、價格與功能，重大變更會公告。</li>
@@ -1254,6 +1298,8 @@ document.querySelectorAll('[data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefau
 $('btnTips').onclick=()=>openDoc('tips');
 
 function petals(){ if(matchMedia('(prefers-reduced-motion: reduce)').matches) return; const cols=['#f7b9c9','#fde0e7','#ffd6c2','#ece2fb']; for(let i=0;i<22;i++){ const p=document.createElement('i'); p.className='petal'; p.style.left=Math.random()*100+'vw'; p.style.background=cols[i%cols.length]; p.style.animationDelay=(Math.random()*.8)+'s'; p.style.animationDuration=(2+Math.random()*1.5)+'s'; p.style.transform='scale('+(.6+Math.random())+')'; document.body.appendChild(p); setTimeout(()=>p.remove(),4000); } }
+/* 首頁示範男女切換 */
+(function(){ const g=$('demoGender'); if(!g) return; g.querySelectorAll('button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); document.querySelectorAll('#demo svg[data-g]').forEach(sv=>sv.style.display=sv.dataset.g===b.dataset.g?'':'none'); }); g.onpointerdown=e=>e.stopPropagation(); })();
 /* 首頁示範滑桿 */
 (function(){ const d=$('demo'); if(!d) return; const a=$('demoAfter'), h=$('demoHd'); const set=x=>{ const r=d.getBoundingClientRect(); const pct=Math.max(4,Math.min(96,(x-r.left)/r.width*100)); a.style.width=pct+'%'; h.style.left=pct+'%'; }; let dr=false; d.addEventListener('pointerdown',e=>{ dr=true; d.setPointerCapture(e.pointerId); set(e.clientX); }); d.addEventListener('pointermove',e=>{ if(dr) set(e.clientX); }); d.addEventListener('pointerup',()=>dr=false); d.addEventListener('pointercancel',()=>dr=false); })();
 

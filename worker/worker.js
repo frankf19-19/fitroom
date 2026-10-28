@@ -179,7 +179,7 @@ async function handleTryon(request, env, cors) {
   const useFree = Math.min(freeLeft, cost);
   const payCredits = cost - useFree;
   if (payCredits > profile.credits) {
-    return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），妳目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
+    return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
   }
   // 先登記進行中（鎖住免費額度與限流），再扣點，失敗再退
   const gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: payCredits, free_used: useFree, status: 'running', variants });
