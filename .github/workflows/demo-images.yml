@@ -18,11 +18,11 @@ jobs:
         run: pip install -q pillow gradio_client
       - name: 合成女生範例
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
-        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f
+        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f --views
       - name: 合成男生範例（有提供才做）
         if: ${{ inputs.person_m != '' && inputs.garment_m != '' }}
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
-        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m || echo "男生版略過"
+        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m --views || echo "男生版略過"
       - name: 縮圖並寫入清單
         run: |
           python3 - <<'PY'
@@ -32,10 +32,13 @@ jobs:
           for g in ("f", "m"):
               b, a = f"demo/{g}-before.jpg", f"demo/{g}-after.jpg"
               if os.path.exists(b) and os.path.exists(a):
-                  for p in (b, a):
+                  entry = {"before": b, "after": a}
+                  for k in ("side", "back"):
+                      if os.path.exists(f"demo/{g}-{k}.jpg"): entry[k] = f"demo/{g}-{k}.jpg"
+                  for p in entry.values():
                       im = ImageOps.exif_transpose(Image.open(p)).convert("RGB")
                       im.thumbnail((900, 1125)); im.save(p, quality=88, optimize=True)
-                  man[g] = {"before": b, "after": a}
+                  man[g] = entry
           json.dump(man, open("demo/manifest.json", "w"))
           print(man)
           PY

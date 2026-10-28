@@ -174,3 +174,6 @@ language sql security definer set search_path = public as $$
   );
 $$;
 revoke all on function public.admin_stats(timestamptz) from public, anon, authenticated;
+
+-- v1.6：多角度（側面／背面）圖片網址
+alter table public.generations add column if not exists views jsonb;

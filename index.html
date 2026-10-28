@@ -346,6 +346,20 @@
   .btn.primary{background:linear-gradient(135deg,#f27a9a 0%,#e0557a 55%,#d64a70 100%);box-shadow:0 8px 20px rgba(224,85,122,.3),inset 0 1px 0 rgba(255,255,255,.25)}
   .topbar .free{display:none;align-items:center;gap:6px;font-size:12px;color:var(--rose-d);background:var(--rose-s);border-radius:999px;padding:5px 10px;white-space:nowrap}
   @media(min-width:600px){.topbar .free{display:inline-flex}}
+  /* 多角度 */
+  .angles{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .angles .seg{display:inline-flex;border:1.5px solid var(--line);border-radius:999px;overflow:hidden;background:#fff}
+  .angles .seg button{border:none;background:transparent;padding:7px 14px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer}
+  .angles .seg button.on{background:var(--ink);color:#fff}
+  .angles .spin{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:700;background:#fff;cursor:pointer;color:var(--ink2)}
+  .angles .spin.on{border-color:var(--rose);color:var(--rose-d)}
+  .angles .spin svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .angles .spin.on svg{animation:rot 1.6s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .polaroid .view-img{display:none}.polaroid .view-img.on{display:block;max-width:100%;max-height:640px}
+  .lightbox .lbviews{display:flex;gap:6px}
+  .lightbox .lbviews button{border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:999px;padding:6px 12px;font-size:12px;cursor:pointer}
+  .lightbox .lbviews button.on{background:#fff;color:var(--ink)}
   /* 花瓣 */
   .petal{position:fixed;top:-20px;width:12px;height:12px;border-radius:12px 0;background:#f7b9c9;z-index:70;pointer-events:none;animation:petal 2.6s linear forwards;opacity:.9}
   @keyframes petal{to{transform:translateY(110vh) rotate(540deg);opacity:0}}
@@ -373,7 +387,7 @@
       <div>
         <div class="kicker">AI 虛擬試穿 · 女生男生都能用</div>
         <h1>買之前，<br>先看看穿在你身上的樣子</h1>
-        <p class="sub">一張全身照，放進想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照。</p>
+        <p class="sub">一張全身照，放進想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照，還能轉到側面與背面看整體。</p>
         <div class="card login" id="loginCard">
           <h2>登入開始試穿</h2>
           <button class="btn block abtn hidden" id="btnApple"><svg viewBox="0 0 24 24"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM13.9 4.9c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>使用 Apple 登入</button>
@@ -467,6 +481,7 @@
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
         <div class="cap" id="demoCap">拖曳中線看看差別（示意圖，正式結果是你的真實照片）</div>
         <div class="gsw" id="demoGender"><button class="on" data-g="f">女生</button><button data-g="m">男生</button></div>
+        <div class="gsw hidden" id="demoAngle" style="left:auto;right:12px"><button class="on" data-a="front">正面</button><button data-a="side">側面</button><button data-a="back">背面</button></div>
       </div>
     </div>
     <div class="why">
@@ -501,7 +516,8 @@
             <span>本次 <b id="costN">0</b> 點 <span class="muted" id="costNote"></span></span>
             <span class="muted">每個品項 1 點</span>
           </div>
-          <div class="opt-row"><span>一次產 2 張挑一張 <span class="muted">（點數 ×2，更容易抽到滿意的）</span></span><div class="switch" id="twoVariants"></div></div>
+          <div class="opt-row"><span>360° 多角度 <span class="muted">（再生成側面與背面，+2 點）</span></span><div class="switch" id="wantViews"></div></div>
+          <div class="opt-row" style="margin-top:0"><span>一次產 2 張挑一張 <span class="muted">（點數 ×2，更容易抽到滿意的）</span></span><div class="switch" id="twoVariants"></div></div>
           <div class="opt-row" style="margin-top:0"><span>鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是你本人）</span></span><div class="switch on" id="faceLock"></div></div>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
           <div class="progress hidden" id="prog"><i></i></div>
@@ -513,6 +529,10 @@
           <div class="row" style="justify-content:space-between;margin-bottom:10px">
             <h2 style="margin:0">3 · 合成結果</h2>
             <span class="muted hidden" id="cmpHint">拖曳中線比較前後</span>
+          </div>
+          <div class="angles hidden" id="angles">
+            <div class="seg"><button data-v="front" class="on">正面</button><button data-v="side">側面</button><button data-v="back">背面</button></div>
+            <button class="spin" id="spinBtn"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>自動旋轉</button>
           </div>
           <div class="result" id="result"><div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div></div>
           <div class="row hidden" style="margin-top:12px" id="resultActions">
@@ -582,6 +602,7 @@
       <h3>合成偏好</h3>
       <div class="setrow"><span>預設鎖定本人臉部<small>配件、髮型合成後把原本的臉貼回去</small></span><div class="switch on" id="prefFace"></div></div>
       <div class="setrow"><span>預設一次產 2 張<small>點數 ×2，更容易抽到滿意的</small></span><div class="switch" id="prefTwo"></div></div>
+      <div class="setrow"><span>預設 360° 多角度<small>每次多生成側面與背面，+2 點</small></span><div class="switch" id="prefViews"></div></div>
       <div class="setrow"><span>震動回饋<small>App 內操作時的觸覺回饋</small></span><div class="switch on" id="prefHaptic"></div></div>
     </div>
     <div class="card">
@@ -614,7 +635,7 @@
   <div id="pickBody"></div>
 </div></div>
 
-<div class="lightbox" id="lightbox"><img alt=""><div class="row"><button class="btn primary" id="lbDownload">下載</button><button class="btn" id="lbUse">當作底圖</button><button class="btn" id="lbDelete">刪除</button><button class="btn ghost" id="lbClose" style="color:#fff">關閉</button></div></div>
+<div class="lightbox" id="lightbox"><img alt=""><div class="lbviews hidden" id="lbViews"></div><div class="row"><button class="btn primary" id="lbDownload">下載</button><button class="btn" id="lbUse">當作底圖</button><button class="btn" id="lbDelete">刪除</button><button class="btn ghost" id="lbClose" style="color:#fff">關閉</button></div></div>
 
 <div class="onb" id="onb" role="dialog" aria-label="使用導覽">
   <button class="btn ghost sm skip" id="onbSkip">略過</button>
@@ -648,8 +669,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '2.7.0';
-const BUILD = '2026-10-28-15';
+const APP_VERSION = '2.8.0';
+const BUILD = '2026-10-28-16';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -908,7 +929,8 @@ function renderSlots(){
   $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } openSlotMenu(el.dataset.type); });
   persistSlots();
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
-  const n=Object.keys(state.slots).length * mult; $('costN').textContent=n;
+  const nItems=Object.keys(state.slots).length;
+  const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0); $('costN').textContent=n;
   if (state.me){ const free=Math.min(state.me.free_left,n); $('costNote').textContent = n? `（免費額度抵 ${free} 點，點數扣 ${n-free} 點）`:''; }
   renderFit();
   $('btnRun').disabled = !n || busy;
@@ -987,6 +1009,7 @@ async function faceLock(originalUri, resultUri){
 }
 $('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
 $('twoVariants').onclick=()=>{ $('twoVariants').classList.toggle('on'); renderSlots(); };
+$('wantViews').onclick=()=>{ $('wantViews').classList.toggle('on'); renderSlots(); };
 
 /* ---------- 尺寸合身預估 ---------- */
 const SIZE_CHARTS={
@@ -1013,25 +1036,25 @@ $('fitGender').querySelectorAll('.chip').forEach(c=>{ c.classList.toggle('on',c.
 try{ const b=JSON.parse(localStorage.getItem('tryon.body')||'null'); if(b){ $('fHeight').value=b.height||''; $('fBust').value=b.bust||''; $('fWaist').value=b.waist||''; $('fHip').value=b.hip||''; } }catch{}
 
 /* ---------- 設定與偏好 ---------- */
-const PREF_DEFAULT={face:true,two:false};
-function applyPrefs(p){ $('faceLock').classList.toggle('on',p.face!==false); $('twoVariants').classList.toggle('on',!!p.two); renderSlots(); }
+const PREF_DEFAULT={face:true,two:false,views:false};
+function applyPrefs(p){ $('faceLock').classList.toggle('on',p.face!==false); $('twoVariants').classList.toggle('on',!!p.two); $('wantViews').classList.toggle('on',!!p.views); renderSlots(); }
 async function loadPrefs(){
   let p={...PREF_DEFAULT}; try{ Object.assign(p, JSON.parse(localStorage.getItem('tryon.prefs')||'{}')); }catch{}
   if(supa&&state.user){ try{ const { data } = await supa.from('profiles').select('prefs').eq('id',state.user.id).single(); if(data&&data.prefs) Object.assign(p,data.prefs); }catch{} }
   applyPrefs(p);
 }
 async function savePrefs(){
-  const p={face:$('prefFace').classList.contains('on'), two:$('prefTwo').classList.contains('on')};
+  const p={face:$('prefFace').classList.contains('on'), two:$('prefTwo').classList.contains('on'), views:$('prefViews').classList.contains('on')};
   try{ localStorage.setItem('tryon.prefs',JSON.stringify(p)); localStorage.setItem('tryon.haptic',$('prefHaptic').classList.contains('on')?'1':'0'); }catch{}
   applyPrefs(p);
   if(supa&&state.user){ await supa.from('profiles').update({prefs:p}).eq('id',state.user.id); }
 }
 function renderSettings(){
   $('verSettings').textContent='v'+APP_VERSION+' · '+BUILD+(IS_APP?' · '+PLATFORM:'');
-  $('prefFace').classList.toggle('on',$('faceLock').classList.contains('on')); $('prefTwo').classList.toggle('on',$('twoVariants').classList.contains('on'));
+  $('prefFace').classList.toggle('on',$('faceLock').classList.contains('on')); $('prefTwo').classList.toggle('on',$('twoVariants').classList.contains('on')); $('prefViews').classList.toggle('on',$('wantViews').classList.contains('on'));
   try{ $('prefHaptic').classList.toggle('on',localStorage.getItem('tryon.haptic')!=='0'); }catch{}
 }
-['prefFace','prefTwo','prefHaptic'].forEach(id=>$(id).onclick=()=>{ $(id).classList.toggle('on'); savePrefs(); });
+['prefFace','prefTwo','prefViews','prefHaptic'].forEach(id=>$(id).onclick=()=>{ $(id).classList.toggle('on'); savePrefs(); });
 document.querySelectorAll('#view-settings [data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefault(); openDoc(a.dataset.doc); });
 
 /* ---------- 首次導覽 ---------- */
@@ -1102,15 +1125,19 @@ $('btnRun').onclick=async()=>{
   $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
   const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
+  state.views=null; stopSpin();
   const order=['dress','top','bottom','hair','hat','accessory','shoes'];
   const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫你'+verbs[i.type]+'…');
+  if($('wantViews').classList.contains('on')) seq.push('轉個身，生成側面與背面…');
   seq.push('快好了，調整光線與細節…');
   let si=0; $('runStatus').textContent=seq[0];
   let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; const ni=Math.min(seq.length-1, Math.floor(pct/90*seq.length)); if(ni!==si){ si=ni; $('runStatus').textContent=seq[si]; const w=$('waitMsg'); if(w) w.textContent=seq[si]; } }, 800);
   setStep(3);
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
-    const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants }) });
+    const views = $('wantViews').classList.contains('on');
+    const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views }) });
+    state.views = d.views || null;
     clearInterval(tick); bar.style.width='96%';
     let imgs = d.images && d.images.length ? d.images : [d.image];
     const needLock = $('faceLock').classList.contains('on') && items.some(i=>!['top','bottom','dress'].includes(i.type));
@@ -1143,7 +1170,9 @@ function renderCompare(before, after){
   const items=Object.keys(state.slots).map(t=>TYPE_LABEL[t]).join('＋')||'穿搭';
   const date=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
-  box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div><div class="cap"><span>${items}</span><small>${date}</small></div></div>`;
+  const v=state.views||{};
+  box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>${v.side?`<img class="view-img" data-v="side" src="${v.side}" alt="側面">`:''}${v.back?`<img class="view-img" data-v="back" src="${v.back}" alt="背面">`:''}<div class="cap"><span>${items}</span><small id="capAngle">${date}</small></div></div>`;
+  $('angles').classList.toggle('hidden', !(v.side||v.back)); setAngle('front');
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
   const sync=()=>{ const w=cmp.clientWidth; aft.querySelector('img').style.width=w+'px'; };
   $('cmpAfterFull').onload=sync; sync(); if(window.__cmpResize) window.removeEventListener('resize',window.__cmpResize); window.__cmpResize=sync; window.addEventListener('resize',sync);
@@ -1154,7 +1183,7 @@ function renderCompare(before, after){
   cmp.addEventListener('pointermove',e=>{ if(dragging) set(e.clientX); });
   cmp.addEventListener('pointerup',()=>dragging=false); cmp.addEventListener('pointercancel',()=>dragging=false);
 }
-$('btnDownload').onclick=()=>{ if(state.result) saveImage(state.result,'試穿吧_'+Date.now()+'.png'); };
+$('btnDownload').onclick=()=>{ if(state.result) saveImage(currentResultImage(),'試穿吧_'+({front:'正面',side:'側面',back:'背面'})[curAngle]+'_'+Date.now()+'.png'); };
 async function shareImage(dataUri){
   if (IS_APP && Plug('Filesystem') && Plug('Share')) {
     try{ const ext=/^data:image\/jpe?g/i.test(dataUri)?'jpg':'png'; const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.'+ext, data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
@@ -1168,7 +1197,7 @@ async function saveImage(dataUri, name){
   }
   const a=document.createElement('a'); a.download=name; a.href=dataUri; a.click();
 }
-$('btnShare').onclick=()=>{ if(state.result){ track('share'); shareImage(state.result); } };
+$('btnShare').onclick=()=>{ if(state.result){ track('share'); shareImage(currentResultImage()); } };
 async function storyImage(before, after){
   const [b,a]=await Promise.all([loadImg(before), loadImg(after)]);
   const W=1080,H=1920; const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
@@ -1184,7 +1213,7 @@ async function storyImage(before, after){
 $('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
-function resetResult(){ state.result=null; $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
+function resetResult(){ state.result=null; state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
 $('btnContinue').onclick=()=>{ if(!state.result) return; const img=state.result; resetResult(); setPerson(img); state.slots={}; renderSlots(); setStep(2); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */
@@ -1244,9 +1273,11 @@ function renderHistory(){
   box.querySelectorAll('.hitem').forEach(el=>el.onclick=async e=>{ const fb=e.target.closest('[data-fav]'); const h=state.history.find(x=>String(x.id)===el.dataset.id); if(fb){ e.stopPropagation(); h.favorite=!h.favorite; fb.classList.toggle('on',h.favorite); haptic(); await supa.from('generations').update({favorite:h.favorite}).eq('id',h.id); return; } openLightbox(h); });
 }
 let lbItem=null;
-function openLightbox(h){ lbItem=h; const lb=$('lightbox'); lb.querySelector('img').src=h.image_url; lb.classList.add('on'); }
+function openLightbox(h){ lbItem=h; const lb=$('lightbox'); lb.querySelector('img').src=h.image_url; const v=h.views||{}; const lv=$('lbViews'); const has=v.side||v.back; lv.classList.toggle('hidden',!has);
+  if(has){ lv.innerHTML=`<button class="on" data-u="${h.image_url}">正面</button>${v.side?`<button data-u="${v.side}">側面</button>`:''}${v.back?`<button data-u="${v.back}">背面</button>`:''}`; lv.querySelectorAll('button').forEach(b=>b.onclick=()=>{ lv.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); lb.querySelector('img').src=b.dataset.u; }); }
+  lb.classList.add('on'); }
 $('lbClose').onclick=()=>$('lightbox').classList.remove('on');
-$('lbDownload').onclick=async()=>{ if(!lbItem) return; saveImage(await urlToDataUri(lbItem.image_url),'試穿吧_'+lbItem.id+'.png'); };
+$('lbDownload').onclick=async()=>{ if(!lbItem) return; saveImage(await urlToDataUri($('lightbox').querySelector('img').src),'試穿吧_'+lbItem.id+'.png'); };
 $('lbUse').onclick=async()=>{ if(!lbItem) return; try{ setPerson(await urlToDataUri(lbItem.image_url)); $('lightbox').classList.remove('on'); go('tryon'); toast('已設為底圖'); }catch{ toast('載入失敗'); } };
 $('lbDelete').onclick=async()=>{ if(!lbItem) return; $('lightbox').classList.remove('on'); if(!await ask('刪除這張紀錄？','刪除後無法復原。',{ok:'刪除',danger:true})) return; await supa.from('generations').update({deleted:true}).eq('id',lbItem.id); state.history=state.history.filter(h=>h.id!==lbItem.id); renderHistory(); };
 
@@ -1310,14 +1341,30 @@ function applyDemo(){
   const d=$('demo'); if(!d) return;
   const ph=demoPhotos&&demoPhotos[demoG];
   d.classList.toggle('photo',!!ph);
-  if(ph){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; const sync=()=>{ $('demoPhBefore').style.width=d.clientWidth+'px'; }; sync(); window.addEventListener('resize',sync); }
-  else { $('demoCap').textContent='拖曳中線看看差別（示意圖，正式結果是你的真實照片）'; document.querySelectorAll('#demo svg[data-g]').forEach(sv=>sv.style.display=sv.dataset.g===demoG?'':'none'); }
+  if(ph){ $('demoPhBefore').src=ph.before; $('demoPhAfter').src=ph.after; $('demoCap').textContent='拖曳中線看看差別（真實 AI 合成結果）'; const sync=()=>{ $('demoPhBefore').style.width=d.clientWidth+'px'; }; sync(); window.addEventListener('resize',sync);
+    const ang=$('demoAngle'); const hasV=ph.side||ph.back; ang.classList.toggle('hidden',!hasV); ang.querySelectorAll('button').forEach(b=>{ b.style.display=(b.dataset.a==='front'||ph[b.dataset.a])?'':'none'; b.classList.toggle('on',b.dataset.a==='front'); b.onclick=e=>{ e.stopPropagation(); ang.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); const front=b.dataset.a==='front'; $('demoPhAfter').src=front?ph.after:ph[b.dataset.a]; $('demoAfter').style.display=front?'':'none'; $('demoHd').style.display=front?'':'none'; $('demoCap').textContent=front?'拖曳中線看看差別（真實 AI 合成結果）':({side:'側面',back:'背面'})[b.dataset.a]+'（AI 依正面結果生成）'; }; }); ang.onpointerdown=e=>e.stopPropagation(); }
+  else { $('demoAngle').classList.add('hidden'); $('demoAfter').style.display=''; $('demoHd').style.display=''; $('demoCap').textContent='拖曳中線看看差別（示意圖，正式結果是你的真實照片）'; document.querySelectorAll('#demo svg[data-g]').forEach(sv=>sv.style.display=sv.dataset.g===demoG?'':'none'); }
   const gsw=$('demoGender'); if(gsw){ const hasM=!demoPhotos||demoPhotos.m; gsw.style.display=hasM?'':'none'; }
 }
 (function(){ const g=$('demoGender'); if(!g) return; g.querySelectorAll('button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); demoG=b.dataset.g; g.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); applyDemo(); }); g.onpointerdown=e=>e.stopPropagation(); })();
 fetch('demo/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(m=>{ if(m&&(m.f||m.m)){ demoPhotos=m; if(!m.f&&m.m) demoG='m'; applyDemo(); } }).catch(()=>{});
 /* 首頁示範滑桿 */
 (function(){ const d=$('demo'); if(!d) return; const a=$('demoAfter'), h=$('demoHd'); const set=x=>{ const r=d.getBoundingClientRect(); const pct=Math.max(4,Math.min(96,(x-r.left)/r.width*100)); a.style.width=pct+'%'; h.style.left=pct+'%'; }; let dr=false; d.addEventListener('pointerdown',e=>{ dr=true; d.setPointerCapture(e.pointerId); set(e.clientX); }); d.addEventListener('pointermove',e=>{ if(dr) set(e.clientX); }); d.addEventListener('pointerup',()=>dr=false); d.addEventListener('pointercancel',()=>dr=false); })();
+
+/* ---------- 多角度切換與自動旋轉 ---------- */
+let spinT=null, curAngle='front';
+function setAngle(a){
+  curAngle=a; const pol=$('result').querySelector('.polaroid'); if(!pol) return;
+  const cmp=pol.querySelector('.cmp'); if(cmp) cmp.style.display = a==='front'?'':'none';
+  pol.querySelectorAll('.view-img').forEach(im=>im.classList.toggle('on', im.dataset.v===a));
+  $('angles').querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===a));
+  $('cmpHint').classList.toggle('hidden', a!=='front');
+  const cap=$('capAngle'); if(cap) cap.textContent = ({front:'正面',side:'側面',back:'背面'})[a] + ' · ' + new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric'});
+}
+function stopSpin(){ if(spinT){ clearInterval(spinT); spinT=null; } const b=$('spinBtn'); if(b) b.classList.remove('on'); }
+$('angles').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ stopSpin(); setAngle(b.dataset.v); haptic(); });
+$('spinBtn').onclick=()=>{ if(spinT){ stopSpin(); return; } const order=['front','side','back','side']; let i=0; $('spinBtn').classList.add('on'); spinT=setInterval(()=>{ i=(i+1)%order.length; setAngle(order[i]); },1100); };
+function currentResultImage(){ if(curAngle!=='front' && state.views && state.views[curAngle]) return state.views[curAngle]; return state.result; }
 
 /* ---------- 離線、安裝、原生事件 ---------- */
 function setOffline(){ $('offline').classList.toggle('on', !navigator.onLine); }

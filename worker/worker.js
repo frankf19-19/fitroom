@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 const PACKS = { // 點數包
   p10: { name: '10', credits: 10, price: 99 },
@@ -41,6 +41,10 @@ const EDIT_PROMPTS = {
   hair_text: 'Photo edit task. Change the hairstyle of the person in the photo to: {{desc}}. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP
 };
 const GEMINI_FALLBACKS = ['gemini-nano-banana-2.1', 'gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
+const VIEW_PROMPTS = {
+  side: 'Generate a new photo of the exact same person wearing the exact same outfit as in this photo, but photographed from the left side (a full 90-degree profile view, the person has turned sideways). Same background, lighting, camera distance and framing, full body visible. Keep identity, body shape, hairstyle, skin and every garment detail (color, pattern, length, fit) perfectly consistent. Photorealistic, no text.',
+  back: 'Generate a new photo of the exact same person wearing the exact same outfit as in this photo, but photographed from behind (a full back view, the person has turned around 180 degrees, face not visible). Same background, lighting, camera distance and framing, full body visible. Keep body shape, hairstyle, skin and every garment detail (color, pattern, length, fit) perfectly consistent. Photorealistic, no text.'
+};
 
 export default {
   async fetch(request, env) {
@@ -156,6 +160,7 @@ async function handleTryon(request, env, cors) {
   let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
   const { person, items } = body || {};
   const variants = Number(body.variants) === 2 ? 2 : 1;
+  const wantViews = body.views === true;
   if (!isDataImage(person)) return json({ error: '請提供全身照（檔案太大或格式不支援）' }, 400, cors);
   if (!Array.isArray(items) || !items.length || items.length > 7) return json({ error: '請至少選一個要試穿的品項（最多 7 個）' }, 400, cors);
   for (const it of items) {
@@ -171,7 +176,7 @@ async function handleTryon(request, env, cors) {
   if (recent.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors);
 
   // 扣點：每個品項 1 點 × 張數；先用今日免費點數，不足再扣點數
-  const cost = items.length * variants;
+  const cost = items.length * variants + (wantViews ? 2 : 0);
   const freeDaily = Number(env.FREE_DAILY || 2);
   const profile = await getProfile(env, user);
   const used = await freeUsedToday(env, user.id);
@@ -198,9 +203,13 @@ async function handleTryon(request, env, cors) {
     }
     return current;
   };
-  let results;
+  let results, views = null;
   try {
     results = await Promise.all(Array.from({ length: variants }, runPipeline));
+    if (wantViews) {
+      const [side, back] = await Promise.all([geminiView(env, results[0], 'side'), geminiView(env, results[0], 'back')]);
+      views = { side, back };
+    }
   } catch (e) {
     if (payCredits > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
     await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: String(e.message).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
@@ -228,9 +237,22 @@ async function handleTryon(request, env, cors) {
     } catch { /* ignore */ }
   }
 
+  // 多角度圖也存起來
+  const viewUrls = {};
+  if (views) {
+    for (const k of ['side', 'back']) {
+      try {
+        const bin = await dataUriToBytes(views[k]);
+        const path = `${user.id}/${Date.now()}-${k}.${bin.ext}`;
+        const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' }, body: bin.bytes });
+        if (up.ok) viewUrls[k] = `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
+      } catch { /* ignore */ }
+    }
+    try { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { views: viewUrls }); } catch { /* ignore */ }
+  }
   let creditsNow = profile.credits - payCredits;
   try { creditsNow = (await getProfile(env, user)).credits; } catch { /* 用估算值 */ }
-  return json({ image: results[0], images: results, image_urls: urls, charged: payCredits, free_used: useFree, credits: creditsNow, free_left: Math.max(0, freeLeft - useFree) }, 200, cors);
+  return json({ image: results[0], images: results, image_urls: urls, views, view_urls: viewUrls, charged: payCredits, free_used: useFree, credits: creditsNow, free_left: Math.max(0, freeLeft - useFree) }, 200, cors);
 }
 
 /* ---- FASHN（queue 模式：送出 → 輪詢 → 取結果） ---- */
@@ -305,6 +327,35 @@ async function geminiEdit(env, person, item, identityRef) {
   const img = cand && cand.content && cand.content.parts && cand.content.parts.find(p => p.inlineData);
   if (!img) throw new Error('配件/髮型服務：' + ((cand && cand.finishReason) || (d.promptFeedback && d.promptFeedback.blockReason) || '未回傳圖片'));
   return `data:${img.inlineData.mimeType};base64,${img.inlineData.data}`;
+}
+
+/* ---- 多角度：從正面結果生成側面／背面 ---- */
+async function geminiView(env, front, which) {
+  const parts = [{ text: VIEW_PROMPTS[which] }, inlinePart(front)];
+  const preferred = env.GEMINI_IMAGE_MODEL || GEMINI_FALLBACKS[0];
+  const models = [preferred, ...GEMINI_FALLBACKS.filter(m => m !== preferred)];
+  let lastErr = '';
+  for (const model of models) {
+    const isGen3 = !model.includes('2.5');
+    const cfgs = isGen3 ? [{ responseModalities: ['IMAGE'], imageConfig: { imageSize: '2K' } }, { responseModalities: ['IMAGE'] }] : [{ responseModalities: ['IMAGE'] }];
+    for (const generationConfig of cfgs) {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': need(env, 'GEMINI_KEY') }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig }) }, '多角度服務');
+      const t = await r.text();
+      if (r.ok) {
+        const d = JSON.parse(t); const cand = d.candidates && d.candidates[0];
+        const img = cand && cand.content && cand.content.parts && cand.content.parts.find(p => p.inlineData);
+        if (img) return `data:${img.inlineData.mimeType};base64,${img.inlineData.data}`;
+        lastErr = (cand && cand.finishReason) || '未回傳圖片'; break;
+      }
+      let m = t; try { m = JSON.parse(t).error.message; } catch {}
+      lastErr = String(m).slice(0, 200);
+      if (r.status === 404 || /not found|not supported|does not exist/i.test(m)) break;
+      if (r.status === 400 && /imageConfig|imageSize|image_size/i.test(m)) continue;
+      if (r.status === 429 || r.status >= 500) continue;
+      throw new Error('多角度服務：' + lastErr);
+    }
+  }
+  throw new Error('多角度服務：' + lastErr);
 }
 
 /* ---- 圖片工具（避免逐 byte 迴圈） ---- */

@@ -71,6 +71,25 @@ def run_gemini(person, garment, category):
             last = f"{model}: 沒有回傳圖片"
     sys.exit("Gemini 失敗：" + last)
 
+VIEW_PROMPTS = {
+    "side": "Generate a new photo of the exact same person wearing the exact same outfit as in this photo, but photographed from the left side (a full 90-degree profile view). Same background, lighting, camera distance and framing, full body visible. Keep identity, body shape, hairstyle and every garment detail perfectly consistent. Photorealistic, no text.",
+    "back": "Generate a new photo of the exact same person wearing the exact same outfit as in this photo, but photographed from behind (full back view, face not visible). Same background, lighting, camera distance and framing, full body visible. Keep body shape, hairstyle and every garment detail perfectly consistent. Photorealistic, no text."
+}
+def gemini_view(front, which):
+    key = os.environ.get("GEMINI_KEY")
+    if not key: return None
+    parts = [{"text": VIEW_PROMPTS[which]}, {"inlineData": {"mimeType": "image/jpeg", "data": base64.b64encode(front).decode()}}]
+    for model in [os.environ.get("GEMINI_IMAGE_MODEL") or "gemini-nano-banana-2.1", "gemini-3-pro-image", "gemini-3.1-flash-image", "gemini-2.5-flash-image"]:
+        for cfg in ({"responseModalities": ["IMAGE"], "imageConfig": {"imageSize": "2K"}}, {"responseModalities": ["IMAGE"]}):
+            try:
+                d = http_json(f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent", {"x-goog-api-key": key}, {"contents": [{"role": "user", "parts": parts}], "generationConfig": cfg})
+            except urllib.error.HTTPError as e:
+                if e.code == 404: break
+                continue
+            for p in d.get("candidates", [{}])[0].get("content", {}).get("parts", []):
+                if "inlineData" in p: return base64.b64decode(p["inlineData"]["data"])
+    return None
+
 def run_fal(person, garment, category):
     key = os.environ.get("FAL_KEY") or sys.exit("缺少 FAL_KEY")
     h = {"Authorization": "Key " + key}
@@ -103,12 +122,19 @@ def main():
     ap.add_argument("--engine", default="gemini", choices=["gemini", "fal", "hf"])
     ap.add_argument("--person", required=True); ap.add_argument("--garment", required=True)
     ap.add_argument("--category", default="auto"); ap.add_argument("--out", required=True)
+    ap.add_argument("--views", action="store_true", help="另外生成側面與背面（需 GEMINI_KEY）")
     a = ap.parse_args()
     person = to_jpeg(load(a.person)[0]); garment = to_jpeg(load(a.garment)[0], 1024)
     after = {"gemini": run_gemini, "fal": run_fal, "hf": run_hf}[a.engine](person, garment, a.category)
     open(a.out + "-before.jpg", "wb").write(person)
-    open(a.out + "-after.jpg", "wb").write(to_jpeg(after))
+    after = to_jpeg(after)
+    open(a.out + "-after.jpg", "wb").write(after)
     print("saved", a.out + "-before.jpg", a.out + "-after.jpg")
+    if a.views:
+        for which in ("side", "back"):
+            img = gemini_view(after, which)
+            if img: open(f"{a.out}-{which}.jpg", "wb").write(to_jpeg(img)); print("saved", f"{a.out}-{which}.jpg")
+            else: print("略過", which)
 
 if __name__ == "__main__":
     main()
