@@ -3,8 +3,8 @@ on:
   workflow_dispatch:
     inputs:
       engine:    { description: '引擎：gemini（免費金鑰）/ fal（付費）/ hf（完全免費，可能排隊）', required: true, default: 'gemini', type: choice, options: [gemini, fal, hf] }
-      person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'https://www.pexels.com/photo/lady-in-jacket-and-bodysuit-on-white-background-in-studio-6856000/' }
-      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'https://www.pexels.com/photo/a-woman-in-white-dress-standing-on-the-edge-of-the-roof-9638207/' }
+      person_f:  { description: '女生全身照（網址，或 repo 內路徑如 demo/person-f.jpg）', required: true, default: 'https://www.pexels.com/photo/elegant-woman-posing-in-black-leotard-28986642/' }
+      garment_f: { description: '女生要試穿的衣服照（網址或路徑）', required: true, default: 'https://www.pexels.com/photo/studio-shoot-of-a-woman-in-striped-long-sleeve-and-denim-pants-8811247/' }
       person_m:  { description: '男生全身照（留空則不做男生版）', required: false, default: 'https://www.pexels.com/photo/man-wearing-white-shirt-on-white-background-7561443/' }
       garment_m: { description: '男生要試穿的衣服照', required: false, default: 'https://www.pexels.com/photo/portrait-of-a-man-in-navy-polo-shirt-35495782/' }
 permissions:
@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 安裝相依
-        run: pip install -q pillow numpy gradio_client
+        run: pip install -q pillow numpy opencv-python-headless gradio_client
       - name: 合成女生範例
         continue-on-error: true
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
