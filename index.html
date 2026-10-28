@@ -38,7 +38,8 @@
   /* 頂欄 */
   .topbar{position:sticky;top:0;z-index:20;background:rgba(255,247,243,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(243,227,224,.8)}
   .topbar .in{max-width:1080px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .logo{font-family:var(--serif);font-weight:900;font-size:22px;letter-spacing:1px;display:flex;align-items:baseline;gap:6px;cursor:pointer}
+  .logo{font-family:var(--serif);font-weight:900;font-size:22px;letter-spacing:1px;display:flex;align-items:baseline;gap:0;cursor:pointer}
+  .logo .mark{margin-right:8px} .logo small{margin-left:6px}
   .logo em{font-style:normal;color:var(--rose)}
   .logo small{font-family:var(--sans);font-size:10px;font-weight:500;color:var(--muted);letter-spacing:3px}
   .topnav{display:none;gap:2px}
@@ -307,6 +308,35 @@
   @keyframes slide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
   .abtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#000;color:#fff;border-color:#000}
   .abtn svg{width:18px;height:18px;fill:#fff}
+  /* 品牌標誌 */
+  .logo .mark{width:26px;height:26px;border-radius:9px;background:var(--rose-g);display:grid;place-items:center;align-self:center;box-shadow:0 4px 10px rgba(224,85,122,.3)}
+  .logo .mark svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  /* 柔光背景 */
+  .blob{position:fixed;border-radius:50%;filter:blur(60px);opacity:.55;pointer-events:none;z-index:-1}
+  /* 拍立得結果框 */
+  .polaroid{background:#fff;padding:12px 12px 16px;border-radius:6px;box-shadow:0 14px 40px rgba(58,38,48,.14),0 2px 6px rgba(58,38,48,.06);display:inline-block;max-width:100%;transform:rotate(-1.2deg);transition:transform .3s}
+  .polaroid:hover{transform:rotate(0)}
+  .polaroid .cap{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-family:var(--serif);font-size:13px;color:var(--ink2)}
+  .polaroid .cap small{font-family:var(--sans);color:var(--muted)}
+  /* 合成中的等待畫面 */
+  .waiting{text-align:center;padding:30px 20px}
+  .waiting .sil{width:120px;height:170px;margin:0 auto 14px;border-radius:60px 60px 20px 20px;background:linear-gradient(90deg,#fde0e7 25%,#fff0f3 50%,#fde0e7 75%);background-size:200% 100%;animation:sh 1.3s infinite;position:relative}
+  .waiting .sil::before{content:"";position:absolute;top:-34px;left:50%;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;background:inherit;animation:inherit}
+  .waiting b{display:block;font-family:var(--serif);font-size:16px;margin-bottom:4px}
+  .waiting span{color:var(--muted);font-size:12px}
+  /* 品項格：已放入打勾 */
+  .slot.has::after{content:"";position:absolute;left:8px;top:8px;width:20px;height:20px;border-radius:50%;background:var(--rose) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat;box-shadow:0 2px 6px rgba(224,85,122,.4)}
+  .slot:not(.has)::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 15%,rgba(255,255,255,.7),transparent 40%);pointer-events:none}
+  /* 收藏跳動 */
+  @keyframes heart{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+  .hitem .fav.on svg{animation:heart .35s ease}
+  /* 卡片頂部微光 */
+  .card{background:linear-gradient(180deg,#fff 0%,#fff 60%,#fffdfc 100%)}
+  h1,h2{font-weight:700}
+  .hero h1{font-weight:900}
+  .btn.primary{background:linear-gradient(135deg,#f27a9a 0%,#e0557a 55%,#d64a70 100%);box-shadow:0 8px 20px rgba(224,85,122,.3),inset 0 1px 0 rgba(255,255,255,.25)}
+  .topbar .free{display:none;align-items:center;gap:6px;font-size:12px;color:var(--rose-d);background:var(--rose-s);border-radius:999px;padding:5px 10px;white-space:nowrap}
+  @media(min-width:600px){.topbar .free{display:inline-flex}}
   /* 花瓣 */
   .petal{position:fixed;top:-20px;width:12px;height:12px;border-radius:12px 0;background:#f7b9c9;z-index:70;pointer-events:none;animation:petal 2.6s linear forwards;opacity:.9}
   @keyframes petal{to{transform:translateY(110vh) rotate(540deg);opacity:0}}
@@ -315,7 +345,7 @@
 <body>
 
 <div class="topbar"><div class="in">
-  <div class="logo" data-go="home">試穿<em>吧</em> <small>TRYON</small></div>
+  <div class="logo" data-go="home"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 4a2 2 0 0 1 2 2c0 1-1 1.5-2 2.5v1.5l8 5v2H4v-2l8-5"/></svg></span>試穿<em>吧</em> <small>TRYON</small></div>
   <nav class="topnav" aria-label="主選單">
     <button data-go="tryon">試衣間</button>
     <button data-go="wardrobe">我的衣櫃</button>
@@ -325,6 +355,8 @@
   <div id="userArea"><button class="btn sm primary" data-go="home" id="loginTop">登入</button></div>
 </div></div>
 
+<div class="blob" style="width:380px;height:380px;background:#ffd9e4;top:-120px;right:-120px"></div>
+<div class="blob" style="width:300px;height:300px;background:#ffe9d9;bottom:10%;left:-140px"></div>
 <main>
   <!-- ===== 首頁 / 登入 ===== -->
   <section class="view" id="view-home">
@@ -347,28 +379,46 @@
       </div>
       <div class="demo" id="demo" aria-label="拖曳比較試穿前後">
         <svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
-          <defs><linearGradient id="bgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff0ea"/><stop offset="1" stop-color="#ffe3ea"/></linearGradient>
-          <pattern id="dots" width="14" height="14" patternUnits="userSpaceOnUse"><circle cx="7" cy="7" r="2.2" fill="#fff" opacity=".9"/></pattern></defs>
+          <defs>
+            <linearGradient id="bgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff3ee"/><stop offset="1" stop-color="#ffe4ec"/></linearGradient>
+            <pattern id="dots" width="16" height="16" patternUnits="userSpaceOnUse"><circle cx="8" cy="8" r="2.4" fill="#fff" opacity=".85"/></pattern>
+            <g id="figure">
+              <path d="M200 58c-16 0-27 12-27 30 0 11 5 20 12 26v13c-2 1-4 2-6 3-22 8-36 26-40 52l-7 40c-1 4 2 7 6 7h10c3 0 5-2 6-5l9-30v108c0 6 5 11 11 11h52c6 0 11-5 11-11V194l9 30c1 3 3 5 6 5h10c4 0 7-3 6-7l-7-40c-4-26-18-44-40-52-2-1-4-2-6-3v-13c7-6 12-15 12-26 0-18-11-30-27-30z" fill="#f6dfd0" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M174 300h52l-2 120c0 4-3 7-7 7h-9c-3 0-5-2-6-5l-2-72-2 72c-1 3-3 5-6 5h-9c-4 0-7-3-7-7z" fill="#f6dfd0" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+              <path d="M173 84c-1-18 11-30 27-30s28 12 27 30c-4-12-13-18-27-18s-23 6-27 18z" fill="#4a2f33"/>
+              <path d="M174 84c-4 20-6 42-2 60 6-2 9-10 8-22-1-8-2-26-6-38zM226 84c4 20 6 42 2 60-6-2-9-10-8-22 1-8 2-26 6-38z" fill="#4a2f33"/>
+              <path d="M188 100q4 6 8 6M204 100q4 6 8 6" fill="none" stroke="#3a2630" stroke-width="1.6" stroke-linecap="round"/>
+              <path d="M195 115q5 3 10 0" fill="none" stroke="#c9566f" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="186" cy="110" r="4" fill="#f5b6c0" opacity=".7"/><circle cx="214" cy="110" r="4" fill="#f5b6c0" opacity=".7"/>
+            </g>
+          </defs>
           <rect width="400" height="500" fill="url(#bgA)"/>
-          <ellipse cx="200" cy="470" rx="120" ry="14" fill="#f3cdd8" opacity=".6"/>
-          <g id="body"><path d="M200 60c-18 0-30 14-30 32 0 14 6 24 14 30v12c-26 6-48 22-54 50l-6 40h26l10-34v150c0 10 6 16 14 16h52c8 0 14-6 14-16V190l10 34h26l-6-40c-6-28-28-44-54-50v-12c8-6 14-16 14-30 0-18-12-32-30-32z" fill="#f4dccb"/>
-          <path d="M170 92c0-20 12-34 30-34s30 14 30 34c0 6-2 12-4 16-6-10-14-14-26-14s-20 4-26 14c-2-4-4-10-4-16z" fill="#5a3a3a"/>
-          <path d="M176 100c-4 18-6 40 0 60l8-4c-4-16-4-36-2-52zM224 100c4 18 6 40 0 60l-8-4c4-16 4-36 2-52z" fill="#5a3a3a"/></g>
-          <g><path d="M156 142c10-6 24-8 44-8s34 2 44 8l8 60h-20l-6-30 2 36c0 6 10 60 24 120h-104c14-60 24-114 24-120l2-36-6 30h-20z" fill="#e0557a"/>
-          <path d="M156 142c10-6 24-8 44-8s34 2 44 8l8 60h-20l-6-30 2 36c0 6 10 60 24 120h-104c14-60 24-114 24-120l2-36-6 30h-20z" fill="url(#dots)" opacity=".7"/>
-          <path d="M176 176h48" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".8"/>
-          <path d="M184 340h16l-4 54-6 2-4 4h-10l-2-6 8-6z M216 340h-16l4 54 6 2 4 4h10l2-6-8-6z" fill="#3a2630"/>
-          <ellipse cx="200" cy="70" rx="42" ry="10" fill="#e3b06a"/><path d="M178 62c4-16 10-26 22-26s18 10 22 26c0 4-8 8-22 8s-22-4-22-8z" fill="#f0c27a"/><path d="M178 60h44" stroke="#e0557a" stroke-width="4" stroke-linecap="round"/>
-          <circle cx="200" cy="128" r="3" fill="#f2b705"/><path d="M190 120q10 14 20 0" fill="none" stroke="#f2b705" stroke-width="2"/></g>
-          <path d="M60 60h40v40" fill="none" stroke="#f3cdd8" stroke-width="3" stroke-linecap="round"/><path d="M340 440h-40v-40" fill="none" stroke="#f3cdd8" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="330" cy="90" r="60" fill="#ffd9e3" opacity=".6"/><circle cx="70" cy="420" r="46" fill="#ffe9d6" opacity=".7"/>
+          <ellipse cx="200" cy="462" rx="110" ry="12" fill="#e9c6d0" opacity=".5"/>
+          <use href="#figure"/>
+          <!-- 試穿後：點點洋裝 + 草帽 + 高跟鞋 -->
+          <path d="M160 136c12-6 26-9 40-9s28 3 40 9l5 34-14 6-2-18-1 44c0 16 10 70 26 118H146c16-48 26-102 26-118l-1-44-2 18-14-6z" fill="#e8657f" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M160 136c12-6 26-9 40-9s28 3 40 9l5 34-14 6-2-18-1 44c0 16 10 70 26 118H146c16-48 26-102 26-118l-1-44-2 18-14-6z" fill="url(#dots)"/>
+          <path d="M176 176h48" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+          <path d="M152 320h96" fill="none" stroke="#3a2630" stroke-width="1.6" opacity=".25"/>
+          <path d="M178 418h18l-3 16-8 6h-11c-3 0-4-3-2-5l6-5zM222 418h-18l3 16 8 6h11c3 0 4-3 2-5l-6-5z" fill="#3a2630"/>
+          <path d="M160 68c0-10 18-16 40-16s40 6 40 16" fill="none" stroke="#3a2630" stroke-width="1.6"/>
+          <path d="M150 70c0-6 22-10 50-10s50 4 50 10-22 10-50 10-50-4-50-10z" fill="#f2c88a" stroke="#3a2630" stroke-width="1.6"/>
+          <path d="M176 66c2-18 10-30 24-30s22 12 24 30c0 4-10 7-24 7s-24-3-24-7z" fill="#f6d59f" stroke="#3a2630" stroke-width="1.6"/>
+          <path d="M176 64h48" stroke="#e0557a" stroke-width="5" stroke-linecap="round"/>
+          <path d="M184 128q16 16 32 0" fill="none" stroke="#e0b64a" stroke-width="2"/><circle cx="200" cy="138" r="3" fill="#e0b64a"/>
         </svg>
         <div class="after" id="demoAfter"><svg viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
           <rect width="400" height="500" fill="url(#bgA)"/>
-          <ellipse cx="200" cy="470" rx="120" ry="14" fill="#f3cdd8" opacity=".6"/>
-          <use href="#body"/>
-          <g id="outfitA"><path d="M156 142c10-6 24-8 44-8s34 2 44 8l8 60h-20l-6-30v88h-52v-88l-6 30h-20z" fill="#e9e4e0"/>
-          <path d="M174 260h52v120c0 6-4 10-10 10h-6l-10-80-10 80h-6c-6 0-10-4-10-10z" fill="#9db7d3"/>
-          <path d="M184 390h18l-2 14h-20zM216 390h-18l2 14h20z" fill="#fff" stroke="#d9c9c0"/></g>
+          <circle cx="330" cy="90" r="60" fill="#ffd9e3" opacity=".6"/><circle cx="70" cy="420" r="46" fill="#ffe9d6" opacity=".7"/>
+          <ellipse cx="200" cy="462" rx="110" ry="12" fill="#e9c6d0" opacity=".5"/>
+          <use href="#figure"/>
+          <!-- 試穿前：白 T + 牛仔褲 -->
+          <path d="M160 136c12-6 26-9 40-9s28 3 40 9l5 34-14 6-2-18v100h-58V158l-2 18-14-6z" fill="#fbf7f4" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M186 130q14 10 28 0" fill="none" stroke="#3a2630" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M172 266h56l4 150c0 3-2 5-5 5h-14c-3 0-5-2-5-5l-8-100-8 100c0 3-2 5-5 5h-14c-3 0-5-2-5-5z" fill="#9fb6d6" stroke="#3a2630" stroke-width="1.6" stroke-linejoin="round"/>
+          <path d="M172 272h56" stroke="#3a2630" stroke-width="1.2" opacity=".5"/>
+          <path d="M180 420h22v12c0 3-2 5-5 5h-14c-3 0-5-2-5-5zM198 420h22v12c0 3-2 5-5 5h-14c-3 0-5-2-5-5z" fill="#fff" stroke="#3a2630" stroke-width="1.6"/>
         </svg></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
@@ -553,8 +603,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '2.3.0';
-const BUILD = '2026-10-28-10';
+const APP_VERSION = '2.4.0';
+const BUILD = '2026-10-28-11';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -649,7 +699,7 @@ function renderUser(){
   const a=$('userArea');
   if (!state.user) { a.innerHTML='<button class="btn sm primary" data-go="home">登入</button>'; a.firstChild.onclick=()=>go('home'); return; }
   const em = state.user.email || '';
-  a.innerHTML = `<div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
+  a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
   a.firstChild.onclick=()=>go('credits');
 }
 const Social = Plug('SocialLogin');
@@ -991,13 +1041,14 @@ $('btnRun').onclick=async()=>{
   if (!configured) return showSetup(true);
   track('tryon_start',{n:items.length}); busy=true; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='8%';
+  $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫妳換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
   const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
   const order=['dress','top','bottom','hair','hat','accessory','shoes'];
   const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫妳'+verbs[i.type]+'…');
   seq.push('快好了，調整光線與細節…');
   let si=0; $('runStatus').textContent=seq[0];
-  let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; const ni=Math.min(seq.length-1, Math.floor(pct/90*seq.length)); if(ni!==si){ si=ni; $('runStatus').textContent=seq[si]; } }, 800);
+  let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; const ni=Math.min(seq.length-1, Math.floor(pct/90*seq.length)); if(ni!==si){ si=ni; $('runStatus').textContent=seq[si]; const w=$('waitMsg'); if(w) w.textContent=seq[si]; } }, 800);
   setStep(3);
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
@@ -1024,11 +1075,15 @@ $('btnRun').onclick=async()=>{
     const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
   }finally{
     busy=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
+    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>再試一次，或換一張更清楚的照片</div>'; }
   }
 };
 function renderCompare(before, after){
   const box=$('result');
-  box.innerHTML=`<div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>`;
+  const items=Object.keys(state.slots).map(t=>TYPE_LABEL[t]).join('＋')||'穿搭';
+  const date=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+  box.style.background='transparent'; box.style.border='none';
+  box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div><div class="cap"><span>${items}</span><small>${date}</small></div></div>`;
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
   const sync=()=>{ const w=cmp.clientWidth; aft.querySelector('img').style.width=w+'px'; };
   $('cmpAfterFull').onload=sync; sync(); window.addEventListener('resize',sync);
