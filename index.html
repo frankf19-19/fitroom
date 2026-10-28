@@ -16,8 +16,11 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="image" href="demo/f-after.jpg?v=20261028-19" fetchpriority="high">
+<link rel="preload" as="image" href="demo/f-before.jpg?v=20261028-19">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <style>
   :root{
     --bg:#ffffff; --bg2:#f6f5f3; --card:#ffffff; --ink:#111111; --ink2:#4a4a4a; --muted:#8a8a8a; --line:#e6e4e1;
@@ -386,9 +389,9 @@
         </div>
       </div>
       <div class="demo photo" id="demo" aria-label="拖曳比較試穿前後">
-        <img class="ph" id="demoPhAfter" src="demo/f-after.jpg?v=20261028-19" alt="試穿後">
+        <img class="ph" id="demoPhAfter" src="demo/f-after.jpg?v=20261028-19" alt="試穿後" width="900" height="1350" decoding="async">
         <div class="gcard" id="demoGcard"><img id="demoGimg" alt="要試的衣服"><span>想試這件</span></div>
-        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.jpg?v=20261028-19" alt="試穿前"></div>
+        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.jpg?v=20261028-19" alt="試穿前" width="900" height="1350" decoding="async"></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
         <div class="cap" id="demoCap">拖曳中線看看差別（真實 AI 合成結果）</div>
@@ -396,6 +399,7 @@
         <div class="gsw hidden" id="demoAngle" style="left:auto;right:12px"><button class="on" data-a="front">正面</button><button data-a="side">側面</button><button data-a="back">背面</button></div>
       </div>
     </div>
+    <div class="row" style="justify-content:center;margin:18px 0 6px"><button class="btn primary lg" data-go="tryon">用自己的照片試穿</button></div>
     <div class="why">
       <div><i style="background:var(--mint)"></i><b>不用猜版型</b><span>網拍只看到模特兒穿，你穿起來不一樣。先合成再決定要不要下單。</span></div>
       <div><i style="background:var(--butter)"></i><b>整套一起搭</b><span>上衣、裙子、鞋子、帽子、飾品一次放上去，連髮型都能換，看整體效果。</span></div>
@@ -571,7 +575,7 @@
 <footer>試穿吧 TryOn · v<span id="ver"></span> · 合成結果為 AI 生成示意，實際商品以賣場為準<br><a href="#" data-doc="privacy">隱私權政策</a>·<a href="#" data-doc="terms">服務條款</a>·<a href="#" data-doc="tips">拍照指引</a></footer>
 
 <script>
-(function(){
+function __tryonBoot(){
 'use strict';
 /* ================= 設定（部署後填入） ================= */
 const CONFIG = {
@@ -581,8 +585,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.2.1';
-const BUILD = '2026-10-28-20';
+const APP_VERSION = '3.3.0';
+const BUILD = '2026-10-29-01';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1313,7 +1317,8 @@ loadPrefs();
 initAuth();
 window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h); });
 (function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } const h=location.hash.replace('#',''); go(VIEWS.includes(h)&&h!=='home' ? h : 'home'); })();
-})();
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',__tryonBoot); else __tryonBoot();
 </script>
 </body>
 </html>
