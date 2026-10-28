@@ -138,3 +138,39 @@ alter table public.client_errors enable row level security;
 alter table public.profiles add column if not exists prefs jsonb not null default '{}'::jsonb;
 drop policy if exists "update own profile prefs" on public.profiles;
 create policy "update own profile prefs" on public.profiles for update using (auth.uid() = id) with check (auth.uid() = id);
+
+-- ============ v1.5（2026-10-28 安全修正，整段執行一次）============
+-- 1. 使用者只能改自己的 prefs，不能改 credits；紀錄只能改 favorite / deleted，不能刪除或改 cost
+alter table public.generations add column if not exists free_used integer not null default 0;
+alter table public.generations add column if not exists deleted boolean not null default false;
+revoke update on public.profiles from authenticated, anon;
+grant update (prefs) on public.profiles to authenticated;
+revoke update, delete on public.generations from authenticated, anon;
+grant update (favorite, deleted) on public.generations to authenticated;
+drop policy if exists "delete own generations" on public.generations;
+-- 2. 訂單不隨帳號刪除（對帳用）
+alter table public.orders add column if not exists user_email text;
+alter table public.orders alter column user_id drop not null;
+alter table public.orders drop constraint if exists orders_user_id_fkey;
+alter table public.orders add constraint orders_user_id_fkey foreign key (user_id) references auth.users(id) on delete set null;
+-- 3. 管理後台聚合（不受 PostgREST 1000 列上限影響）
+create or replace function public.admin_stats(p_day_start timestamptz) returns json
+language sql security definer set search_path = public as $$
+  select json_build_object(
+    'users', (select count(*) from profiles),
+    'gen_total', (select count(*) from generations where status = 'ok'),
+    'gen_today', (select count(*) from generations where status = 'ok' and created_at >= p_day_start),
+    'gen_week', (select count(*) from generations where status = 'ok' and created_at >= now() - interval '7 days'),
+    'fail_week', (select count(*) from generations where status = 'failed' and created_at >= now() - interval '7 days'),
+    'revenue', (select coalesce(sum(amount),0) from orders where status = 'paid'),
+    'revenue_week', (select coalesce(sum(amount),0) from orders where status = 'paid' and paid_at >= now() - interval '7 days'),
+    'orders_paid', (select count(*) from orders where status = 'paid'),
+    'credits_outstanding', (select coalesce(sum(credits),0) from profiles),
+    'by_type', (select coalesce(json_object_agg(t, n), '{}'::json) from (select unnest(items) as t, count(*) as n from generations where status='ok' and created_at >= now() - interval '7 days' group by 1) x),
+    'funnel', (select coalesce(json_object_agg(name, n), '{}'::json) from (select name, count(distinct coalesce(user_id::text, anon_id)) as n from events where created_at >= now() - interval '7 days' group by 1) f),
+    'failures', (select coalesce(json_agg(json_build_object('created_at', created_at, 'items', items, 'error', error) order by created_at desc), '[]'::json) from (select * from generations where status='failed' order by created_at desc limit 20) g),
+    'recent_users', (select coalesce(json_agg(json_build_object('email', email, 'credits', credits, 'created_at', created_at) order by created_at desc), '[]'::json) from (select * from profiles order by created_at desc limit 20) u),
+    'client_errors', (select coalesce(json_agg(json_build_object('created_at', created_at, 'message', message, 'url', url, 'platform', platform, 'app_version', app_version) order by created_at desc), '[]'::json) from (select * from client_errors order by created_at desc limit 20) c)
+  );
+$$;
+revoke all on function public.admin_stats(timestamptz) from public, anon, authenticated;

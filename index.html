@@ -1169,7 +1169,7 @@ $('btnWardrobeAdd').onclick=()=>{
 async function loadHistory(){
   if(!supa||!state.user) return;
   if(!state.history.length && $('historyList')) $('historyList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>';
-  const { data, error } = await supa.from('generations').select('*').order('created_at',{ascending:false}).limit(100);
+  const { data, error } = await supa.from('generations').select('*').eq('status','ok').eq('deleted',false).order('created_at',{ascending:false}).limit(100);
   if(error){ toast('讀取紀錄失敗'); return; }
   state.history=(data||[]).filter(g=>g.image_url); renderHistory();
 }
@@ -1186,7 +1186,7 @@ function openLightbox(h){ lbItem=h; const lb=$('lightbox'); lb.querySelector('im
 $('lbClose').onclick=()=>$('lightbox').classList.remove('on');
 $('lbDownload').onclick=async()=>{ if(!lbItem) return; saveImage(await urlToDataUri(lbItem.image_url),'試穿吧_'+lbItem.id+'.png'); };
 $('lbUse').onclick=async()=>{ if(!lbItem) return; try{ setPerson(await urlToDataUri(lbItem.image_url)); $('lightbox').classList.remove('on'); go('tryon'); toast('已設為底圖'); }catch{ toast('載入失敗'); } };
-$('lbDelete').onclick=async()=>{ if(!lbItem) return; $('lightbox').classList.remove('on'); if(!await ask('刪除這張紀錄？','刪除後無法復原。',{ok:'刪除',danger:true})) return; await supa.from('generations').delete().eq('id',lbItem.id); loadHistory(); };
+$('lbDelete').onclick=async()=>{ if(!lbItem) return; $('lightbox').classList.remove('on'); if(!await ask('刪除這張紀錄？','刪除後無法復原。',{ok:'刪除',danger:true})) return; await supa.from('generations').update({deleted:true}).eq('id',lbItem.id); state.history=state.history.filter(h=>h.id!==lbItem.id); renderHistory(); };
 
 /* ---------- 點數 ---------- */
 function renderCredits(){
