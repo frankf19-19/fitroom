@@ -5,7 +5,7 @@
   "ios": { "contentInset": "always", "scheme": "TryOn" },
   "android": { "allowMixedContent": false },
   "plugins": {
-    "SplashScreen": { "launchShowDuration": 0, "launchAutoHide": false, "backgroundColor": "#fff8f5", "showSpinner": false },
-    "StatusBar": { "style": "LIGHT", "backgroundColor": "#fff8f5" }
+    "SplashScreen": { "launchShowDuration": 0, "launchAutoHide": false, "backgroundColor": "#ffffff", "showSpinner": false },
+    "StatusBar": { "style": "LIGHT", "backgroundColor": "#ffffff" }
   }
 }
