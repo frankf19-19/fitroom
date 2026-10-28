@@ -180,3 +180,9 @@ alter table public.generations add column if not exists views jsonb;
 
 -- v1.7：同一人同時只能有一筆進行中（真正的鎖）
 create unique index if not exists generations_one_running on public.generations (user_id) where status = 'running';
+
+-- v1.8：身形檔案（身高體重三圍 + AI 分析結果）
+alter table public.profiles add column if not exists body jsonb;          -- {height,weight,bust,waist,hip,gender}
+alter table public.profiles add column if not exists analysis jsonb;      -- AI 分析結果（見 worker analyzeBody）
+alter table public.profiles add column if not exists analysis_at timestamptz;
+grant update (prefs, body) on public.profiles to authenticated;

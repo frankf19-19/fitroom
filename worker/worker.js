@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '1.7.0';
+const VERSION = '1.8.0';
 const RUNNING_STALE_MS = 10 * 60 * 1000;   // 進行中超過 10 分鐘視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -58,6 +58,7 @@ export default {
       if (p === '/api/health') return json({ ok: true, version: VERSION }, 200, cors);
       if (p === '/api/me' && m === 'GET') return handleMe(request, env, cors);
       if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors);
+      if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors);
       if (p === '/api/checkout' && m === 'POST') return handleCheckout(request, env, cors);
       if (p === '/api/ecpay/notify' && m === 'POST') return handleEcpayNotify(request, env);
       if (p === '/api/ecpay/return') return handleEcpayReturn(request, env);
@@ -152,7 +153,55 @@ async function handleMe(request, env, cors) {
   const freeDaily = Number(env.FREE_DAILY || 2);
   const used = await freeUsedToday(env, user.id);
   const packs = Object.fromEntries(Object.entries(PACKS).map(([k, v]) => [k, { name: v.name + ' 點', credits: v.credits, price: v.price }]));
-  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), views_available: !!env.GEMINI_KEY, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
+  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), views_available: !!env.GEMINI_KEY, analyze_available: !!env.GEMINI_KEY, body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
+}
+
+/* ---------------- /api/analyze：身形與臉型分析（免費，不扣點；每天最多 5 次） ---------------- */
+const ANALYZE_PROMPT = `You are a professional fashion stylist and body-shape consultant. Analyze the full-body photo together with the measurements provided. Output ONLY a JSON object (no markdown) with these keys:
+{
+ "body_shape": one of ["hourglass","pear","inverted_triangle","rectangle","apple","athletic"],
+ "shoulder": "narrow|average|broad",
+ "torso": "short|average|long",
+ "legs": "short|average|long",
+ "proportion_note": "one short sentence in Traditional Chinese about shoulder/waist/hip proportion seen in the photo",
+ "face_shape": one of ["oval","round","square","heart","long","diamond"],
+ "skin_tone": "cool|neutral|warm",
+ "current_hair": "short|medium|long",
+ "hair_texture": "straight|wavy|curly",
+ "fit_advice": {"tops": "...", "bottoms": "...", "dresses": "...", "colors": "...", "hair": "..."}  (each a concise Traditional Chinese sentence tailored to this person),
+ "avoid": "one Traditional Chinese sentence on what to avoid",
+ "render_hints": "one English sentence for an image model describing this person's real body proportions and how garments should drape on them (e.g. 'broad shoulders, defined waist, long legs; fitted tops sit close at the waist, trousers fall long')"
+}
+Be specific and honest but kind. Base body_shape on both the photo and the numbers. Never mention weight loss. Do not include any text outside the JSON.`;
+async function handleAnalyze(request, env, cors) {
+  let user;
+  try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  if (!env.GEMINI_KEY) return json({ error: '身形分析服務尚未啟用' }, 503, cors);
+  let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
+  const { person } = body || {}; const b = body.body || {};
+  if (!isDataImage(person)) return json({ error: '請提供全身照' }, 400, cors);
+  const h = Number(b.height), w = Number(b.weight);
+  if (!(h >= 120 && h <= 220) || !(w >= 30 && w <= 200)) return json({ error: '請填寫身高（120–220 cm）與體重（30–200 kg）' }, 400, cors);
+  // 每日 5 次
+  const cnt = await sb(env, `/rest/v1/events?user_id=eq.${user.id}&name=eq.analyze&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`);
+  if (cnt.length >= 5) return json({ error: '今天的分析次數已用完（每天 5 次），明天再試' }, 429, cors);
+  const bmi = w / Math.pow(h / 100, 2);
+  const meas = `Measurements: height ${h} cm, weight ${w} kg (BMI ${bmi.toFixed(1)})` + (b.bust ? `, bust ${b.bust} cm` : '') + (b.waist ? `, waist ${b.waist} cm` : '') + (b.hip ? `, hip ${b.hip} cm` : '') + (b.gender ? `, gender ${b.gender === 'm' ? 'male' : 'female'}` : '') + '.';
+  const parts = [{ text: ANALYZE_PROMPT + '\n' + meas }, inlinePart(person)];
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  let out = null, lastErr = '';
+  for (const model of models) {
+    const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', 60000);
+    const t = await r.text();
+    if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch (e) { lastErr = '回傳格式異常'; continue; } }
+    try { lastErr = JSON.parse(t).error.message.slice(0, 160); } catch { lastErr = t.slice(0, 160); }
+    if (r.status === 404) continue; if (r.status === 429 || r.status >= 500) continue; break;
+  }
+  if (!out) return json({ error: '身形分析失敗：' + lastErr }, 502, cors);
+  out.bmi = Number(bmi.toFixed(1)); out.measured = { height: h, weight: w, bust: b.bust || null, waist: b.waist || null, hip: b.hip || null, gender: b.gender || null }; out.analyzed_at = new Date().toISOString();
+  await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { body: out.measured, analysis: out, analysis_at: out.analyzed_at }).catch(() => {});
+  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'analyze', platform: String(body.platform || 'web').slice(0, 20) }) }).catch(() => {});
+  return json({ analysis: out }, 200, cors);
 }
 
 /* ---------------- /api/tryon ---------------- */
@@ -208,11 +257,13 @@ async function handleTryon(request, env, cors) {
 
   const order = ['dress', 'top', 'bottom', 'hair', 'hat', 'accessory', 'shoes'];
   const sorted = [...items].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+  const hints = (profile.analysis && profile.analysis.render_hints) ? String(profile.analysis.render_hints).slice(0, 300) : '';
+  const faceHint = (profile.analysis && profile.analysis.face_shape) ? ` The person has a ${profile.analysis.face_shape} face shape; choose hair framing that flatters it.` : '';
   const runPipeline = async () => {
     let current = person;
     for (const it of sorted) {
       if (CLOTHING[it.type]) current = await fashnTryon(env, current, it.image, CLOTHING[it.type], it.photo_type);
-      else current = await geminiEdit(env, current, it, person);
+      else current = await geminiEdit(env, current, it, person, hints + (it.type === 'hair' ? faceHint : ''));
     }
     return current;
   };
@@ -228,7 +279,7 @@ async function handleTryon(request, env, cors) {
   let finalPay = payCredits, finalFree = useFree;
   if (wantViews) {
     try {
-      const [side, back] = await Promise.all([geminiView(env, results[0], 'side', left()), geminiView(env, results[0], 'back', left())]);
+      const [side, back] = await Promise.all([geminiView(env, results[0], 'side', left(), hints), geminiView(env, results[0], 'back', left(), hints)]);
       views = { side, back };
     } catch (e) {
       viewsError = String(e.message).slice(0, 160);
@@ -316,12 +367,13 @@ async function fashnTryon(env, person, garment, category, photoType) {
 function extractErr(t) { try { const j = JSON.parse(t); return String(j.detail ? JSON.stringify(j.detail) : (j.error || j.message || t)).slice(0, 200); } catch { return String(t).slice(0, 200); } }
 
 /* ---- Gemini 影像編輯（模型備援鏈） ---- */
-async function geminiEdit(env, person, item, identityRef) {
+async function geminiEdit(env, person, item, identityRef, bodyHint) {
   const preferred = env.GEMINI_IMAGE_MODEL || GEMINI_FALLBACKS[0];
   const models = [preferred, ...GEMINI_FALLBACKS.filter(m => m !== preferred)];
   let prompt = (item.type === 'hair' && !isDataImage(item.image)) ? EDIT_PROMPTS.hair_text.replace('{{desc}}', item.text.trim().slice(0, 200)) : EDIT_PROMPTS[item.type];
   const hasRef = isDataImage(item.image), hasId = identityRef && identityRef !== person;
   prompt += hasId ? ` The ${hasRef ? 'third' : 'second'} image is the same person (identity reference): the face, skin tone and body in the output must be identical to this person.` : ' The face and identity of the person must remain exactly identical.';
+  if (bodyHint) prompt += ' Body notes for realistic fit: ' + bodyHint;
   const parts = [{ text: prompt }, inlinePart(person)];
   if (hasRef) parts.push(inlinePart(item.image));
   if (hasId) parts.push(inlinePart(identityRef));
@@ -355,9 +407,9 @@ async function geminiEdit(env, person, item, identityRef) {
 }
 
 /* ---- 多角度：從正面結果生成側面／背面 ---- */
-async function geminiView(env, front, which, maxMs) {
+async function geminiView(env, front, which, maxMs, bodyHint) {
   if (maxMs !== undefined && maxMs < 15000) throw new Error('多角度服務：時間不足');
-  const parts = [{ text: VIEW_PROMPTS[which] }, inlinePart(front)];
+  const parts = [{ text: VIEW_PROMPTS[which] + (bodyHint ? ' Body proportions to preserve: ' + bodyHint : '') }, inlinePart(front)];
   const preferred = env.GEMINI_IMAGE_MODEL || GEMINI_FALLBACKS[0];
   const models = [preferred, ...GEMINI_FALLBACKS.filter(m => m !== preferred)];
   let lastErr = '';
@@ -410,7 +462,7 @@ async function urlToDataUri(u) {
 }
 
 /* ---------------- 事件與錯誤回報 ---------------- */
-const EVENT_NAMES = new Set(['open', 'login', 'photo', 'item', 'tryon_start', 'tryon_ok', 'tryon_fail', 'share', 'story', 'buy_click', 'paid', 'install']);
+const EVENT_NAMES = new Set(['open', 'login', 'photo', 'item', 'tryon_start', 'tryon_ok', 'tryon_fail', 'share', 'story', 'buy_click', 'paid', 'install', 'analyze']);
 async function handleEvent(request, env, cors) {
   let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }
   const name = String(body.name || ''); if (!EVENT_NAMES.has(name)) return json({ ok: false }, 400, cors);

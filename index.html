@@ -355,6 +355,19 @@
   .filt::-webkit-scrollbar{display:none}
   .filt .chip,.chips .chip{flex:none;white-space:nowrap}
   .petal{display:none}
+  .bodycard{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:700px){.bodycard{grid-template-columns:1fr 1fr}}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px;letter-spacing:.3px}
+  .kv dt{color:var(--muted);letter-spacing:1.5px;font-size:10px;padding-top:2px}
+  .kv dd{margin:0;color:var(--ink)}
+  .advice{border-top:1px solid var(--line);padding:12px 0;font-size:13px;line-height:1.8}
+  .advice b{display:block;font-size:10px;letter-spacing:2px;color:var(--muted);font-weight:500;margin-bottom:2px}
+  .shape{display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  .shape .ic{width:46px;height:46px;border:1px solid var(--ink);display:grid;place-items:center;flex:none}
+  .shape .ic svg{width:26px;height:26px;stroke:var(--ink);fill:none;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+  .shape b{font-family:var(--serif);font-weight:400;font-size:17px;letter-spacing:2px;display:block}
+  .shape small{color:var(--muted);font-size:11px;letter-spacing:1px}
+  .analyze-cta{border:1px solid var(--line);padding:14px;font-size:12px;line-height:1.8;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -424,6 +437,7 @@
             <input type="file" accept="image/*" id="filePerson">
             <div class="tip"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>放一張你的全身照</b>正面站好、光線均勻、衣服貼身<br>手機拍的就可以</div>
           </div>
+          <div class="analyze-cta" id="analyzeCta" style="margin-top:12px"><span id="analyzeCtaText">填身高體重並分析身形，合成會依你的真實比例調整版型與髮型。</span><button class="btn sm" id="btnAnalyzeGo">我的身形</button></div>
           <div class="row" style="margin-top:10px">
             <button class="btn sm" id="btnPersonFromHistory">從合成紀錄選底圖</button>
             <button class="btn sm ghost" id="btnTips">怎麼拍效果最好？</button>
@@ -515,6 +529,30 @@
       <div class="muted" style="margin-top:8px">刪除帳號會一併刪除你所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
     </div>
   </section>
+  <!-- ===== 我的身形 ===== -->
+  <section class="view" id="view-body">
+    <h1 style="font-size:24px;margin:0 0 6px">我的身形</h1>
+    <div class="muted" style="margin-bottom:16px">填身高體重，上傳全身照，AI 分析體型、臉型與膚色，之後每次合成都會依你的真實比例呈現。免費、不扣點（每天 5 次）。</div>
+    <div class="card">
+      <h3>基本資料</h3>
+      <div class="chips" id="bodyGender"><span class="chip on" data-g="f">女</span><span class="chip" data-g="m">男</span></div>
+      <div class="fitgrid" style="grid-template-columns:repeat(2,1fr)">
+        <label>身高 cm<input type="number" id="bHeight" placeholder="162" inputmode="decimal"></label>
+        <label>體重 kg<input type="number" id="bWeight" placeholder="52" inputmode="decimal"></label>
+      </div>
+      <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">三圍（選填，填了更準）</summary>
+        <div class="fitgrid" style="grid-template-columns:repeat(3,1fr);margin-top:8px">
+          <label>胸圍 cm<input type="number" id="bBust" inputmode="decimal"></label>
+          <label>腰圍 cm<input type="number" id="bWaist" inputmode="decimal"></label>
+          <label>臀圍 cm<input type="number" id="bHip" inputmode="decimal"></label>
+        </div></details>
+      <div class="muted" style="margin-top:10px" id="bodyPhotoNote">分析會用試衣間目前的全身照。</div>
+      <div class="row" style="margin-top:14px"><button class="btn primary" id="btnAnalyze">分析我的身形</button><button class="btn ghost" data-go="tryon">回試衣間</button></div>
+      <div class="muted" id="analyzeStatus" style="margin-top:8px"></div>
+    </div>
+    <div id="bodyReport"></div>
+  </section>
+
   <!-- ===== 設定 ===== -->
   <section class="view" id="view-settings">
     <h1 style="font-size:24px;margin:0 0 12px">設定</h1>
@@ -527,6 +565,7 @@
     </div>
     <div class="card">
       <h3>關於</h3>
+      <div class="setrow"><span>我的身形<small>身高體重與 AI 分析報告</small></span><a href="#" data-go="body" onclick="return false">查看</a></div>
       <div class="setrow"><span>聯絡客服<small>問題、建議、合作</small></span><a href="mailto:frankccc199@gmail.com?subject=試穿吧%20TryOn">寫信</a></div>
       <div class="setrow"><span>隱私權政策</span><a href="#" data-doc="privacy">查看</a></div>
       <div class="setrow"><span>服務條款</span><a href="#" data-doc="terms">查看</a></div>
@@ -589,8 +628,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.5.0';
-const BUILD = '2026-10-29-03';
+const APP_VERSION = '3.6.0';
+const BUILD = '2026-10-29-04';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -647,8 +686,8 @@ let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- 導覽 ---------- */
-const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings'];
-const NEED_LOGIN=['wardrobe','history','credits','admin','settings'];
+const VIEWS=['home','tryon','wardrobe','history','credits','admin','settings','body'];
+const NEED_LOGIN=['wardrobe','history','credits','admin','settings','body'];
 const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=magiclink|type=recovery)=?/;
 function go(v, keepHash){
   if (window.__pickResolve) window.__pickResolve();
@@ -666,6 +705,7 @@ function go(v, keepHash){
   if (v==='credits') refreshMe();
   if (v==='admin') loadAdmin();
   if (v==='settings') renderSettings();
+  if (v==='body') renderBody();
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 
@@ -786,7 +826,7 @@ async function api(path, opts={}){
 async function refreshMe(){
   if (!state.user) return;
   try { state.me = await api('/api/me'); } catch(e){ state.me=null; }
-  renderUser(); renderCredits(); renderSlots();
+  renderUser(); renderCredits(); renderSlots(); updateAnalyzeCta();
 }
 
 /* ---------- 圖片工具 ---------- */
@@ -981,10 +1021,12 @@ function renderSettings(){
 }
 ['prefFace','prefTwo','prefViews','prefHaptic'].forEach(id=>$(id).onclick=()=>{ $(id).classList.toggle('on'); savePrefs(); });
 document.querySelectorAll('#view-settings [data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefault(); openDoc(a.dataset.doc); });
+document.querySelectorAll('#view-settings a[data-go]').forEach(a=>a.onclick=e=>{ e.preventDefault(); go(a.dataset.go); });
 
 /* ---------- 首次導覽 ---------- */
 const ONB=[
   {t:'放一張全身照',x:'正面站好、光線均勻、衣服貼身。手機拍的就可以。',bg:'var(--blush)',ic:'<svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>'},
+  {t:'填身高體重，AI 分析身形',x:'體型、臉型、膚色一次看懂，之後每次合成都依你的真實比例呈現，還會給穿搭建議。',bg:'var(--butter)',ic:'<svg viewBox="0 0 24 24"><path d="M7 3h10l-4 9 4 9H7l4-9z"/></svg>'},
   {t:'放入想試的單品',x:'上衣、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。從網拍截圖直接上傳。',bg:'var(--mint)',ic:ICON.dress},
   {t:'看看穿起來的樣子',x:'30 秒內看到真實合成照，可以前後比較、下載、做成限動分享。',bg:'var(--lilac)',ic:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg>'}
 ];
@@ -995,6 +1037,64 @@ $('onbNext').onclick=()=>{ haptic(); if(onbI<ONB.length-1) showOnb(onbI+1); else
 $('onbSkip').onclick=closeOnb;
 $('onbAgain').onclick=e=>{ e.preventDefault(); showOnb(0); };
 try{ if(!localStorage.getItem('tryon.onb') && (IS_APP || matchMedia('(max-width:899px)').matches)) setTimeout(()=>showOnb(0),400); }catch{}
+
+/* ---------- 我的身形 ---------- */
+const SHAPE_LABEL={hourglass:'沙漏型',pear:'梨型',inverted_triangle:'倒三角型',rectangle:'H 型',apple:'蘋果型',athletic:'運動型'};
+const FACE_LABEL={oval:'鵝蛋臉',round:'圓臉',square:'方臉',heart:'心型臉',long:'長臉',diamond:'菱形臉'};
+const TONE_LABEL={cool:'冷色調',neutral:'中性',warm:'暖色調'};
+const L3={narrow:'偏窄',average:'適中',broad:'偏寬',short:'偏短',long:'偏長',straight:'直髮',wavy:'微捲',curly:'捲髮',medium:'中長'};
+const SHAPE_ICON={
+  hourglass:'<svg viewBox="0 0 24 24"><path d="M7 3h10l-4 9 4 9H7l4-9z"/></svg>',
+  pear:'<svg viewBox="0 0 24 24"><path d="M9 3h6l1 7c3 2 4 5 4 7a8 8 0 0 1-16 0c0-2 1-5 4-7z"/></svg>',
+  inverted_triangle:'<svg viewBox="0 0 24 24"><path d="M4 4h16l-6 17h-4z"/></svg>',
+  rectangle:'<svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18"/></svg>',
+  apple:'<svg viewBox="0 0 24 24"><path d="M8 3h8l2 6-1 7-3 5H10l-3-5-1-7z"/></svg>',
+  athletic:'<svg viewBox="0 0 24 24"><path d="M5 4h14l-3 8 2 9H6l2-9z"/></svg>'
+};
+let bodyGender='f';
+$('bodyGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ bodyGender=c.dataset.g; $('bodyGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); });
+$('btnAnalyzeGo').onclick=()=>{ if(!state.user) return openLogin(); go('body'); };
+function renderBody(){
+  const b=(state.me&&state.me.body)||{}; const a=state.me&&state.me.analysis;
+  if(b.height) $('bHeight').value=b.height; if(b.weight) $('bWeight').value=b.weight; if(b.bust) $('bBust').value=b.bust; if(b.waist) $('bWaist').value=b.waist; if(b.hip) $('bHip').value=b.hip;
+  if(b.gender){ bodyGender=b.gender; $('bodyGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g===b.gender)); }
+  $('bodyPhotoNote').textContent = state.person ? '分析會用試衣間目前的全身照。' : '請先到試衣間放一張全身照，再回來分析。';
+  $('btnAnalyze').disabled = !state.person;
+  if(state.me && state.me.analyze_available===false){ $('analyzeStatus').textContent='身形分析服務尚未啟用（伺服器未設定影像金鑰）。'; $('btnAnalyze').disabled=true; }
+  renderReport(a);
+}
+function renderReport(a){
+  const box=$('bodyReport'); if(!a){ box.innerHTML=''; return; }
+  const fa=a.fit_advice||{};
+  box.innerHTML=`<div class="card"><h3>身形報告 <span class="muted" style="letter-spacing:0;font-weight:400">${a.analyzed_at?new Date(a.analyzed_at).toLocaleDateString('zh-TW'):''}</span></h3>
+    <div class="shape"><div class="ic">${SHAPE_ICON[a.body_shape]||SHAPE_ICON.rectangle}</div><div><b>${SHAPE_LABEL[a.body_shape]||a.body_shape||'—'}</b><small>${a.proportion_note||''}</small></div></div>
+    <div class="bodycard">
+      <dl class="kv"><dt>肩寬</dt><dd>${L3[a.shoulder]||'—'}</dd><dt>上身</dt><dd>${L3[a.torso]||'—'}</dd><dt>腿長</dt><dd>${L3[a.legs]||'—'}</dd><dt>BMI</dt><dd>${a.bmi||'—'}</dd></dl>
+      <dl class="kv"><dt>臉型</dt><dd>${FACE_LABEL[a.face_shape]||'—'}</dd><dt>膚色</dt><dd>${TONE_LABEL[a.skin_tone]||'—'}</dd><dt>目前髮長</dt><dd>${L3[a.current_hair]||a.current_hair||'—'}</dd><dt>髮質</dt><dd>${L3[a.hair_texture]||'—'}</dd></dl>
+    </div>
+    <div style="margin-top:14px">
+      ${fa.tops?`<div class="advice"><b>上衣</b>${fa.tops}</div>`:''}${fa.bottoms?`<div class="advice"><b>褲子 / 裙子</b>${fa.bottoms}</div>`:''}${fa.dresses?`<div class="advice"><b>洋裝</b>${fa.dresses}</div>`:''}${fa.colors?`<div class="advice"><b>顏色</b>${fa.colors}</div>`:''}${fa.hair?`<div class="advice"><b>髮型</b>${fa.hair}</div>`:''}${a.avoid?`<div class="advice"><b>建議避開</b>${a.avoid}</div>`:''}
+    </div>
+    <div class="muted" style="margin-top:12px">之後每次合成都會依這份分析調整衣服版型與髮型。</div>
+    <div class="row" style="margin-top:12px"><button class="btn primary" data-go="tryon">去試穿</button></div></div>`;
+  box.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+}
+$('btnAnalyze').onclick=async()=>{
+  if(!state.user) return openLogin(); if(!state.person) return toast('請先放一張全身照');
+  const h=+$('bHeight').value, w=+$('bWeight').value;
+  if(!(h>=120&&h<=220)||!(w>=30&&w<=200)) return toast('請填寫正確的身高與體重');
+  $('btnAnalyze').disabled=true; $('analyzeStatus').textContent='AI 正在分析你的身形與臉型…（約 10 秒）';
+  try{
+    const d=await api('/api/analyze',{method:'POST',body:JSON.stringify({ person: state.person, body:{height:h,weight:w,bust:+$('bBust').value||null,waist:+$('bWaist').value||null,hip:+$('bHip').value||null,gender:bodyGender}, platform:PLATFORM })});
+    if(state.me){ state.me.analysis=d.analysis; state.me.body=d.analysis.measured; }
+    $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success'); track('analyze');
+    // 同步到尺寸預估
+    $('fHeight').value=h; if($('bBust').value) $('fBust').value=$('bBust').value; if($('bWaist').value) $('fWaist').value=$('bWaist').value; if($('bHip').value) $('fHip').value=$('bHip').value; renderFit();
+    updateAnalyzeCta();
+  }catch(e){ $('analyzeStatus').textContent=e.message; haptic('error'); }
+  finally{ $('btnAnalyze').disabled=false; }
+};
+function updateAnalyzeCta(){ const a=state.me&&state.me.analysis; const t=$('analyzeCtaText'); const b=$('btnAnalyzeGo'); if(!t) return; if(a){ t.textContent=`已套用你的身形：${SHAPE_LABEL[a.body_shape]||''}・${FACE_LABEL[a.face_shape]||''}・${TONE_LABEL[a.skin_tone]||''}。合成會依真實比例調整。`; b.textContent='查看報告'; } else { t.textContent='填身高體重並分析身形，合成會依你的真實比例調整版型與髮型。'; b.textContent='我的身形'; } }
 
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
