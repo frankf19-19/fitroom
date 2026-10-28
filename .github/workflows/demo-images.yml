@@ -43,7 +43,7 @@ jobs:
                       if old.get(g, {}).get(k): entry[k] = old[g][k]
                   for k in ("side", "back"):
                       if os.path.exists(f"demo/{g}-{k}.jpg"): entry[k] = f"demo/{g}-{k}.jpg"
-                  for p in entry.values():
+                  for p in [v for v in entry.values() if isinstance(v, str) and v.startswith("demo/") and v.endswith(".jpg")]:
                       im = ImageOps.exif_transpose(Image.open(p)).convert("RGB")
                       im.thumbnail((900, 1125)); im.save(p, quality=88, optimize=True)
                   man[g] = entry
