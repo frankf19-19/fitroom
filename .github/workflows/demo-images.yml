@@ -17,13 +17,18 @@ jobs:
       - name: 安裝相依
         run: pip install -q pillow gradio_client
       - name: 合成女生範例
+        continue-on-error: true
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
-        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f --views
+        run: |
+          echo "GEMINI_KEY set: $([ -n "$GEMINI_KEY" ] && echo yes || echo NO)" | tee demo/log-f.txt
+          python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_f }}" --garment "${{ inputs.garment_f }}" --out demo/f --views 2>&1 | tee -a demo/log-f.txt
       - name: 合成男生範例（有提供才做）
         if: ${{ inputs.person_m != '' && inputs.garment_m != '' }}
         env: { FAL_KEY: "${{ secrets.FAL_KEY }}", GEMINI_KEY: "${{ secrets.GEMINI_KEY }}", HF_TOKEN: "${{ secrets.HF_TOKEN }}" }
-        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m --views || echo "男生版略過"
+        continue-on-error: true
+        run: python3 demo/generate.py --engine "${{ inputs.engine }}" --person "${{ inputs.person_m }}" --garment "${{ inputs.garment_m }}" --out demo/m --views 2>&1 | tee demo/log-m.txt
       - name: 縮圖並寫入清單
+        if: always()
         run: |
           python3 - <<'PY'
           import json, os
@@ -48,8 +53,9 @@ jobs:
           print(man)
           PY
       - name: 提交到 main（網站會自動重新部署）
+        if: always()
         run: |
           git config user.name "demo-bot"; git config user.email "demo-bot@users.noreply.github.com"
           git add demo/
-          git commit -m "更新首頁真人範例圖" || echo "沒有變更"
+          git commit -m "更新首頁真人範例圖（含執行紀錄）" || echo "沒有變更"
           git push
