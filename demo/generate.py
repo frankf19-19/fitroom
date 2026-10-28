@@ -108,14 +108,28 @@ def run_hf(person, garment, category):
     from gradio_client import Client, handle_file
     pp, gp = "/tmp/_person.jpg", "/tmp/_garment.jpg"
     open(pp, "wb").write(person); open(gp, "wb").write(garment)
-    client = Client("yisol/IDM-VTON", hf_token=os.environ.get("HF_TOKEN") or None)
-    try:
-        out = client.predict({"background": handle_file(pp), "layers": [], "composite": None}, handle_file(gp),
-                             "a photo of a garment", True, False, 30, 42, api_name="/tryon")
-    except Exception as e:
-        print("API 簽章可能已變更，可用的 API："); print(client.view_api(return_format="str")); raise
-    path = out[0] if isinstance(out, (list, tuple)) else out
-    return open(path if isinstance(path, str) else path["path"], "rb").read()
+    token = os.environ.get("HF_TOKEN") or None
+    spaces = ["Nymbo/Virtual-Try-On", "yisol/IDM-VTON", "levihsu/OOTDiffusion"]
+    last = None
+    for sp in spaces:
+        try:
+            print("嘗試 Space:", sp, flush=True)
+            client = Client(sp, token=token) if token else Client(sp)
+            try:
+                out = client.predict({"background": handle_file(pp), "layers": [], "composite": None}, handle_file(gp),
+                                     "a photo of a garment", True, False, 30, 42, api_name="/tryon")
+            except Exception as e1:
+                print("簽章 A 失敗：", str(e1)[:300], flush=True)
+                try: print(client.view_api(return_format="str")[:1500], flush=True)
+                except Exception: pass
+                raise
+            path = out[0] if isinstance(out, (list, tuple)) else out
+            if isinstance(path, dict): path = path.get("path") or path.get("value")
+            print("完成 Space:", sp, flush=True)
+            return open(path, "rb").read()
+        except Exception as e:
+            last = e; print("Space 失敗：", sp, str(e)[:300], flush=True)
+    sys.exit("Hugging Face 全部失敗：" + str(last)[:300])
 
 def main():
     ap = argparse.ArgumentParser()
