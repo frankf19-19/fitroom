@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '1.9.0';
+const VERSION = '1.9.1';
 const RUNNING_STALE_MS = 10 * 60 * 1000;   // 進行中超過 10 分鐘視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -58,6 +58,7 @@ export default {
       if (p === '/api/health') return json({ ok: true, version: VERSION }, 200, cors);
       if (p === '/api/me' && m === 'GET') return handleMe(request, env, cors);
       if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors);
+      if (p === '/api/outfit' && m === 'POST') return handleOutfit(request, env, cors);
       if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors);
       if (p === '/api/products' && m === 'GET') return handleProducts(request, env, cors, url);
       if (p === '/api/img' && m === 'GET') return handleImgProxy(request, env, cors, url);
@@ -176,6 +177,7 @@ const ANALYZE_PROMPT = `You are a professional fashion stylist and body-shape co
  "hair_texture": "straight|wavy|curly",
  "fit_advice": {"tops": "...", "bottoms": "...", "dresses": "...", "colors": "...", "hair": "..."}  (each a concise Traditional Chinese sentence tailored to this person),
  "avoid": "one Traditional Chinese sentence on what to avoid",
+ "estimated": {"bust": int, "waist": int, "hip": int, "shoulder": int}  (your best estimate of this person's body circumferences in cm from the photo, height and weight; if a measurement was provided, echo it),
  "render_hints": "one English sentence for an image model describing this person's real body proportions and how garments should drape on them (e.g. 'broad shoulders, defined waist, long legs; fitted tops sit close at the waist, trousers fall long')"
 }
 Be specific and honest but kind. Base body_shape on both the photo and the numbers. Never mention weight loss. Do not include any text outside the JSON.`;
@@ -204,7 +206,9 @@ async function handleAnalyze(request, env, cors) {
     if (r.status === 404) continue; if (r.status === 429 || r.status >= 500) continue; break;
   }
   if (!out) return json({ error: '身形分析失敗：' + lastErr }, 502, cors);
-  out.bmi = Number(bmi.toFixed(1)); out.measured = { height: h, weight: w, bust: b.bust || null, waist: b.waist || null, hip: b.hip || null, gender: b.gender || null }; out.analyzed_at = new Date().toISOString();
+  out.bmi = Number(bmi.toFixed(1)); const est = out.estimated || {}; const n = v => (Number(v) > 30 && Number(v) < 200) ? Math.round(Number(v)) : null;
+  out.measured = { height: h, weight: w, bust: b.bust || null, waist: b.waist || null, hip: b.hip || null, gender: b.gender || null,
+    est_bust: n(est.bust), est_waist: n(est.waist), est_hip: n(est.hip), est_shoulder: n(est.shoulder) }; out.analyzed_at = new Date().toISOString();
   await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { body: out.measured, analysis: out, analysis_at: out.analyzed_at }).catch(() => {});
   await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'analyze', platform: String(body.platform || 'web').slice(0, 20) }) }).catch(() => {});
   return json({ analysis: out }, 200, cors);
@@ -467,15 +471,60 @@ async function urlToDataUri(u) {
   return `data:${mime};base64,${btoa(s)}`;
 }
 
+
+/* ---------------- AI 搭配建議 ---------------- */
+async function handleOutfit(request, env, cors) {
+  let user;
+  try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  if (!env.GEMINI_KEY) return json({ error: '搭配建議服務尚未啟用' }, 503, cors);
+  let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
+  const have = Array.isArray(body.have) ? body.have.slice(0, 8) : [];
+  const gender = body.gender === 'm' ? 'm' : 'f';
+  const cnt = await sb(env, `/rest/v1/events?user_id=eq.${user.id}&name=eq.outfit&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`).catch(() => []);
+  if (cnt.length >= 20) return json({ error: '今天的搭配建議次數已用完（每天 20 次），明天再試' }, 429, cors);
+  const prof = (await sb(env, `/rest/v1/profiles?id=eq.${user.id}&select=analysis,body`).catch(() => []))[0] || {};
+  const a = prof.analysis || {};
+  const haveTypes = new Set(have.map(h => h.type));
+  const wantTypes = ['top', 'bottom', 'dress', 'shoes', 'hat', 'accessory'].filter(t => !haveTypes.has(t));
+  if (haveTypes.has('dress')) { ['top', 'bottom'].forEach(t => { const i = wantTypes.indexOf(t); if (i >= 0) wantTypes.splice(i, 1); }); }
+  const cands = await sb(env, `/rest/v1/products?active=eq.true&gender=in.(${gender},u)&type=in.(${wantTypes.join(',')})&select=id,brand,name,type,gender,price,currency,image_url,buy_url,tags&order=featured.desc,created_at.desc&limit=90`).catch(() => []);
+  if (!cands.length) return json({ outfits: [], note: '商店目前沒有可搭配的商品' }, 200, cors);
+  const list = cands.map(c => `${c.id}|${c.type}|${c.brand || ''}|${c.name}|${(c.tags || []).join(' ')}|NT$${c.price || ''}`).join('\n');
+  const profile = `User: ${gender === 'm' ? 'male' : 'female'}` + (a.body_shape ? `, body shape ${a.body_shape}` : '') + (a.shoulder ? `, ${a.shoulder} shoulders` : '') + (a.legs ? `, ${a.legs} legs` : '') + (a.skin_tone ? `, ${a.skin_tone} skin tone` : '') + (prof.body && prof.body.height ? `, height ${prof.body.height} cm` : '') + '.' + (a.fit_advice ? ` Stylist notes: tops: ${a.fit_advice.tops || ''}; bottoms: ${a.fit_advice.bottoms || ''}; colors: ${a.fit_advice.colors || ''}.` : '') + (a.avoid ? ` Avoid: ${a.avoid}` : '');
+  const haveTxt = have.length ? have.map(h => `${h.type}: ${h.brand ? h.brand + ' ' : ''}${h.name}`).join('; ') : '(nothing yet)';
+  const prompt = `You are a personal stylist for a Taiwanese fashion app. ${profile}
+The user currently has in the fitting room: ${haveTxt}.
+Candidate products from our shop (one per line: id|type|brand|name|tags|price):
+${list}
+
+Build ${have.length ? '2' : '3'} outfits that go with what the user already has (or complete looks if nothing yet). Use ONLY candidate ids. Each outfit: 2–4 products, at most one product per type, never two of the same type. Prefer items flattering the user's body shape and skin tone; keep colors coherent; mix price points sensibly.
+Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"one Traditional Chinese sentence on why this look suits the user's body","items":[{"id":123,"reason":"short Traditional Chinese reason (<=25 chars)"}]}],"note":"one short Traditional Chinese sentence of overall advice"}`;
+  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  let out = null, lastErr = '';
+  for (const model of models) {
+    const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, responseMimeType: 'application/json' } }) }, '搭配建議服務', 45000);
+    const t = await r.text();
+    if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch { lastErr = '回傳格式異常'; continue; } }
+    try { lastErr = JSON.parse(t).error.message.slice(0, 160); } catch { lastErr = t.slice(0, 160); }
+    if (r.status === 404 || r.status === 429 || r.status >= 500) continue; break;
+  }
+  if (!out) return json({ error: '搭配建議失敗：' + lastErr }, 502, cors);
+  const byId = new Map(cands.map(c => [String(c.id), c]));
+  const outfits = (out.outfits || []).map(o => { const seen = new Set(); const items = (o.items || []).map(i => { const pr = byId.get(String(i.id)); if (!pr || seen.has(pr.type)) return null; seen.add(pr.type); return { product: pr, reason: String(i.reason || '').slice(0, 80) }; }).filter(Boolean); return { title: String(o.title || '').slice(0, 30), tip: String(o.tip || '').slice(0, 120), items }; }).filter(o => o.items.length);
+  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'outfit', props: { have: have.length, out: outfits.length } }) }).catch(() => {});
+  return json({ outfits, note: String(out.note || '').slice(0, 120) }, 200, cors);
+}
+
 /* ---------------- 商品櫥窗 ---------------- */
 async function handleProducts(request, env, cors, url) {
   const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').trim().slice(0, 40);
   const page = Math.max(0, Number(url.searchParams.get('page') || 0)), size = 24;
-  let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
+  let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
   if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
   if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)`;
   if (q) qs += `&or=(name.ilike.*${encodeURIComponent(q)}*,brand.ilike.*${encodeURIComponent(q)}*)`;
-  const rows = await sb(env, qs);
+  let rows;
+  try { rows = await sb(env, qs); } catch (e) { rows = await sb(env, qs.replace(',sizes,', ',')); }  // 舊資料庫尚未加 sizes 欄位時仍可用
   return json({ products: rows, page, has_more: rows.length === size }, 200, { ...cors, 'Cache-Control': 'public, max-age=60' });
 }
 async function handleProductClick(request, env, cors) {

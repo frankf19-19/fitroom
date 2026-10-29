@@ -40,6 +40,15 @@ def fetch_cat(code, n):
     j = json.load(r)
   return (j.get('resp') or [{}])[0].get('productList') or []
 
+SIZE_ORDER = ['XXS','XS','S','M','L','XL','XXL','3XL','4XL']
+def sizes_of(p):
+  toks = set(t.strip() for t in (p.get('productName') or '').replace('，', ',').split())
+  found = set()
+  for t in toks:
+    for x in t.split(','):
+      if x in SIZE_ORDER: found.add(x)
+  return [x for x in SIZE_ORDER if x in found]
+
 def classify(cat_type, name):
   if cat_type: return cat_type
   if '帽' in name: return 'hat'
@@ -70,7 +79,7 @@ for code, (ctype, gender, tags) in CATS.items():
     g = 'u' if '男女' in sex else gender
     rows.append({'source': 'uniqlo', 'external_id': pid, 'brand': 'UNIQLO', 'name': name, 'type': t, 'gender': g,
                  'price': int(p.get('minPrice') or 0), 'currency': 'TWD', 'image_url': IMG + p['mainPic'],
-                 'buy_url': BUY + pid, 'tags': tags + ([s for s in [p.get('season')] if s]), 'active': True,
+                 'buy_url': BUY + pid, 'tags': tags + ([s for s in [p.get('season')] if s]), 'sizes': sizes_of(p), 'active': True,
                  'featured': k == 0 and ctype in ('top', 'dress')})
     seen.add(pid); k += 1
     if k >= PER_CAT: break
@@ -81,7 +90,13 @@ existing = sb('GET', 'products?source=eq.uniqlo&select=id,external_id')
 ex = {r['external_id']: r['id'] for r in existing}
 ins = [r for r in rows if r['external_id'] not in ex]
 upd = [r for r in rows if r['external_id'] in ex]
-if ins: sb('POST', 'products', ins, prefer='return=minimal')
+def strip(rs): return [{k: v for k, v in r.items() if k != 'sizes'} for r in rs]
+try:
+  if ins: sb('POST', 'products', ins, prefer='return=minimal')
+except Exception as e:
+  print('sizes 欄位尚未建立，改用不含 sizes 的資料：', e)
+  if ins: sb('POST', 'products', strip(ins), prefer='return=minimal')
+  upd = strip(upd)
 for r in upd:
   sb('PATCH', f"products?id=eq.{ex[r['external_id']]}", {k: v for k, v in r.items() if k not in ('source', 'external_id')}, prefer='return=minimal')
 gone = [i for e, i in ex.items() if e not in seen]

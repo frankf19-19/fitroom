@@ -289,7 +289,10 @@
   .variants .v img{width:100%;display:block}
   .variants .v span{position:absolute;left:8px;top:8px;background:#fff;color:var(--ink);font-size:10px;letter-spacing:1px;padding:3px 8px}
   .variants .v:hover img{opacity:.85}
-  .fitgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .fitgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+  @media(max-width:560px){.fitgrid{grid-template-columns:repeat(3,1fr)}}
+  .outfit{border:1px solid var(--line);padding:12px;margin-bottom:12px}.outfit h3{font-size:14px;margin:0 0 4px}.outfit .tip{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.6}.outfit .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.outfit .it{font-size:12px}.outfit .it img{width:100%;aspect-ratio:3/4;object-fit:cover;background:var(--bg2);display:block;margin-bottom:6px}.outfit .it .why{color:var(--muted);line-height:1.5;margin:4px 0 6px}.outfit .it .btn{padding:6px 10px;font-size:11px}
+  .fitrow{flex-wrap:wrap}.fitrow .rec{font-size:12px;color:var(--muted);flex-basis:100%;line-height:1.6}.fitrow .rec b{color:var(--ink)}.fitrow .rec.bad{color:var(--bad)}.fitrow .rec.ok{color:var(--ok)}
   .fitgrid label{display:flex;flex-direction:column;font-size:10px;letter-spacing:1px;color:var(--muted);gap:2px}
   .fitgrid input{padding:8px 0;font-size:14px}
   .fitrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:12px;gap:8px}
@@ -495,16 +498,24 @@
           </div>
         </div>
         <div class="card">
-          <h2>4 · 尺寸合身預估 <span class="muted" style="font-weight:400">（選填，不用 AI、不扣點）</span></h2>
+          <h2>4 · 尺寸建議 <span class="muted" style="font-weight:400">（依各品牌尺碼表，不扣點）</span></h2>
           <div class="chips" id="fitGender"><span class="chip on" data-g="f">女裝尺碼</span><span class="chip" data-g="m">男裝尺碼</span></div>
           <div class="fitgrid">
             <label>身高 cm<input type="number" id="fHeight" placeholder="162"></label>
             <label>胸圍 cm<input type="number" id="fBust" placeholder="84"></label>
             <label>腰圍 cm<input type="number" id="fWaist" placeholder="66"></label>
             <label>臀圍 cm<input type="number" id="fHip" placeholder="90"></label>
+            <label>腳長 cm<input type="number" id="fFoot" placeholder="24" step="0.5"></label>
           </div>
-          <div id="fitRows" style="margin-top:10px"><div class="muted">放入上衣、下身或洋裝後，這裡可以選尺碼看合不合身。</div></div>
-          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">通用尺碼表與判斷方式</summary><div class="muted" style="margin-top:6px;line-height:1.7">女裝（胸／腰／臀 cm）：XS 80/60/84、S 84/64/88、M 88/68/92、L 92/72/96、XL 96/76/100、2XL 100/80/104。男裝：XS 84/70/86、S 88/74/90、M 92/78/94、L 96/82/98、XL 100/86/102、2XL 104/90/106。<br>鬆份＝衣服圍度−身體圍度：小於 0 偏緊、0–6 合身、6–14 寬鬆、超過 14 過大。各品牌版型不同，僅供參考；若賣場有提供平量尺寸，以平量×2 換算更準。</div></details>
+          <div class="muted" id="fitHint" style="margin-top:6px;font-size:12px">沒量過三圍？到「我的身形」做分析，AI 會從照片與身高體重估一組，這裡自動帶入。</div>
+          <div id="fitRows" style="margin-top:10px"><div class="muted">放入上衣、下身、洋裝或鞋子後，這裡會依品牌尺碼表建議尺寸；你選了別的尺寸會提醒哪裡會緊或鬆。</div></div>
+          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">尺碼表怎麼來的</summary><div class="muted" style="margin-top:6px;line-height:1.7">內建 UNIQLO／GU（亞洲尺碼）、ZARA、H&amp;M 的身體尺寸對照表，其他品牌用通用亞洲尺碼。判斷方式：你的圍度落在該尺碼範圍內＝合身；超過上限＝會緊；低於下限＝會鬆。鞋子以腳長＋0.5–1 cm 餘裕換算該品牌標示。各品牌版型仍有差異，僅供參考，賣場有平量尺寸時以賣場為準。</div></details>
+        </div>
+        <div class="card" id="outfitCard">
+          <h2>5 · AI 搭配建議 <span class="muted" style="font-weight:400">（依你的身形與商店商品，不扣點）</span></h2>
+          <div class="muted" style="font-size:12px;line-height:1.7">把目前試衣間的單品交給 AI，從商店裡挑出能一起搭的下身、鞋子、配件，說明為什麼適合你的身形與膚色。還沒放單品也可以，會依你的身形直接推薦整套。</div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="btnOutfit">幫我搭配</button><span class="muted" id="outfitStatus" style="font-size:12px"></span></div>
+          <div id="outfitBox" style="margin-top:12px"></div>
         </div>
       </div>
     </div>
@@ -666,8 +677,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.7.1';
-const BUILD = '2026-10-29-09';
+const APP_VERSION = '3.8.0';
+const BUILD = '2026-10-29-10';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1024,29 +1035,84 @@ $('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
 $('twoVariants').onclick=()=>{ $('twoVariants').classList.toggle('on'); renderSlots(); };
 $('wantViews').onclick=()=>{ $('wantViews').classList.toggle('on'); renderSlots(); };
 
-/* ---------- 尺寸合身預估 ---------- */
-const SIZE_CHARTS={
-  f:{XS:{bust:80,waist:60,hip:84},S:{bust:84,waist:64,hip:88},M:{bust:88,waist:68,hip:92},L:{bust:92,waist:72,hip:96},XL:{bust:96,waist:76,hip:100},'2XL':{bust:100,waist:80,hip:104}},
-  m:{XS:{bust:84,waist:70,hip:86},S:{bust:88,waist:74,hip:90},M:{bust:92,waist:78,hip:94},L:{bust:96,waist:82,hip:98},XL:{bust:100,waist:86,hip:102},'2XL':{bust:104,waist:90,hip:106}}
+/* ---------- 尺寸建議（各品牌尺碼表） ---------- */
+// 身體尺寸範圍（cm）：[min,max]。來源：各品牌官方尺碼表（亞洲／歐洲）整理，僅供參考
+const R=(a,b)=>[a,b];
+const BRAND_CHARTS={
+  generic:{label:'通用亞洲尺碼',
+    f:{XS:{bust:R(78,82),waist:R(58,62),hip:R(82,86)},S:{bust:R(82,86),waist:R(62,66),hip:R(86,90)},M:{bust:R(86,90),waist:R(66,70),hip:R(90,94)},L:{bust:R(90,94),waist:R(70,74),hip:R(94,98)},XL:{bust:R(94,98),waist:R(74,78),hip:R(98,102)},XXL:{bust:R(98,102),waist:R(78,82),hip:R(102,106)}},
+    m:{XS:{bust:R(82,86),waist:R(68,72),hip:R(84,88)},S:{bust:R(86,90),waist:R(72,76),hip:R(88,92)},M:{bust:R(90,94),waist:R(76,80),hip:R(92,96)},L:{bust:R(94,98),waist:R(80,84),hip:R(96,100)},XL:{bust:R(98,102),waist:R(84,88),hip:R(100,104)},XXL:{bust:R(102,106),waist:R(88,92),hip:R(104,108)}}},
+  uniqlo:{label:'UNIQLO 亞洲尺碼',
+    f:{XS:{bust:R(77,80),waist:R(58,61),hip:R(83,86)},S:{bust:R(80,83),waist:R(61,64),hip:R(86,89)},M:{bust:R(83,87),waist:R(64,68),hip:R(89,93)},L:{bust:R(87,91),waist:R(68,72),hip:R(93,97)},XL:{bust:R(91,96),waist:R(72,77),hip:R(97,102)},XXL:{bust:R(96,101),waist:R(77,82),hip:R(102,107)},'3XL':{bust:R(101,106),waist:R(82,87),hip:R(107,112)}},
+    m:{XS:{bust:R(76,84),waist:R(60,68),hip:R(80,88)},S:{bust:R(80,88),waist:R(68,76),hip:R(84,92)},M:{bust:R(88,96),waist:R(76,84),hip:R(92,100)},L:{bust:R(96,104),waist:R(84,92),hip:R(100,108)},XL:{bust:R(104,112),waist:R(92,100),hip:R(108,116)},XXL:{bust:R(112,120),waist:R(100,108),hip:R(116,124)},'3XL':{bust:R(120,128),waist:R(108,116),hip:R(124,132)}}},
+  zara:{label:'ZARA 歐洲尺碼',
+    f:{XS:{bust:R(80,84),waist:R(62,66),hip:R(88,92)},S:{bust:R(84,88),waist:R(66,70),hip:R(92,96)},M:{bust:R(88,92),waist:R(70,74),hip:R(96,100)},L:{bust:R(94,98),waist:R(76,80),hip:R(102,106)},XL:{bust:R(100,104),waist:R(82,86),hip:R(108,112)}},
+    m:{S:{bust:R(90,94),waist:R(78,82),hip:R(92,96)},M:{bust:R(94,98),waist:R(82,86),hip:R(96,100)},L:{bust:R(102,106),waist:R(88,92),hip:R(102,106)},XL:{bust:R(110,114),waist:R(96,100),hip:R(108,112)},XXL:{bust:R(118,122),waist:R(104,108),hip:R(114,118)}}},
+  hm:{label:'H&M 歐洲尺碼',
+    f:{XS:{bust:R(78,82),waist:R(62,66),hip:R(86,90)},S:{bust:R(82,86),waist:R(66,70),hip:R(90,94)},M:{bust:R(86,90),waist:R(70,74),hip:R(94,98)},L:{bust:R(92,96),waist:R(76,80),hip:R(100,104)},XL:{bust:R(98,102),waist:R(82,86),hip:R(106,110)}},
+    m:{XS:{bust:R(84,88),waist:R(72,76),hip:R(86,90)},S:{bust:R(88,96),waist:R(76,84),hip:R(90,96)},M:{bust:R(96,104),waist:R(84,92),hip:R(96,102)},L:{bust:R(104,112),waist:R(92,100),hip:R(102,108)},XL:{bust:R(112,120),waist:R(100,108),hip:R(108,114)}}}
 };
+BRAND_CHARTS.gu=Object.assign({},BRAND_CHARTS.uniqlo,{label:'GU 亞洲尺碼'});
+// 鞋：腳長 cm → 各標示。[cm, EU, US女, US男, UK]
+const SHOE_TABLE=[[22,35,5,3.5,2.5],[22.5,35.5,5.5,4,3],[23,36,6,4.5,3.5],[23.5,37,6.5,5,4],[24,37.5,7,5.5,4.5],[24.5,38,7.5,6,5],[25,39,8,6.5,5.5],[25.5,39.5,8.5,7,6],[26,40,9,7.5,6.5],[26.5,41,9.5,8,7],[27,42,10,8.5,7.5],[27.5,42.5,10.5,9,8],[28,43,11,9.5,8.5],[28.5,44,11.5,10,9],[29,44.5,12,10.5,9.5],[29.5,45,12.5,11,10],[30,46,13,11.5,10.5]];
+const SHOE_BRAND_NOTE={converse:'Converse 版型偏大，一般建議選小半號','dr. martens':'Dr. Martens 只有整號，介於兩號間選小一號',birkenstock:'Birkenstock 偏大，建議選小一號',nike:'Nike 版型偏窄，腳寬可選大半號',adidas:'adidas 多數鞋款正常偏小半號'};
+function brandKey(name){ const n=(name||'').toLowerCase().replace(/[^a-z&]/g,''); if(n.includes('uniqlo'))return 'uniqlo'; if(n==='gu'||n.startsWith('gu'))return 'gu'; if(n.includes('zara'))return 'zara'; if(n.includes('h&m')||n==='hm')return 'hm'; return 'generic'; }
 let fitGender='f'; try{ fitGender=localStorage.getItem('tryon.fitGender')||'f'; }catch{}
-let SIZE_CHART=SIZE_CHARTS[fitGender];
 const fitSizes={};
-function fitTag(e){ if(e==null||isNaN(e)) return '<span class="tag na">填身材</span>'; if(e<0) return `<span class="tag bad">偏緊 ${e.toFixed(0)}</span>`; if(e<=6) return `<span class="tag ok">合身 +${e.toFixed(0)}</span>`; if(e<=14) return `<span class="tag warn">寬鬆 +${e.toFixed(0)}</span>`; return `<span class="tag bad">過大 +${e.toFixed(0)}</span>`; }
+function bodyVals(){ return {bust:+$('fBust').value||null, waist:+$('fWaist').value||null, hip:+$('fHip').value||null, foot:+$('fFoot').value||null}; }
+// 單一尺碼在某圍度的狀況：負=緊 正=鬆 0=合身
+function fitDelta(range, v){ if(!range||!v) return null; if(v>range[1]) return -(v-range[1]); if(v<range[0]) return range[0]-v; return 0; }
+function dimsFor(t){ return t==='top'?['bust']:t==='bottom'?['waist','hip']:['bust','waist','hip']; }
+const DIM_LABEL={bust:'胸圍',waist:'腰圍',hip:'臀圍'};
+function scoreSize(chart, sz, t, body){ const g=chart[sz]; if(!g) return null; const out={}; let tight=0, loose=0, known=0; for(const d of dimsFor(t)){ const x=fitDelta(g[d], body[d]); out[d]=x; if(x==null) continue; known++; if(x<0) tight=Math.max(tight,-x); else loose=Math.max(loose,x); } return {dims:out, tight, loose, known}; }
+function recommendSize(chart, sizes, t, body){ let best=null; for(const sz of sizes){ const sc=scoreSize(chart,sz,t,body); if(!sc||!sc.known) continue; const cost=sc.tight*3+sc.loose; if(!best||cost<best.cost) best={sz,cost,sc}; } return best; }
+function shoeRow(item){ const foot=+$('fFoot').value||0; const sz=fitSizes.shoes||''; const sizes=(item.sizes&&item.sizes.length)?item.sizes:SHOE_TABLE.map(r=>fitGender==='f'?`US ${r[2]} / EU ${r[1]} / ${r[0]}cm`:`US ${r[3]} / EU ${r[1]} / ${r[0]}cm`);
+  let rec='';
+  if(foot){ const want=foot+0.7; let row=SHOE_TABLE.find(r=>r[0]>=want)||SHOE_TABLE[SHOE_TABLE.length-1]; const us=fitGender==='f'?row[2]:row[3]; rec=`腳長 ${foot} cm → 建議 <b>${row[0]} cm（EU ${row[1]}／US ${us}／UK ${row[4]}）</b>`; const bk=Object.keys(SHOE_BRAND_NOTE).find(k=>(item.brand||item.name||'').toLowerCase().includes(k)); if(bk) rec+=`。${SHOE_BRAND_NOTE[bk]}`;
+    if(sz){ const m=sz.match(/(\d+(?:\.\d)?)\s*cm/); const eu=sz.match(/EU\s*(\d+(?:\.\d)?)/i); let chosenCm=m?+m[1]:(eu?(SHOE_TABLE.find(r=>r[1]==+eu[1])||[])[0]:null); if(chosenCm){ const diff=chosenCm-row[0]; if(Math.abs(diff)>=0.5) rec+=`<br><span class="${diff<0?'bad':'warn'}">你選的 ${sz} 比建議${diff<0?'小':'大'} ${Math.abs(diff)} cm，${diff<0?'腳趾可能會頂到':'走路可能會滑動'}</span>`; else rec+='<br><span class="ok">你選的尺寸剛好</span>'; } } }
+  else rec='填上面的「腳長」就能換算鞋號（量法：站著，腳跟到最長腳趾的直線距離）';
+  return `<div class="fitrow"><span>鞋子 <select data-fit="shoes"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${k}</option>`).join('')}</select></span><span class="muted" style="font-size:11px">${item.brand||''}</span><div class="rec">${rec}</div></div>`; }
 function renderFit(){
-  const body={bust:+$('fBust').value||null, waist:+$('fWaist').value||null, hip:+$('fHip').value||null};
-  try{ localStorage.setItem('tryon.body', JSON.stringify({height:$('fHeight').value,bust:$('fBust').value,waist:$('fWaist').value,hip:$('fHip').value})); }catch{}
-  const cl=['top','bottom','dress'].filter(t=>state.slots[t]);
-  const box=$('fitRows'); if(!cl.length){ box.innerHTML='<div class="muted">放入上衣、下身或洋裝後，這裡可以選尺碼看合不合身。</div>'; return; }
-  box.innerHTML=cl.map(t=>{ const sz=fitSizes[t]||''; const g=SIZE_CHART[sz]; let tags='';
-    if(t==='top'||t==='dress') tags+='胸 '+fitTag(g&&body.bust?g.bust-body.bust:null)+' ';
-    if(t==='bottom'||t==='dress') tags+='腰 '+fitTag(g&&body.waist?g.waist-body.waist:null)+' 臀 '+fitTag(g&&body.hip?g.hip-body.hip:null);
-    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${Object.keys(SIZE_CHART).map(k=>`<option ${k===sz?'selected':''}>${k}</option>`).join('')}</select></span><span>${sz?tags:'<span class="tag na">選尺碼</span>'}</span></div>`; }).join('');
+  const body=bodyVals();
+  try{ localStorage.setItem('tryon.body', JSON.stringify({height:$('fHeight').value,bust:$('fBust').value,waist:$('fWaist').value,hip:$('fHip').value,foot:$('fFoot').value})); }catch{}
+  const cl=['top','bottom','dress','shoes'].filter(t=>state.slots[t]);
+  const box=$('fitRows'); if(!cl.length){ box.innerHTML='<div class="muted">放入上衣、下身、洋裝或鞋子後，這裡會依品牌尺碼表建議尺寸；你選了別的尺寸會提醒哪裡會緊或鬆。</div>'; return; }
+  box.innerHTML=cl.map(t=>{ const item=state.slots[t]; if(t==='shoes') return shoeRow(item);
+    const bk=brandKey(item.brand); const bc=BRAND_CHARTS[bk]; const g=(item.pgender==='m'||item.pgender==='f')?item.pgender:fitGender; const chart=bc[g]||bc.f;
+    const avail=(item.sizes&&item.sizes.length)?item.sizes.filter(x=>chart[x]):[]; const sizes=avail.length?avail:Object.keys(chart);
+    const sz=fitSizes[t]||''; const hasBody=dimsFor(t).some(d=>body[d]);
+    let rec='';
+    if(!hasBody) rec='填上面的三圍（或先做身形分析）就能建議尺寸';
+    else { const best=recommendSize(chart,sizes,t,body);
+      if(best){ rec=`依 ${bc.label}${item.brand&&bk==='generic'?'（'+item.brand+' 無內建表）':''}：建議 <b>${best.sz}</b>`;
+        const parts=Object.entries(best.sc.dims).filter(([,x])=>x!=null).map(([d,x])=>x===0?`${DIM_LABEL[d]}合身`:x<0?`${DIM_LABEL[d]}緊 ${x*-1} cm`:`${DIM_LABEL[d]}鬆 ${x} cm`); if(parts.length) rec+=`（${parts.join('、')}）`;
+        if(sz&&sz!==best.sz){ const sc=scoreSize(chart,sz,t,body); if(sc){ const bad=Object.entries(sc.dims).filter(([,x])=>x!=null&&x<0).map(([d,x])=>`${DIM_LABEL[d]}會緊 ${-x} cm`); const loose=Object.entries(sc.dims).filter(([,x])=>x!=null&&x>0).map(([d,x])=>`${DIM_LABEL[d]}會鬆 ${x} cm`); rec+=`<br><span class="${bad.length?'bad':'warn'}">⚠ 你選 ${sz}：${[...bad,...loose].join('、')||'與建議不同'}，建議改 ${best.sz}</span>`; } }
+        else if(sz) rec+='<br><span class="ok">✓ 你選的尺寸合適</span>';
+      } else rec='這個品牌的尺碼表沒有對應資料，請以賣場尺寸表為準'; }
+    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${k}</option>`).join('')}</select></span><span class="muted" style="font-size:11px">${item.brand||''}${avail.length?' · 賣場有 '+avail.join('/'):''}</span><div class="rec">${rec}</div></div>`; }).join('');
   box.querySelectorAll('[data-fit]').forEach(sel=>sel.onchange=()=>{ fitSizes[sel.dataset.fit]=sel.value; renderFit(); });
 }
-['fHeight','fBust','fWaist','fHip'].forEach(id=>$(id).addEventListener('input',renderFit));
-$('fitGender').querySelectorAll('.chip').forEach(c=>{ c.classList.toggle('on',c.dataset.g===fitGender); c.onclick=()=>{ fitGender=c.dataset.g; SIZE_CHART=SIZE_CHARTS[fitGender]; try{ localStorage.setItem('tryon.fitGender',fitGender); }catch{} $('fitGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); renderFit(); }; });
-try{ const b=JSON.parse(localStorage.getItem('tryon.body')||'null'); if(b){ $('fHeight').value=b.height||''; $('fBust').value=b.bust||''; $('fWaist').value=b.waist||''; $('fHip').value=b.hip||''; } }catch{}
+['fHeight','fBust','fWaist','fHip','fFoot'].forEach(id=>$(id).addEventListener('input',renderFit));
+$('fitGender').querySelectorAll('.chip').forEach(c=>{ c.classList.toggle('on',c.dataset.g===fitGender); c.onclick=()=>{ fitGender=c.dataset.g; try{ localStorage.setItem('tryon.fitGender',fitGender); }catch{} $('fitGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); renderFit(); }; });
+try{ const b=JSON.parse(localStorage.getItem('tryon.body')||'null'); if(b){ $('fHeight').value=b.height||''; $('fBust').value=b.bust||''; $('fWaist').value=b.waist||''; $('fHip').value=b.hip||''; $('fFoot').value=b.foot||''; } }catch{}
+
+
+/* ---------- AI 搭配建議 ---------- */
+$('btnOutfit').onclick=async()=>{
+  if(!state.user) return openLogin();
+  const have=Object.entries(state.slots).map(([type,it])=>({type,name:it.name||TYPE_LABEL[type],brand:it.brand||null,product_id:it.product_id||null}));
+  $('btnOutfit').disabled=true; $('outfitStatus').textContent='AI 正在從商店挑單品…（約 10 秒）'; $('outfitBox').innerHTML='';
+  try{
+    const d=await api('/api/outfit',{method:'POST',body:JSON.stringify({have, gender:(state.me&&state.me.body&&state.me.body.gender)||fitGender})});
+    const outs=d.outfits||[]; if(!outs.length){ $('outfitStatus').textContent='目前商店裡找不到合適的搭配，再放一件單品試試。'; return; }
+    $('outfitStatus').textContent=d.note||'';
+    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${o.title||'搭配'}</h3><div class="tip">${o.tip||''}</div><div class="items">${(o.items||[]).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" alt=""><b>${it.product.brand||''}</b> ${it.product.name}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${it.reason||''}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
+    const all=outs.flatMap(o=>(o.items||[]).map(i=>i.product));
+    $('outfitBox').querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>{ const p=all.find(x=>String(x.id)===b.dataset.oid); if(p) tryProduct(p); });
+    track('outfit',{n:all.length});
+  }catch(e){ $('outfitStatus').textContent=e.message; haptic('error'); }
+  finally{ $('btnOutfit').disabled=false; }
+};
 
 /* ---------- 設定與偏好 ---------- */
 const PREF_DEFAULT={face:true,two:false,views:false};
@@ -1112,7 +1178,7 @@ function renderShop(){
 }
 async function tryProduct(p){
   if(!p) return;
-  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null}; renderSlots(); haptic(); toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); go('tryon'); }
+  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}; renderSlots(); haptic(); toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); go('tryon'); }
   catch{ toast('商品圖載入失敗，請改用截圖上傳'); }
 }
 function buyProduct(p){ if(!p||!p.buy_url) return; fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'buy',anon_id:anonId}),keepalive:true}).catch(()=>{}); track('buy_click',{product:p.id}); if(IS_APP&&Plug('Browser')) Plug('Browser').open({url:p.buy_url}); else window.open(p.buy_url,'_blank','noopener'); }
@@ -1176,7 +1242,7 @@ $('btnAnalyze').onclick=async()=>{
     if(state.me){ state.me.analysis=d.analysis; state.me.body=d.analysis.measured; }
     $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success'); track('analyze');
     // 同步到尺寸預估
-    $('fHeight').value=h; if($('bBust').value) $('fBust').value=$('bBust').value; if($('bWaist').value) $('fWaist').value=$('bWaist').value; if($('bHip').value) $('fHip').value=$('bHip').value; renderFit();
+    $('fHeight').value=h; const mm=d.analysis.measured||{}; $('fBust').value=$('bBust').value||mm.est_bust||''; $('fWaist').value=$('bWaist').value||mm.est_waist||''; $('fHip').value=$('bHip').value||mm.est_hip||''; if(!$('bBust').value&&mm.est_bust) $('fitHint').textContent=`已帶入 AI 估計的三圍（胸 ${mm.est_bust}／腰 ${mm.est_waist}／臀 ${mm.est_hip} cm），實際量過更準。`; renderFit();
     updateAnalyzeCta();
   }catch(e){ $('analyzeStatus').textContent=e.message; haptic('error'); }
   finally{ $('btnAnalyze').disabled=false; }

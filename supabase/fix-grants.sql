@@ -4,3 +4,4 @@ grant execute on function public.admin_stats(timestamptz) to service_role;
 -- 管理者測試點數
 update public.profiles set credits = credits + 300 where lower(email) = 'frankccc199@gmail.com';
 select email, credits from public.profiles;
+alter table public.products add column if not exists sizes text[] not null default '{}';
