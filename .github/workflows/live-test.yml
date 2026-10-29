@@ -1,0 +1,22 @@
+name: 正式站端到端測試
+on:
+  workflow_dispatch:
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q playwright && python3 -m playwright install --with-deps chromium
+      - name: 跑測試
+        env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SITE_URL: https://frankf19-19.github.io/fitroom/
+        run: python3 qa/live_test.py
+      - name: 結果推到 qa-live 分支
+        if: always()
+        run: |
+          cd qa-live && git init -q && git checkout -q -b qa-live && git add -A
+          git -c user.name=qa-bot -c user.email=qa@bot commit -q -m "live test $(date -u +%Y-%m-%dT%H:%M)"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-live
