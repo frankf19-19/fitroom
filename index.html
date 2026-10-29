@@ -678,7 +678,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '3.8.0';
-const BUILD = '2026-10-29-10';
+const BUILD = '2026-10-29-11';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -730,6 +730,7 @@ let toastT; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.
 
 /* ---------- 狀態 ---------- */
 const state = { user:null, session:null, me:null, person:null, personOrig:null, slots:{}, result:null, wardrobe:[], history:[] };
+try{ if(localStorage.getItem('tryon.debug')==='1') window.__tryon={state, get renderSlots(){return renderSlots;}, get renderFit(){return renderFit;}}; }catch{}
 const configured = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && CONFIG.WORKER_URL;
 let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
