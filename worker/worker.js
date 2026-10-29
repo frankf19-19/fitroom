@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 const RUNNING_STALE_MS = 4 * 60 * 1000;    // 進行中超過 4 分鐘視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -61,7 +61,7 @@ export default {
       if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors, ctx);
       if (p === '/api/tryon/status' && m === 'GET') return handleTryonStatus(request, env, cors, url);
       if (p === '/api/outfit' && m === 'POST') return handleOutfit(request, env, cors);
-      if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors);
+      if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors, ctx);
       if (p === '/api/products' && m === 'GET') return handleProducts(request, env, cors, url);
       if (p === '/api/img' && m === 'GET') return handleImgProxy(request, env, cors, url);
       if (p === '/api/product-click' && m === 'POST') return handleProductClick(request, env, cors);
@@ -183,7 +183,7 @@ const ANALYZE_PROMPT = `You are a professional fashion stylist and body-shape co
  "render_hints": "one English sentence for an image model describing this person's real body proportions and how garments should drape on them (e.g. 'broad shoulders, defined waist, long legs; fitted tops sit close at the waist, trousers fall long')"
 }
 Be specific and honest but kind. Base body_shape on both the photo and the numbers. Never mention weight loss. Do not include any text outside the JSON.`;
-async function handleAnalyze(request, env, cors) {
+async function handleAnalyze(request, env, cors, ctx) {
   let user;
   try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
   if (!env.GEMINI_KEY) return json({ error: '身形分析服務尚未啟用' }, 503, cors);
@@ -197,24 +197,34 @@ async function handleAnalyze(request, env, cors) {
   if (cnt.length >= 5) return json({ error: '今天的分析次數已用完（每天 5 次），明天再試' }, 429, cors);
   const bmi = w / Math.pow(h / 100, 2);
   const meas = `Measurements: height ${h} cm, weight ${w} kg (BMI ${bmi.toFixed(1)})` + (b.bust ? `, bust ${b.bust} cm` : '') + (b.waist ? `, waist ${b.waist} cm` : '') + (b.hip ? `, hip ${b.hip} cm` : '') + (b.gender ? `, gender ${b.gender === 'm' ? 'male' : 'female'}` : '') + '.';
-  const parts = [{ text: ANALYZE_PROMPT + '\n' + meas }, inlinePart(person)];
-  const models = TEXT_MODELS;
-  let out = null, lastErr = '';
-  for (const model of models) {
-    const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', 60000);
-    const t = await r.text();
-    if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch (e) { lastErr = '回傳格式異常'; continue; } }
-    let em; try { em = JSON.parse(t).error.message.slice(0, 160); } catch { em = t.slice(0, 160); }
-    if (r.status === 429) lastErr = '文字模型額度已用完（' + model + '），請稍後再試或綁定 Google AI 帳單'; else if (r.status !== 404) lastErr = em; else if (!lastErr) lastErr = em;
-    if (r.status === 404 || r.status === 429 || r.status >= 500) continue; break;
+  const asyncMode = body.async === true && ctx && typeof ctx.waitUntil === 'function';
+  const startedAt = new Date().toISOString();
+  const job = async () => {
+    const parts = [{ text: ANALYZE_PROMPT + '\n' + meas }, inlinePart(person)];
+    const models = TEXT_MODELS;
+    let out = null, lastErr = '';
+    for (const model of models) {
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', 45000);
+      const t = await r.text();
+      if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch (e) { lastErr = '回傳格式異常'; continue; } }
+      let em; try { em = JSON.parse(t).error.message.slice(0, 160); } catch { em = t.slice(0, 160); }
+      if (r.status === 429) lastErr = '文字模型額度已用完（' + model + '），請稍後再試或綁定 Google AI 帳單'; else if (r.status !== 404) lastErr = em; else if (!lastErr) lastErr = em;
+      if (r.status === 404 || r.status === 429 || r.status >= 500) continue; break;
+    }
+    if (!out) { const err = new Error('身形分析失敗：' + lastErr); err.status = 502; throw err; }
+    out.bmi = Number(bmi.toFixed(1)); const est = out.estimated || {}; const n = v => (Number(v) > 30 && Number(v) < 200) ? Math.round(Number(v)) : null;
+    out.measured = { height: h, weight: w, bust: b.bust || null, waist: b.waist || null, hip: b.hip || null, gender: b.gender || null,
+      est_bust: n(est.bust), est_waist: n(est.waist), est_hip: n(est.hip), est_shoulder: n(est.shoulder) }; out.analyzed_at = new Date().toISOString();
+    await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { body: out.measured, analysis: out, analysis_at: out.analyzed_at }).catch(() => {});
+    await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'analyze', platform: String(body.platform || 'web').slice(0, 20) }) }).catch(() => {});
+    return out;
+  };
+  if (asyncMode) {
+    ctx.waitUntil(job().catch(async e => { await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { analysis: { error: String(e.message).slice(0, 200), analyzed_at: new Date().toISOString() } }).catch(() => {}); }));
+    return json({ async: true, started_at: startedAt }, 202, cors);
   }
-  if (!out) return json({ error: '身形分析失敗：' + lastErr }, 502, cors);
-  out.bmi = Number(bmi.toFixed(1)); const est = out.estimated || {}; const n = v => (Number(v) > 30 && Number(v) < 200) ? Math.round(Number(v)) : null;
-  out.measured = { height: h, weight: w, bust: b.bust || null, waist: b.waist || null, hip: b.hip || null, gender: b.gender || null,
-    est_bust: n(est.bust), est_waist: n(est.waist), est_hip: n(est.hip), est_shoulder: n(est.shoulder) }; out.analyzed_at = new Date().toISOString();
-  await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { body: out.measured, analysis: out, analysis_at: out.analyzed_at }).catch(() => {});
-  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'analyze', platform: String(body.platform || 'web').slice(0, 20) }) }).catch(() => {});
-  return json({ analysis: out }, 200, cors);
+  try { return json({ analysis: await job() }, 200, cors); }
+  catch (e) { return json({ error: e.message }, e.status || 502, cors); }
 }
 
 /* ---------------- /api/tryon ---------------- */

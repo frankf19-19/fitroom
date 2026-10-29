@@ -682,8 +682,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.9.0';
-const BUILD = '2026-10-29-12';
+const APP_VERSION = '3.9.1';
+const BUILD = '2026-10-30-01';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1227,7 +1227,7 @@ function renderBody(){
   renderReport(a);
 }
 function renderReport(a){
-  const box=$('bodyReport'); if(!a){ box.innerHTML=''; return; }
+  const box=$('bodyReport'); if(!a||a.error||!a.body_shape){ box.innerHTML=''; return; }
   const fa=a.fit_advice||{};
   box.innerHTML=`<div class="card"><h3>身形報告 <span class="muted" style="letter-spacing:0;font-weight:400">${a.analyzed_at?new Date(a.analyzed_at).toLocaleDateString('zh-TW'):''}</span></h3>
     <div class="shape"><div class="ic">${SHAPE_ICON[a.body_shape]||SHAPE_ICON.rectangle}</div><div><b>${SHAPE_LABEL[a.body_shape]||a.body_shape||'—'}</b><small>${a.proportion_note||''}</small></div></div>
@@ -1248,7 +1248,19 @@ $('btnAnalyze').onclick=async()=>{
   if(!(h>=120&&h<=220)||!(w>=30&&w<=200)) return toast('請填寫正確的身高與體重');
   $('btnAnalyze').disabled=true; $('analyzeStatus').textContent='AI 正在分析你的身形與臉型…（約 10 秒）';
   try{
-    const d=await api('/api/analyze',{method:'POST',body:JSON.stringify({ person: state.person, body:{height:h,weight:w,bust:+$('bBust').value||null,waist:+$('bWaist').value||null,hip:+$('bHip').value||null,gender:bodyGender}, platform:PLATFORM })});
+    let d=await api('/api/analyze',{method:'POST',body:JSON.stringify({ person: state.person, body:{height:h,weight:w,bust:+$('bBust').value||null,waist:+$('bWaist').value||null,hip:+$('bHip').value||null,gender:bodyGender}, platform:PLATFORM, async:true })});
+    if(d&&d.async){
+      // 後端在背景分析，每 3 秒看一次結果（手機不會因為等太久而斷線）
+      const t0=Date.now(); const since=d.started_at||new Date(t0).toISOString();
+      while(true){
+        await new Promise(r=>setTimeout(r,3000));
+        const sec=Math.round((Date.now()-t0)/1000); $('analyzeStatus').textContent=`AI 正在分析你的身形與臉型…（${sec} 秒）`;
+        let me=null; try{ me=await api('/api/me'); }catch(e){ if(Date.now()-t0>120000) throw e; continue; }
+        const a=me&&me.analysis;
+        if(a&&a.analyzed_at&&a.analyzed_at>=since){ if(a.error) throw new Error(a.error); d={analysis:a}; break; }
+        if(Date.now()-t0>150000) throw new Error('分析逾時，請再按一次「分析我的身形」');
+      }
+    }
     if(state.me){ state.me.analysis=d.analysis; state.me.body=d.analysis.measured; }
     $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success');
     // 同步到尺寸預估
