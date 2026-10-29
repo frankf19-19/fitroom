@@ -179,6 +179,7 @@ grant execute on function public.admin_stats(timestamptz) to service_role;
 
 -- v1.6：多角度（側面／背面）圖片網址
 alter table public.generations add column if not exists views jsonb;
+alter table public.generations add column if not exists job jsonb;   -- 分段合成的進度狀態（Worker 寫入）
 
 -- v1.7：同一人同時只能有一筆進行中（真正的鎖）
 create unique index if not exists generations_one_running on public.generations (user_id) where status = 'running';

@@ -18,8 +18,8 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.0.1';
-const RUNNING_STALE_MS = 4 * 60 * 1000;    // 進行中超過 4 分鐘視為失敗並退點
+const VERSION = '2.1.0';
+const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 const PACKS = { // 點數包
@@ -235,7 +235,8 @@ async function handleTryon(request, env, cors, ctx) {
   const { person, items } = body || {};
   const variants = Number(body.variants) === 2 ? 2 : 1;
   const wantViews = body.views === true && !!env.GEMINI_KEY;
-  const asyncMode = body.async === true && ctx && typeof ctx.waitUntil === 'function';
+  const asyncMode = false;
+  const stepMode = body.async === true;
   const started = Date.now();
   const left = () => TRYON_BUDGET_MS - (Date.now() - started);
   if (!isDataImage(person)) return json({ error: '請提供全身照（檔案太大或格式不支援）' }, 400, cors);
@@ -249,7 +250,11 @@ async function handleTryon(request, env, cors, ctx) {
 
   // 清理卡住的「進行中」（Worker 中途被終止時）：標記失敗並退點
   try {
-    const stale = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&created_at=lt.${encodeURIComponent(new Date(Date.now() - RUNNING_STALE_MS).toISOString())}`, { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ status: 'failed', error: '逾時（系統自動標記）' }) });
+    const cut = encodeURIComponent(new Date(Date.now() - RUNNING_STALE_MS).toISOString());
+    const mark = { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ status: 'failed', error: '逾時（系統自動標記）' }) };
+    const s1 = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&job=is.null&created_at=lt.${cut}`, mark).catch(() => []);
+    const s2 = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&job->>touched=lt.${cut}`, mark).catch(() => []);
+    const stale = [...(Array.isArray(s1) ? s1 : []), ...(Array.isArray(s2) ? s2 : [])];
     for (const g of (Array.isArray(stale) ? stale : [])) {
       if (g.cost > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: g.cost }).catch(() => {});
       await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}`, { cost: 0, free_used: 0 }).catch(() => {});
@@ -359,8 +364,29 @@ async function handleTryon(request, env, cors, ctx) {
     try { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { views: stored }); } catch { /* ignore */ }
     return payload;
   };
-  if (asyncMode) {
-    ctx.waitUntil(job().catch(() => {}));
+  if (stepMode) {
+    // 分段模式：先把輸入圖存到 Storage，之後每次前端輪詢推進一步（不靠長時間背景工作）
+    try {
+      const base = `${user.id}/jobs/${gen.id}`;
+      const personUrl = await putImage(env, `${base}/person`, person);
+      const steps = [];
+      for (let k = 0; k < sorted.length; k++) {
+        const it = sorted[k];
+        const st = { type: it.type };
+        if (CLOTHING[it.type]) { st.category = CLOTHING[it.type]; st.photo_type = it.photo_type || null; st.image_url = await putImage(env, `${base}/item${k}`, it.image); }
+        else { if (isDataImage(it.image)) st.image_url = await putImage(env, `${base}/item${k}`, it.image); if (it.text) st.text = String(it.text).slice(0, 200); }
+        steps.push(st);
+      }
+      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, steps,
+        chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
+        want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
+        pay: payCredits, free: useFree, free_left: freeLeft, cost };
+      await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { job: jobState });
+    } catch (e) {
+      if (payCredits > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
+      await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '準備失敗：' + String(e.message).slice(0, 200), cost: 0, free_used: 0 }).catch(() => {});
+      return json({ error: '準備合成失敗（已退回點數）：' + e.message }, 502, cors);
+    }
     return json({ id: gen.id, async: true, cost }, 202, cors);
   }
   try { return json(await job(), 200, cors); }
@@ -370,14 +396,126 @@ async function handleTryonStatus(request, env, cors, url) {
   let user;
   try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
   const id = Number(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
-  const rows = await sb(env, `/rest/v1/generations?id=eq.${id}&user_id=eq.${user.id}&select=status,error,image_url,views,created_at`);
+  const rows = await sb(env, `/rest/v1/generations?id=eq.${id}&user_id=eq.${user.id}&select=id,status,error,image_url,views,created_at,job,cost,free_used,items,variants`);
   const g = rows[0]; if (!g) return json({ error: '找不到這筆合成' }, 404, cors);
-  if (g.status === 'running' && Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) return json({ status: 'failed', error: '合成逾時，點數會自動退回，請再試一次' }, 200, cors);
   if (g.status === 'failed') return json({ status: 'failed', error: g.error || '合成失敗' }, 200, cors);
   if (g.status === 'ok') { const r = (g.views && g.views.result) || null; return json({ status: 'ok', result: r || { images: [null], image_urls: [g.image_url], views: null, view_urls: g.views || {}, views_error: null } }, 200, cors); }
-  return json({ status: 'running' }, 200, cors);
+  const job = g.job;
+  if (!job) {
+    if (Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) return json({ status: 'failed', error: '合成逾時，點數會自動退回，請再試一次' }, 200, cors);
+    return json({ status: 'running' }, 200, cors);
+  }
+  const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
+  const fail = async (msg) => {
+    if (job.pay > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: job.pay }).catch(() => {});
+    await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
+    return json({ status: 'failed', error: msg }, 200, cors);
+  };
+  // 太久沒進度（使用者關掉頁面等）→ 失敗並退點
+  if (Date.now() - new Date(job.touched).getTime() > RUNNING_STALE_MS && (job.lock_until || 0) < Date.now()) return fail('合成逾時（已退回點數），請再試一次');
+  // 取得鎖（避免兩個輪詢同時推進）
+  if ((job.lock_until || 0) > Date.now()) return json({ status: 'running', progress: progress() }, 200, cors);
+  const v = job.v;
+  job.v = v + 1; job.lock_until = Date.now() + 90000;
+  const got = await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running&job->>v=eq.${v}`, { job }, true).catch(() => []);
+  if (!Array.isArray(got) || !got.length) return json({ status: 'running', progress: progress() }, 200, cors);
+  const save = async (extra = {}) => { job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString(); await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { job, ...extra }); };
+  const base = `${user.id}/jobs/${id}`;
+  try {
+    // 1) 推進每條合成鏈（一次最多一個 Gemini 步驟）
+    await Promise.all(job.chains.map(async (ch, ci) => {
+      for (let guard = 0; guard < 3 && ch.i < job.steps.length; guard++) {
+        const st = job.steps[ch.i];
+        if (st.category) {
+          if (!ch.req) { ch.req = await falSubmit(env, ch.cur, st.image_url, st.category, st.photo_type); return; }
+          const r = await falCheck(env, ch.req);
+          if (!r) return;                         // 還在排隊／處理中
+          ch.cur = r; ch.req = null; ch.i++;      // 完成，換下一步
+          continue;
+        }
+        const personData = await urlToDataUri(ch.cur);
+        const idRef = await urlToDataUri(job.person_url);
+        const item = { type: st.type, image: st.image_url ? await urlToDataUri(st.image_url) : undefined, text: st.text };
+        const out = await geminiEdit(env, personData, item, idRef, (job.hints || '') + (st.type === 'hair' ? (job.face_hint || '') : ''));
+        ch.cur = await putImage(env, `${base}/c${ci}-s${ch.i}`, out); ch.i++;
+        return;                                   // 一次只做一個 Gemini（控制單次請求時間）
+      }
+    }));
+    const chainsDone = job.chains.every(c => c.i >= job.steps.length);
+    if (!chainsDone) { await save(); return json({ status: 'running', progress: progress() }, 200, cors); }
+    // 2) 360°
+    if (job.want_views && !job.views && !job.views_error) {
+      try {
+        const front = await urlToDataUri(job.chains[0].cur);
+        const [side, back] = await Promise.all([geminiView(env, front, 'side', 55000, job.hints), geminiView(env, front, 'back', 55000, job.hints)]);
+        job.views = { side: await putImage(env, `${base}/side`, side), back: await putImage(env, `${base}/back`, back) };
+      } catch (e) {
+        job.views_error = String(e.message).slice(0, 160);
+        const refund = Math.min(2, job.pay);
+        if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
+        job.free = job.free - (2 - refund); job.pay = job.pay - refund;
+      }
+      await save(); return json({ status: 'running', progress: progress() }, 200, cors);
+    }
+    // 3) 收尾：結果複製到我們的 Storage（fal 的網址會過期）
+    const urls = [];
+    for (let i = 0; i < job.chains.length; i++) {
+      const u = job.chains[i].cur;
+      urls.push(u.startsWith(env.SUPABASE_URL) ? u : await copyToStorage(env, `${user.id}/${Date.now()}-${i}`, u).catch(() => u));
+    }
+    const viewUrls = job.views || {};
+    const prof = await getProfile(env, user).catch(() => null);
+    const result = { images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
+    for (let i = 1; i < urls.length; i++) await sbInsert(env, 'generations', { user_id: user.id, items: g.items, cost: 0, free_used: 0, status: 'ok', image_url: urls[i], variants: g.variants }).catch(() => {});
+    job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
+    await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { status: 'ok', image_url: urls[0], cost: job.pay, free_used: job.free, error: job.views_error, views: { ...viewUrls, result }, job });
+    return json({ status: 'ok', result }, 200, cors);
+  } catch (e) {
+    return fail('合成失敗（已退回點數）：' + e.message);
+  }
 }
-
+/* ---- Storage 工具 ---- */
+async function putImage(env, pathNoExt, dataUri) {
+  const bin = await dataUriToBytes(dataUri);
+  const path = `${pathNoExt}.${bin.ext}`;
+  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' }, body: bin.bytes });
+  if (!up.ok) throw new Error('圖片儲存失敗（' + up.status + '）');
+  return `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
+}
+async function copyToStorage(env, pathNoExt, srcUrl) {
+  const r = await fetchT(srcUrl, {}, '下載結果');
+  if (!r.ok) throw new Error('下載結果失敗');
+  const mime = (r.headers.get('Content-Type') || 'image/png').split(';')[0];
+  const ext = mime === 'image/jpeg' ? 'jpg' : (mime.split('/')[1] || 'png');
+  const path = `${pathNoExt}.${ext}`;
+  const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': mime, 'x-upsert': 'true' }, body: r.body });
+  if (!up.ok) throw new Error('圖片儲存失敗');
+  return `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
+}
+/* ---- FASHN 分段：送出／查一次 ---- */
+async function falSubmit(env, personUrl, garmentUrl, category, photoType) {
+  const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
+  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode: 'quality', garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: 'png', seed: Math.floor(Math.random() * 1e9) }) }, '衣服試穿服務', 30000);
+  const t = await r.text();
+  if (!r.ok) throw new Error('衣服試穿服務：' + extractErr(t));
+  const j = JSON.parse(t);
+  if (!j.status_url || !j.response_url) throw new Error('衣服試穿服務沒有回應工作編號');
+  return { status_url: j.status_url, response_url: j.response_url, at: Date.now() };
+}
+async function falCheck(env, req) {
+  const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY') };
+  if (Date.now() - (req.at || 0) > UPSTREAM_TIMEOUT_MS) throw new Error('衣服試穿服務逾時，請稍後再試');
+  const sr = await fetchT(req.status_url, { headers }, '衣服試穿服務', 20000);
+  const sd = await sr.json().catch(() => ({}));
+  if (sd.status === 'FAILED' || (sr.status >= 400 && sr.status !== 202)) throw new Error('衣服試穿服務：' + friendlyFal(typeof sd.error === 'string' ? sd.error : (Array.isArray(sd.detail) ? sd.detail.map(x => x && x.msg || '').join('; ') : (sd.detail || '處理失敗'))));
+  if (sd.status !== 'COMPLETED') return null;
+  const rr = await fetchT(req.response_url, { headers }, '衣服試穿服務', 30000);
+  const rt = await rr.text();
+  if (!rr.ok) throw new Error('衣服試穿服務：' + extractErr(rt));
+  const d = JSON.parse(rt); const u = d && d.images && d.images[0] && d.images[0].url;
+  if (!u) throw new Error('衣服試穿服務沒有回傳圖片');
+  return u;
+}
 
 /* ---- FASHN（queue 模式：送出 → 輪詢 → 取結果） ---- */
 async function fashnTryon(env, person, garment, category, photoType) {

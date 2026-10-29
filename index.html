@@ -682,8 +682,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.9.1';
-const BUILD = '2026-10-30-01';
+const APP_VERSION = '3.9.2';
+const BUILD = '2026-10-30-02';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1339,14 +1339,19 @@ $('btnRun').onclick=async()=>{
     let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true }) });
     if (d && d.async && d.id) {
       // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
-      const t0=Date.now(); let st;
+      const t0=Date.now(); let st; clearInterval(tick);
+      const STEP_TXT={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',finish:'整理結果'};
+      try{ localStorage.setItem('tryon.pending', String(d.id)); }catch{}
       while (true) {
-        await new Promise(r=>setTimeout(r,3000));
-        try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 4*60*1000) throw e; continue; }
+        await new Promise(r=>setTimeout(r,2500));
+        try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
         if (st.status==='ok') { d = st.result; break; }
         if (st.status==='failed') throw new Error(st.error||'合成失敗');
-        if (Date.now()-t0 > 5*60*1000) throw new Error('合成逾時，點數會自動退回，請再試一次');
+        const sec=Math.round((Date.now()-t0)/1000);
+        if (st.progress) { const pg=st.progress; const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/pg.total*100))); bar.style.width=pc+'%'; const msg=`正在${STEP_TXT[pg.current]||'處理'}…（第 ${Math.min(pg.done+1,pg.total)}/${pg.total} 步，${sec} 秒）`; $('runStatus').textContent=msg; const w=$('waitMsg'); if(w) w.textContent=msg; }
+        if (Date.now()-t0 > 7*60*1000) throw new Error('合成逾時，點數會自動退回，請再試一次');
       }
+      try{ localStorage.removeItem('tryon.pending'); }catch{}
     }
     // 伺服器已上傳成功的圖只回 URL，轉成 data URI 供後續（臉部鎖定、分享、繼續搭）使用
     const pick = async (data, url) => data || (url ? await urlToDataUri(url) : null);

@@ -65,17 +65,25 @@ with sync_playwright() as pw:
       slots = pg.evaluate("[...document.querySelectorAll('.slot.has')].map(e=>e.dataset.type)")
       cur = pg.evaluate("document.querySelector('.view.on')?.id")
       step('商店商品放進試衣間', len(slots) > 0, f'slots={slots} view={cur}')
+      # 再放一件褲子（重現「上衣＋褲子」兩步合成）
+      pg.goto(SITE + '#shop'); pg.wait_for_timeout(2000)
+      pg.click('#shopType [data-t="bottom"]'); pg.wait_for_timeout(3000)
+      if pg.locator('[data-try]').count():
+        pg.locator('[data-try]').first.click(); pg.wait_for_timeout(3000)
+      slots = pg.evaluate("[...document.querySelectorAll('.slot.has')].map(e=>e.dataset.type)")
+      step('再放入褲子', 'bottom' in slots, f'slots={slots}')
     # 5. 尺寸建議
     pg.fill('#fBust', '86'); pg.fill('#fWaist', '68'); pg.fill('#fHip', '92'); pg.wait_for_timeout(300)
     fr = txt('#fitRows'); step('尺寸建議有內容', fr and '建議' in fr, fr); shot('04_fit')
     # 6. AI 試穿（真的呼叫 fal）
-    cost = txt('#costN'); pg.click('#btnRun'); t0 = time.time(); done = False
-    while time.time() - t0 < 150:
+    cost = txt('#costN'); pg.click('#btnRun'); t0 = time.time(); done = False; statuses = []
+    while time.time() - t0 < 300:
       pg.wait_for_timeout(3000)
       if pg.locator('#result img').count() > 0: done = True; break
       rs = txt('#runStatus') or ''
+      if not statuses or statuses[-1] != rs: statuses.append(rs)
       if any(k in rs for k in ('失敗', '錯誤', '不足', '逾時')): break
-    step('AI 試穿出結果', done, f'cost={cost} 耗時 {int(time.time()-t0)}s runStatus={txt("#runStatus")}'); shot('05_result')
+    step('AI 試穿出結果', done, f'cost={cost} 耗時 {int(time.time()-t0)}s runStatus={txt("#runStatus")} statuses={statuses[-6:]}'); shot('05_result')
     # 7. 身形分析
     pg.goto(SITE + '#body'); pg.wait_for_timeout(1200)
     pg.fill('#bHeight', '162'); pg.fill('#bWeight', '52'); pg.click('#btnAnalyze')
