@@ -1,0 +1,17 @@
+name: 同步商店商品（UNIQLO 測試用）
+on:
+  workflow_dispatch:
+    inputs:
+      per_cat: { description: '每個分類幾件', default: '12', required: false }
+  schedule:
+    - cron: '17 20 * * *'   # 每天台灣時間 04:17 更新價格與下架
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 抓商品並寫入 Supabase
+        env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python3 tools/sync_uniqlo.py "${{ inputs.per_cat || '12' }}"
