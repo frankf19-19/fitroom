@@ -101,7 +101,7 @@
   .hero h1{font-size:34px;line-height:1.3;margin:10px 0 18px}
   @media(min-width:900px){.hero h1{font-size:clamp(34px,3.2vw,44px);text-wrap:balance}}
   .hero .kicker{font-size:11px;letter-spacing:4px;color:var(--muted);margin-bottom:10px}
-  .demo{position:relative;width:100%;overflow:hidden;aspect-ratio:2/3;max-width:420px;margin:22px auto;background:var(--bg2);touch-action:none;user-select:none;cursor:ew-resize}
+  .demo{position:relative;width:100%;overflow:hidden;aspect-ratio:2/3;max-width:420px;margin:22px auto;background:var(--bg2);touch-action:pan-y;user-select:none;cursor:ew-resize}
   @media(min-width:900px){.demo{margin:0 0 0 auto}}
   .demo svg{position:absolute;inset:0;width:100%;height:100%}
   .demo .after{position:absolute;inset:0;width:55%;overflow:hidden}
@@ -239,7 +239,7 @@
   footer{text-align:center;color:var(--muted);font-size:11px;letter-spacing:1px;padding:40px 18px;line-height:2.2;border-top:1px solid var(--line);margin-top:30px}
   footer a{color:var(--muted);margin:0 8px}
   /* 前後對比滑桿 */
-  .cmp{position:relative;display:inline-block;max-width:100%;user-select:none;touch-action:none}
+  .cmp{position:relative;display:inline-block;max-width:100%;user-select:none;touch-action:pan-y}
   .cmp img{display:block;max-width:100%;max-height:680px}
   .cmp .after{position:absolute;inset:0;overflow:hidden;width:50%}
   .cmp .after img{position:absolute;left:0;top:0;height:100%;width:auto;max-width:none}
@@ -387,6 +387,11 @@
   .shape b{font-family:var(--serif);font-weight:400;font-size:17px;letter-spacing:2px;display:block}
   .shape small{color:var(--muted);font-size:11px;letter-spacing:1px}
   .analyze-cta{border:1px solid var(--line);padding:14px;font-size:12px;line-height:1.8;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  @media(max-width:899px){input[type=text],input[type=email],input[type=url],input[type=number],input[type=search],select,textarea{font-size:16px}}
+  .topbar .in{padding-top:calc(14px + env(safe-area-inset-top))}
+  .toast{bottom:calc(var(--nav) + 18px + env(safe-area-inset-bottom))}
+  .lightbox img{max-height:calc(100dvh - 190px)}
+  .sheet{max-height:88dvh}
 </style>
 </head>
 <body>
@@ -419,7 +424,7 @@
           <button class="btn block gbtn" id="btnGoogle"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.9l-7.8 6C6.5 42.6 14.6 48 24 48z"/></svg>使用 Google 登入</button>
           <div class="or">或用 Email</div>
           <div class="row" style="flex-wrap:nowrap"><input type="email" id="emailInput" placeholder="你的 Email"><button class="btn" id="btnEmail">寄驗證碼</button></div>
-          <div class="emailsent hidden" id="emailSent">已寄到 <b id="emailSentTo"></b>。輸入信中的驗證碼，或直接點信裡的連結（找不到請看垃圾郵件）。
+          <div class="emailsent hidden" id="emailSent">已寄到 <b id="emailSentTo"></b>。點信裡的「Sign in」連結即可登入；若信中有驗證碼也可以直接輸入（找不到請看垃圾郵件）。
             <div class="otp"><input type="text" inputmode="numeric" autocomplete="one-time-code" id="otpCode" placeholder="驗證碼"><button class="btn primary" id="otpVerify">登入</button></div></div>
           <div class="muted" style="margin-top:8px">免註冊、免密碼。每天送免費合成額度。</div>
           <div style="margin-top:10px;text-align:center"><button class="btn ghost sm" data-go="tryon">先不登入，逛逛試衣間</button></div>
@@ -677,8 +682,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '3.8.0';
-const BUILD = '2026-10-29-11';
+const APP_VERSION = '3.9.0';
+const BUILD = '2026-10-29-12';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -762,6 +767,7 @@ document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=
 
 /* ---------- 登入 ---------- */
 async function initAuth(){
+  try{ const hp=new URLSearchParams(location.hash.replace(/^#/,'')); if(hp.get('error_description')||hp.get('error_code')){ const code=hp.get('error_code')||''; toast(code.includes('expired')?'登入連結已失效（可能已點過或超過時限），請重新寄一封':'登入失敗：'+(hp.get('error_description')||code)); history.replaceState(null,'',location.pathname+location.search); } }catch{}
   if (!supa) { state.authReady=true; renderUser(); showSetup(); return; }
   const { data } = await supa.auth.getSession();
   state.authReady=true;
@@ -838,7 +844,7 @@ async function verifyOtp(email, code, btn){
 }
 $('otpVerify').onclick=()=>verifyOtp($('emailInput').value.trim(), $('otpCode').value, $('otpVerify'));
 $('otpCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('otpVerify').click(); });
-function resetUserState(){ state.me=null; state.wardrobe=[]; state.history=[]; state.result=null; state.person=null; state.personOrig=null; state.slots={}; try{ sessionStorage.removeItem('tryon.person'); sessionStorage.removeItem('tryon.slots'); }catch{} }
+function resetUserState(){ state.me=null; state.wardrobe=[]; state.history=[]; state.result=null; state.person=null; state.personOrig=null; state.slots={}; try{ ['tryon.person','tryon.slots'].forEach(k=>{ localStorage.removeItem(k); sessionStorage.removeItem(k); }); }catch{} }
 $('btnLogout').onclick=async()=>{ if(!await ask('要登出嗎？','',{ok:'登出'})) return; if(supa) await supa.auth.signOut(); resetUserState(); location.replace(location.pathname); };
 function openLogin(){
   if(!supa) return showSetup(true);
@@ -870,14 +876,16 @@ window.addEventListener('unhandledrejection',e=>{ if(!CONFIG.WORKER_URL) return;
 async function api(path, opts={}){
   if (!CONFIG.WORKER_URL) throw new Error('尚未設定合成服務');
   const token = state.session && state.session.access_token;
-  const r = await fetch(CONFIG.WORKER_URL + path, { ...opts, headers:{ 'Content-Type':'application/json', ...(token?{'Authorization':'Bearer '+token}:{}), ...(opts.headers||{}) } });
+  let r; try { r = await fetch(CONFIG.WORKER_URL + path, { ...opts, headers:{ 'Content-Type':'application/json', ...(token?{'Authorization':'Bearer '+token}:{}), ...(opts.headers||{}) } }); }
+  catch(e){ throw new Error(navigator.onLine===false ? '目前沒有網路連線' : '連線中斷，請確認網路後再試；若已扣點會在幾分鐘內自動退回'); }
   let d; try { d = await r.json(); } catch { throw new Error('服務回應異常（'+r.status+'）'); }
   if (!r.ok || d.error) { const e=new Error(d.error||('HTTP '+r.status)); e.data=d; throw e; }
   return d;
 }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.user&&!busy) refreshMe(); });
 async function refreshMe(){
   if (!state.user) return;
-  try { state.me = await api('/api/me'); } catch(e){ state.me=null; }
+  try { state.me = await api('/api/me'); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+e.message); }
   renderUser(); renderCredits(); renderSlots(); updateAnalyzeCta();
 }
 
@@ -909,9 +917,10 @@ function dataUriToBlob(uri){ const [h,b]=uri.split(','); const mime=/data:(.*?);
 
 /* ---------- 全身照 ---------- */
 function setStep(n){ document.querySelectorAll('#steps3 span').forEach(sp=>{ const k=+sp.dataset.s; sp.classList.toggle('done',k<n); sp.classList.toggle('cur',k===n); }); }
-function setPerson(dataUri){
+async function setPerson(dataUri){
+  if (dataUri && dataUri.length > 1500000) { try { const im=await loadImg(dataUri); dataUri=downscale(im,1280,'image/jpeg',0.9); } catch{} }
   state.person = dataUri; state.personOrig = dataUri;
-  try{ sessionStorage.setItem('tryon.person', dataUri); }catch{}
+  try{ localStorage.setItem('tryon.person', dataUri); }catch{}
   if(!Object.keys(state.slots).length) setStep(2);
   const box=$('personBox'); box.classList.add('has');
   box.innerHTML = `<img src="${dataUri}" alt="全身照"><button class="btn sm change" id="personChange">更換</button>`;
@@ -935,9 +944,9 @@ $('btnPersonFromHistory').onclick=async()=>{
 };
 
 function restoreSession(){
-  try{ const p=sessionStorage.getItem('tryon.person'); if(p) setPerson(p); const sl=sessionStorage.getItem('tryon.slots'); if(sl){ state.slots=JSON.parse(sl); renderSlots(); } }catch{}
+  try{ const p=localStorage.getItem('tryon.person')||sessionStorage.getItem('tryon.person'); if(p) setPerson(p); const sl=localStorage.getItem('tryon.slots')||sessionStorage.getItem('tryon.slots'); if(sl){ state.slots=JSON.parse(sl); renderSlots(); } }catch{}
 }
-function persistSlots(){ try{ sessionStorage.setItem('tryon.slots', JSON.stringify(state.slots)); }catch{} }
+function persistSlots(){ try{ localStorage.setItem('tryon.slots', JSON.stringify(state.slots)); }catch{} }
 
 /* ---------- 單品格子 ---------- */
 function renderSlots(){
@@ -1107,7 +1116,7 @@ $('btnOutfit').onclick=async()=>{
     const d=await api('/api/outfit',{method:'POST',body:JSON.stringify({have, gender:(state.me&&state.me.body&&state.me.body.gender)||fitGender})});
     const outs=d.outfits||[]; if(!outs.length){ $('outfitStatus').textContent='目前商店裡找不到合適的搭配，再放一件單品試試。'; return; }
     $('outfitStatus').textContent=d.note||'';
-    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${o.title||'搭配'}</h3><div class="tip">${o.tip||''}</div><div class="items">${(o.items||[]).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" alt=""><b>${it.product.brand||''}</b> ${it.product.name}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${it.reason||''}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
+    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${o.title||'搭配'}</h3><div class="tip">${o.tip||''}</div><div class="items">${(o.items||[]).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${it.product.brand||''}</b> ${it.product.name}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${it.reason||''}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
     const all=outs.flatMap(o=>(o.items||[]).map(i=>i.product));
     $('outfitBox').querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>{ const p=all.find(x=>String(x.id)===b.dataset.oid); if(p) tryProduct(p); });
     track('outfit',{n:all.length});
@@ -1173,7 +1182,7 @@ $('shopMore').onclick=()=>loadShop(false);
 function renderShop(){
   const box=$('shopList');
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" alt="${p.name}">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${p.brand||''}</span><span class="name">${p.name}</span><span class="price">${p.price!=null?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${p.name}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${p.brand||''}</span><span class="name">${p.name}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
 }
@@ -1241,7 +1250,7 @@ $('btnAnalyze').onclick=async()=>{
   try{
     const d=await api('/api/analyze',{method:'POST',body:JSON.stringify({ person: state.person, body:{height:h,weight:w,bust:+$('bBust').value||null,waist:+$('bWaist').value||null,hip:+$('bHip').value||null,gender:bodyGender}, platform:PLATFORM })});
     if(state.me){ state.me.analysis=d.analysis; state.me.body=d.analysis.measured; }
-    $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success'); track('analyze');
+    $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success');
     // 同步到尺寸預估
     $('fHeight').value=h; const mm=d.analysis.measured||{}; $('fBust').value=$('bBust').value||mm.est_bust||''; $('fWaist').value=$('bWaist').value||mm.est_waist||''; $('fHip').value=$('bHip').value||mm.est_hip||''; if(!$('bBust').value&&mm.est_bust) $('fitHint').textContent=`已帶入 AI 估計的三圍（胸 ${mm.est_bust}／腰 ${mm.est_waist}／臀 ${mm.est_hip} cm），實際量過更準。`; renderFit();
     updateAnalyzeCta();
@@ -1315,7 +1324,18 @@ $('btnRun').onclick=async()=>{
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
-    const d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views }) });
+    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true }) });
+    if (d && d.async && d.id) {
+      // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
+      const t0=Date.now(); let st;
+      while (true) {
+        await new Promise(r=>setTimeout(r,3000));
+        try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 4*60*1000) throw e; continue; }
+        if (st.status==='ok') { d = st.result; break; }
+        if (st.status==='failed') throw new Error(st.error||'合成失敗');
+        if (Date.now()-t0 > 5*60*1000) throw new Error('合成逾時，點數會自動退回，請再試一次');
+      }
+    }
     // 伺服器已上傳成功的圖只回 URL，轉成 data URI 供後續（臉部鎖定、分享、繼續搭）使用
     const pick = async (data, url) => data || (url ? await urlToDataUri(url) : null);
     const n = Math.max((d.images||[]).length, (d.image_urls||[]).length, 1);
@@ -1467,6 +1487,7 @@ let lbItem=null;
 function openLightbox(h){ lbItem=h; const lb=$('lightbox'); lb.querySelector('img').src=h.image_url; const v=h.views||{}; const lv=$('lbViews'); const has=v.side||v.back; lv.classList.toggle('hidden',!has);
   if(has){ lv.innerHTML=`<button class="on" data-u="${h.image_url}">正面</button>${v.side?`<button data-u="${v.side}">側面</button>`:''}${v.back?`<button data-u="${v.back}">背面</button>`:''}`; lv.querySelectorAll('button').forEach(b=>b.onclick=()=>{ lv.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); lb.querySelector('img').src=b.dataset.u; }); }
   lb.classList.add('on'); }
+$('lightbox').addEventListener('click',e=>{ if(e.target.id==='lightbox') $('lightbox').classList.remove('on'); });
 $('lbClose').onclick=()=>$('lightbox').classList.remove('on');
 $('lbDownload').onclick=async()=>{ if(!lbItem) return; saveImage(await urlToDataUri($('lightbox').querySelector('img').src),'試穿吧_'+lbItem.id+'.png'); };
 $('lbUse').onclick=async()=>{ if(!lbItem) return; try{ setPerson(await urlToDataUri(lbItem.image_url)); $('lightbox').classList.remove('on'); go('tryon'); toast('已設為底圖'); }catch{ toast('載入失敗'); } };

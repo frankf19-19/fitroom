@@ -18,8 +18,8 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '1.9.1';
-const RUNNING_STALE_MS = 10 * 60 * 1000;   // 進行中超過 10 分鐘視為失敗並退點
+const VERSION = '2.0.0';
+const RUNNING_STALE_MS = 4 * 60 * 1000;    // 進行中超過 4 分鐘視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 const PACKS = { // 點數包
@@ -42,6 +42,7 @@ const EDIT_PROMPTS = {
   hair: 'Photo edit task. Change the hairstyle of the person in the first photo to the hairstyle shown in the second image: same length, cut, texture and hair color. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP,
   hair_text: 'Photo edit task. Change the hairstyle of the person in the photo to: {{desc}}. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP
 };
+const TEXT_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
 const GEMINI_FALLBACKS = ['gemini-nano-banana-2.1', 'gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
 const VIEW_PROMPTS = {
   side: 'Generate a new photo of the exact same person wearing the exact same outfit as in this photo, but photographed from the left side (a full 90-degree profile view, the person has turned sideways). Same background, lighting, camera distance and framing, full body visible. Keep identity, body shape, hairstyle, skin and every garment detail (color, pattern, length, fit) perfectly consistent. Photorealistic, no text.',
@@ -49,7 +50,7 @@ const VIEW_PROMPTS = {
 };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const cors = corsHeaders(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
@@ -57,7 +58,8 @@ export default {
       const p = url.pathname, m = request.method;
       if (p === '/api/health') return json({ ok: true, version: VERSION }, 200, cors);
       if (p === '/api/me' && m === 'GET') return handleMe(request, env, cors);
-      if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors);
+      if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors, ctx);
+      if (p === '/api/tryon/status' && m === 'GET') return handleTryonStatus(request, env, cors, url);
       if (p === '/api/outfit' && m === 'POST') return handleOutfit(request, env, cors);
       if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors);
       if (p === '/api/products' && m === 'GET') return handleProducts(request, env, cors, url);
@@ -196,14 +198,15 @@ async function handleAnalyze(request, env, cors) {
   const bmi = w / Math.pow(h / 100, 2);
   const meas = `Measurements: height ${h} cm, weight ${w} kg (BMI ${bmi.toFixed(1)})` + (b.bust ? `, bust ${b.bust} cm` : '') + (b.waist ? `, waist ${b.waist} cm` : '') + (b.hip ? `, hip ${b.hip} cm` : '') + (b.gender ? `, gender ${b.gender === 'm' ? 'male' : 'female'}` : '') + '.';
   const parts = [{ text: ANALYZE_PROMPT + '\n' + meas }, inlinePart(person)];
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  const models = TEXT_MODELS;
   let out = null, lastErr = '';
   for (const model of models) {
     const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', 60000);
     const t = await r.text();
     if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch (e) { lastErr = '回傳格式異常'; continue; } }
-    try { lastErr = JSON.parse(t).error.message.slice(0, 160); } catch { lastErr = t.slice(0, 160); }
-    if (r.status === 404) continue; if (r.status === 429 || r.status >= 500) continue; break;
+    let em; try { em = JSON.parse(t).error.message.slice(0, 160); } catch { em = t.slice(0, 160); }
+    if (r.status === 429) lastErr = '文字模型額度已用完（' + model + '），請稍後再試或綁定 Google AI 帳單'; else if (r.status !== 404) lastErr = em; else if (!lastErr) lastErr = em;
+    if (r.status === 404 || r.status === 429 || r.status >= 500) continue; break;
   }
   if (!out) return json({ error: '身形分析失敗：' + lastErr }, 502, cors);
   out.bmi = Number(bmi.toFixed(1)); const est = out.estimated || {}; const n = v => (Number(v) > 30 && Number(v) < 200) ? Math.round(Number(v)) : null;
@@ -215,13 +218,14 @@ async function handleAnalyze(request, env, cors) {
 }
 
 /* ---------------- /api/tryon ---------------- */
-async function handleTryon(request, env, cors) {
+async function handleTryon(request, env, cors, ctx) {
   let user;
   try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
   let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
   const { person, items } = body || {};
   const variants = Number(body.variants) === 2 ? 2 : 1;
   const wantViews = body.views === true && !!env.GEMINI_KEY;
+  const asyncMode = body.async === true && ctx && typeof ctx.waitUntil === 'function';
   const started = Date.now();
   const left = () => TRYON_BUDGET_MS - (Date.now() - started);
   if (!isDataImage(person)) return json({ error: '請提供全身照（檔案太大或格式不支援）' }, 400, cors);
@@ -277,68 +281,93 @@ async function handleTryon(request, env, cors) {
     }
     return current;
   };
-  let results, views = null, viewsError = null;
-  try {
-    results = await Promise.all(Array.from({ length: variants }, runPipeline));
-  } catch (e) {
-    if (payCredits > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
-    await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: String(e.message).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
-    return json({ error: '合成失敗（已退回點數）：' + e.message }, 502, cors);
-  }
-  // 多角度獨立處理：失敗只退 2 點，主圖照常回傳
-  let finalPay = payCredits, finalFree = useFree;
-  if (wantViews) {
+  const job = async () => {
+    let results, views = null, viewsError = null;
     try {
-      const [side, back] = await Promise.all([geminiView(env, results[0], 'side', left(), hints), geminiView(env, results[0], 'back', left(), hints)]);
-      views = { side, back };
+      results = await Promise.all(Array.from({ length: variants }, runPipeline));
     } catch (e) {
-      viewsError = String(e.message).slice(0, 160);
-      const refund = Math.min(2, payCredits);
-      if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
-      finalPay = payCredits - refund; finalFree = useFree - (2 - refund);
+      if (payCredits > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
+      const msg = '合成失敗（已退回點數）：' + e.message;
+      await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
+      const err = new Error(msg); err.status = 502; throw err;
     }
-  }
-
-  // 存結果到 Storage；第一張更新原列，其餘各新增一列（不計免費額度）
-  const urls = [];
-  for (let i = 0; i < results.length; i++) {
-    let u = null;
-    try {
-      const bin = await dataUriToBytes(results[i]);
-      const path = `${user.id}/${Date.now()}-${i}.${bin.ext}`;
-      const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, {
-        method: 'POST',
-        headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' },
-        body: bin.bytes
-      });
-      if (up.ok) u = `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
-    } catch { /* 圖片存檔失敗不影響回傳 */ }
-    urls.push(u);
-    try {
-      if (i === 0) await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'ok', image_url: u, cost: finalPay, free_used: finalFree, error: viewsError });
-      else await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: 0, free_used: 0, status: 'ok', image_url: u, variants });
-    } catch { /* ignore */ }
-  }
-
-  // 多角度圖也存起來
-  const viewUrls = {};
-  if (views) {
-    for (const k of ['side', 'back']) {
+    // 多角度獨立處理：失敗只退 2 點，主圖照常回傳
+    let finalPay = payCredits, finalFree = useFree;
+    if (wantViews) {
       try {
-        const bin = await dataUriToBytes(views[k]);
-        const path = `${user.id}/${Date.now()}-${k}.${bin.ext}`;
-        const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' }, body: bin.bytes });
-        if (up.ok) viewUrls[k] = `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
+        const [side, back] = await Promise.all([geminiView(env, results[0], 'side', left(), hints), geminiView(env, results[0], 'back', left(), hints)]);
+        views = { side, back };
+      } catch (e) {
+        viewsError = String(e.message).slice(0, 160);
+        const refund = Math.min(2, payCredits);
+        if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
+        finalPay = payCredits - refund; finalFree = useFree - (2 - refund);
+      }
+    }
+
+    // 存結果到 Storage；第一張更新原列，其餘各新增一列（不計免費額度）
+    const urls = [];
+    for (let i = 0; i < results.length; i++) {
+      let u = null;
+      try {
+        const bin = await dataUriToBytes(results[i]);
+        const path = `${user.id}/${Date.now()}-${i}.${bin.ext}`;
+        const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, {
+          method: 'POST',
+          headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' },
+          body: bin.bytes
+        });
+        if (up.ok) u = `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
+      } catch { /* 圖片存檔失敗不影響回傳 */ }
+      urls.push(u);
+      try {
+        if (i === 0) await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'ok', image_url: u, cost: finalPay, free_used: finalFree, error: viewsError });
+        else await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: 0, free_used: 0, status: 'ok', image_url: u, variants });
       } catch { /* ignore */ }
     }
-    try { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { views: viewUrls }); } catch { /* ignore */ }
+
+    // 多角度圖也存起來
+    const viewUrls = {};
+    if (views) {
+      for (const k of ['side', 'back']) {
+        try {
+          const bin = await dataUriToBytes(views[k]);
+          const path = `${user.id}/${Date.now()}-${k}.${bin.ext}`;
+          const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' }, body: bin.bytes });
+          if (up.ok) viewUrls[k] = `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
+        } catch { /* ignore */ }
+      }
+    }
+    let creditsNow = profile.credits - finalPay;
+    try { creditsNow = (await getProfile(env, user)).credits; } catch { /* 用估算值 */ }
+    // 圖片已上傳成功的只回 URL，省下回應體積；上傳失敗的才回 base64
+    const imagesOut = results.map((r, i) => urls[i] ? null : r);
+    const payload = { images: imagesOut, image_urls: urls, views: views ? { side: viewUrls.side ? null : views.side, back: viewUrls.back ? null : views.back } : null, view_urls: viewUrls, views_error: viewsError, charged: finalPay, free_used: finalFree, credits: creditsNow, free_left: Math.max(0, freeLeft - finalFree) };
+    // 非同步模式：結果只存 URL（base64 太大），存進 views.result 供輪詢取用
+    const stored = { ...viewUrls, result: asyncMode ? { ...payload, images: payload.images.map(x => null), views: null } : undefined };
+    if (asyncMode && (urls.some(u => !u) || (views && (!viewUrls.side || !viewUrls.back)))) stored.result.partial = true;
+    try { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { views: stored }); } catch { /* ignore */ }
+    return payload;
+  };
+  if (asyncMode) {
+    ctx.waitUntil(job().catch(() => {}));
+    return json({ id: gen.id, async: true, cost }, 202, cors);
   }
-  let creditsNow = profile.credits - finalPay;
-  try { creditsNow = (await getProfile(env, user)).credits; } catch { /* 用估算值 */ }
-  // 圖片已上傳成功的只回 URL，省下回應體積；上傳失敗的才回 base64
-  const imagesOut = results.map((r, i) => urls[i] ? null : r);
-  return json({ images: imagesOut, image_urls: urls, views: views ? { side: viewUrls.side ? null : views.side, back: viewUrls.back ? null : views.back } : null, view_urls: viewUrls, views_error: viewsError, charged: finalPay, free_used: finalFree, credits: creditsNow, free_left: Math.max(0, freeLeft - finalFree) }, 200, cors);
+  try { return json(await job(), 200, cors); }
+  catch (e) { return json({ error: e.message }, e.status || 502, cors); }
 }
+async function handleTryonStatus(request, env, cors, url) {
+  let user;
+  try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
+  const id = Number(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
+  const rows = await sb(env, `/rest/v1/generations?id=eq.${id}&user_id=eq.${user.id}&select=status,error,image_url,views,created_at`);
+  const g = rows[0]; if (!g) return json({ error: '找不到這筆合成' }, 404, cors);
+  if (g.status === 'running' && Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) return json({ status: 'failed', error: '合成逾時，點數會自動退回，請再試一次' }, 200, cors);
+  if (g.status === 'failed') return json({ status: 'failed', error: g.error || '合成失敗' }, 200, cors);
+  if (g.status === 'ok') { const r = (g.views && g.views.result) || null; return json({ status: 'ok', result: r || { images: [null], image_urls: [g.image_url], views: null, view_urls: g.views || {}, views_error: null } }, 200, cors); }
+  return json({ status: 'running' }, 200, cors);
+}
+
 
 /* ---- FASHN（queue 模式：送出 → 輪詢 → 取結果） ---- */
 async function fashnTryon(env, person, garment, category, photoType) {
@@ -507,13 +536,14 @@ ${list}
 
 Build ${have.length ? '2' : '3'} outfits that go with what the user already has (or complete looks if nothing yet). Use ONLY candidate ids. Each outfit: 2–4 products, at most one product per type, never two of the same type. Prefer items flattering the user's body shape and skin tone; keep colors coherent; mix price points sensibly.
 Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"one Traditional Chinese sentence on why this look suits the user's body","items":[{"id":123,"reason":"short Traditional Chinese reason (<=25 chars)"}]}],"note":"one short Traditional Chinese sentence of overall advice"}`;
-  const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  const models = TEXT_MODELS;
   let out = null, lastErr = '';
   for (const model of models) {
     const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, responseMimeType: 'application/json' } }) }, '搭配建議服務', 45000);
     const t = await r.text();
     if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch { lastErr = '回傳格式異常'; continue; } }
-    try { lastErr = JSON.parse(t).error.message.slice(0, 160); } catch { lastErr = t.slice(0, 160); }
+    let em; try { em = JSON.parse(t).error.message.slice(0, 160); } catch { em = t.slice(0, 160); }
+    if (r.status === 429) lastErr = '文字模型額度已用完（' + model + '），請稍後再試或綁定 Google AI 帳單'; else if (r.status !== 404) lastErr = em; else if (!lastErr) lastErr = em;
     if (r.status === 404 || r.status === 429 || r.status >= 500) continue; break;
   }
   if (!out) return json({ error: '搭配建議失敗：' + lastErr }, 502, cors);
@@ -525,7 +555,7 @@ Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"
 
 /* ---------------- 商品櫥窗 ---------------- */
 async function handleProducts(request, env, cors, url) {
-  const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').trim().slice(0, 40);
+  const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 40);
   const page = Math.max(0, Number(url.searchParams.get('page') || 0)), size = 24;
   let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
   if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
@@ -668,6 +698,7 @@ async function handleEcpayNotify(request, env) {
   const mac = p.CheckMacValue; delete p.CheckMacValue;
   if (mac !== await ecpayMac(p, cfg.key, cfg.iv)) return new Response('0|CheckMacValue Error', { status: 400 });
   if (p.MerchantID !== cfg.merchant) return new Response('0|MerchantID Error', { status: 400 });
+  if (p.SimulatePaid === '1' && !cfg.test) return new Response('1|OK');
   if (p.RtnCode === '1') {
     const rows = await sb(env, `/rest/v1/orders?trade_no=eq.${encodeURIComponent(p.MerchantTradeNo)}&select=*`);
     const o = rows[0];
