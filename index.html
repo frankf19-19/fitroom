@@ -692,7 +692,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '4.1.0';
-const BUILD = '2026-10-30-06';
+const BUILD = '2026-10-30-07';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1395,8 +1395,9 @@ $('btnRun').onclick=async()=>{
       const t0=Date.now(); let st; clearInterval(tick); const jobId=d.id;
       const STEP_TXT={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',finish:'整理結果'};
       try{ localStorage.setItem('tryon.pending', String(d.id)); }catch{}
+      if ($('faceLock').classList.contains('on')) getFaceDetector().catch(()=>{});   // 等待時先載入臉部偵測，結果出來就能馬上鎖臉
       while (true) {
-        await new Promise(r=>setTimeout(r,2500));
+        await new Promise(r=>setTimeout(r, Date.now()-t0 < 15000 ? 3000 : 1500));
         try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
         if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
         if (st.front) { window.__lastTiming=st.front.timing; d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
