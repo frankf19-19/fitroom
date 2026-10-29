@@ -9,7 +9,7 @@ SUPABASE_URL = "https://oksutiyvzxgssmgppdbz.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_3XnPxz8D1X8OTv5a6-Ku5Q_7v8zx7_K"
 SITE_URL = "https://frankf19-19.github.io/fitroom"
 FREE_DAILY = "2"
-ADMIN_EMAILS = "frankccc199@gmail.com"
+ADMIN_EMAILS = "frankccc199@gmail.com,frankccc199@hotmail.com"
 GEMINI_IMAGE_MODEL = "gemini-nano-banana-2.1"
 
 [observability]
