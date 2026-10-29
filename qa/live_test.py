@@ -55,7 +55,7 @@ with sync_playwright() as pw:
     ua = txt('#userArea'); step('登入後右上顯示點數', ua and '點' in ua and '–' not in ua, f'url={pg.url} userArea={ua}'); shot('01_home_after_login')
     # 3. 試衣間：上傳全身照
     pg.goto(SITE + '#tryon'); pg.wait_for_timeout(1500)
-    pg.set_input_files('#filePerson', 'qa/person.jpg'); pg.wait_for_timeout(2500)
+    pg.set_input_files('#filePerson', 'demo/f-before.jpg'); pg.wait_for_timeout(2500)
     step('上傳全身照', 'has' in (pg.get_attribute('#personBox', 'class') or ''), pg.get_attribute('#personBox', 'class')); shot('02_tryon_person')
     # 4. 商店：放入第一件上衣
     pg.goto(SITE + '#shop'); pg.wait_for_timeout(3500)
@@ -99,7 +99,7 @@ with sync_playwright() as pw:
       pg.goto(SITE + '#' + v); pg.wait_for_timeout(2000); shot(f'08_{v}')
       step(f'頁面 #{v}', pg.evaluate("document.querySelector('.view.on')?.id") == 'view-' + v, pg.evaluate("document.querySelector('.view.on')?.id"))
     # 10. 登出
-    pg.click('#view-settings #btnLogout', timeout=5000); pg.wait_for_timeout(500)
+    pg.click('#btnLogout', timeout=5000); pg.wait_for_timeout(500)
     try: pg.click('#dlgOk', timeout=3000)
     except Exception: pass
     pg.wait_for_timeout(2500); ua = txt('#userArea'); step('登出', ua is None or '登入' in ua or '–' in ua, ua); shot('09_logged_out')

@@ -363,7 +363,7 @@ async function fashnTryon(env, person, garment, category, photoType) {
     const sr = await fetchT(statusUrl, { headers }, '衣服試穿服務', 30000);
     const sd = await sr.json().catch(() => ({}));
     if (sd.status === 'COMPLETED') { done = true; break; }
-    if (sd.status === 'FAILED' || sr.status >= 400 && sr.status !== 202) throw new Error('衣服試穿服務：' + (sd.error || sd.detail || '處理失敗'));
+    if (sd.status === 'FAILED' || sr.status >= 400 && sr.status !== 202) throw new Error('衣服試穿服務：' + friendlyFal(typeof sd.error === 'string' ? sd.error : (Array.isArray(sd.detail) ? sd.detail.map(x => x && x.msg || '').join('; ') : (sd.detail || '處理失敗'))));
   }
   if (!done) throw new Error('衣服試穿服務逾時，請稍後再試');
   const rr = await fetchT(responseUrl, { headers }, '衣服試穿服務');
@@ -374,7 +374,15 @@ async function fashnTryon(env, person, garment, category, photoType) {
   if (!u) throw new Error('衣服試穿服務沒有回傳圖片');
   return await urlToDataUri(u);
 }
-function extractErr(t) { try { const j = JSON.parse(t); return String(j.detail ? JSON.stringify(j.detail) : (j.error || j.message || t)).slice(0, 200); } catch { return String(t).slice(0, 200); } }
+function friendlyFal(msg) {
+  const m = String(msg || '');
+  if (/detect body pose|person_image|no person|pose/i.test(m)) return '照片裡偵測不到完整的人體，請換一張正面、全身入鏡、光線清楚的照片';
+  if (/garment_image|garment/i.test(m)) return '衣服圖看不清楚，請換一張正面、背景乾淨的衣服照';
+  if (/content|nsfw|safety/i.test(m)) return '這張照片不符合安全規範，請換一張';
+  if (/timeout|timed out/i.test(m)) return '處理逾時，請再試一次';
+  return m.slice(0, 200);
+}
+function extractErr(t) { let raw; try { const j = JSON.parse(t); const d = j.detail; raw = Array.isArray(d) ? d.map(x => x && x.msg || '').join('; ') : (typeof d === 'string' ? d : (j.error || j.message || t)); } catch { raw = String(t); } return friendlyFal(raw); }
 
 /* ---- Gemini 影像編輯（模型備援鏈） ---- */
 async function geminiEdit(env, person, item, identityRef, bodyHint) {
@@ -584,7 +592,7 @@ async function handleImgProxy(request, env, cors, url) {
 }
 
 /* ---------------- 事件與錯誤回報 ---------------- */
-const EVENT_NAMES = new Set(['open', 'login', 'photo', 'item', 'tryon_start', 'tryon_ok', 'tryon_fail', 'share', 'story', 'buy_click', 'paid', 'install', 'analyze']);
+const EVENT_NAMES = new Set(['open', 'login', 'photo', 'item', 'tryon_start', 'tryon_ok', 'tryon_fail', 'share', 'story', 'buy_click', 'paid', 'install', 'analyze', 'outfit']);
 async function handleEvent(request, env, cors) {
   let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }
   const name = String(body.name || ''); if (!EVENT_NAMES.has(name)) return json({ ok: false }, 400, cors);
