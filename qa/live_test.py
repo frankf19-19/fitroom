@@ -83,6 +83,12 @@ with sync_playwright() as pw:
       rs = txt('#runStatus') or ''
       if not statuses or statuses[-1] != rs: statuses.append(rs)
       if any(k in rs for k in ('失敗', '錯誤', '不足', '逾時')): break
+    if done:
+      ui = pg.locator('#usedItems .ui-it').count()
+      if ui: pg.locator('#usedItems .ui-it').first.click(); pg.wait_for_timeout(800)
+      step('結果下方可點開選過的單品', ui > 0 and pg.locator('#itemView.on').count() > 0, f'items={ui}'); shot('05b_itemview')
+      try: pg.click('#ivClose', timeout=2000)
+      except Exception: pass
     step('AI 試穿出結果', done, f'cost={cost} 耗時 {int(time.time()-t0)}s runStatus={txt("#runStatus")} statuses={statuses[-6:]}'); shot('05_result')
     # 7. 身形分析
     pg.goto(SITE + '#body'); pg.wait_for_timeout(1200)

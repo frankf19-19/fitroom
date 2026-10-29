@@ -18,10 +18,50 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
+// 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
+const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-pro/edit', 'https://queue.fal.run/fal-ai/nano-banana-2/edit'];
+const ITEM_LABEL = { top: 'TOP or OUTERWEAR (upper body garment)', bottom: 'BOTTOM (trousers / skirt / shorts)', dress: 'ONE-PIECE (dress / jumpsuit)', shoes: 'SHOES', hat: 'HAT', accessory: 'ACCESSORY (bag / jewelry / glasses / watch)', hair: 'HAIRSTYLE reference' };
+function outfitPrompt(steps, hints, faceHint) {
+  const lines = []; let k = 2;
+  const refs = steps.map(st => { if (st.image_url) { const n = k++; lines.push(`Image ${n} is a product photo of the ${ITEM_LABEL[st.type]} to put on the customer.`); return n; } return null; });
+  const hairText = steps.find(st => st.type === 'hair' && !st.image_url && st.text);
+  const types = new Set(steps.map(s => s.type));
+  return [
+    'Virtual try-on photo edit for a fashion e-commerce app.',
+    'Image 1 is the customer photo. ' + lines.join(' '),
+    hairText ? `Also change the customer's hairstyle to: ${hairText.text}.` : '',
+    'Produce a photo of the SAME customer from Image 1 now wearing exactly these products.',
+    'GARMENT FIDELITY IS THE TOP PRIORITY. Copy each product exactly as it appears in its product photo:',
+    '- identical silhouette, cut and proportions (wide or balloon-leg trousers must stay wide/balloon-shaped, oversized stays oversized, cropped stays cropped), the same length relative to the body, rise and fit;',
+    '- identical color, fabric, texture, quilting and stitching, pattern, prints, logos, buttons, zippers, pockets, collar/hood and hem details;',
+    '- worn the same way as in the product photo (jacket open or closed, sleeves, tucked or untucked, how the hood falls).',
+    'From each product photo use ONLY that product. Ignore the model wearing it, any other clothes they wear, the background and any text overlays.',
+    types.has('top') ? 'If the top is outerwear shown open over another garment, the customer keeps their own top underneath.' : '',
+    "Fully replace the customer's current clothing in the provided categories (for example shorts become full-length trousers when the product is trousers). Keep the customer's clothing in categories that were not provided unchanged.",
+    'IDENTITY AND SCENE MUST NOT CHANGE: same face, facial expression, ' + (types.has('hair') ? '' : 'hairstyle, ') + 'skin tone, body shape and proportions, pose, hands and anything held in the hands (for example a phone), background, mirror, lighting, camera angle and framing.',
+    'Realistic fit and drape on this body with natural folds and shadows. Photorealistic. No text, no watermark. Keep the same aspect ratio and framing as Image 1.',
+    hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : ''
+  ].filter(Boolean).join('\n');
+}
+async function outfitSubmit(env, engineIdx, imageUrls, prompt, hi = true) {
+  const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
+  const body = { prompt, image_urls: imageUrls, num_images: 1, aspect_ratio: 'auto', output_format: 'png' };
+  if (hi) body.resolution = '2K';
+  const r = await fetchT(OUTFIT_ENGINES[engineIdx], { method: 'POST', headers, body: JSON.stringify(body) }, '換裝服務', 30000);
+  const t = await r.text();
+  if (!r.ok) { if (hi && r.status === 422 && /resolution/i.test(t)) return outfitSubmit(env, engineIdx, imageUrls, prompt, false); throw new Error('換裝服務：' + extractErr(t)); }
+  const j = JSON.parse(t);
+  if (!j.status_url || !j.response_url) throw new Error('換裝服務沒有回應工作編號');
+  return { status_url: j.status_url, response_url: j.response_url, at: Date.now() };
+}
+const VIEW_FAL_PROMPTS = {
+  side: 'Generate a new photo of the exact same person wearing the exact same outfit as in this photo, photographed from the side (a 90-degree profile view, the person has turned sideways). Same background, lighting, camera distance and framing, full body visible. Keep identity, body shape, hairstyle, skin and every garment detail (color, silhouette, length, fit) perfectly consistent. Photorealistic, no text.',
+  back: 'Generate a new photo of the exact same person wearing the exact same outfit as in this photo, photographed from behind (full back view, the person has turned around 180 degrees, face not visible). Same background, lighting, camera distance and framing, full body visible. Keep body shape, hairstyle, skin and every garment detail (color, silhouette, length, fit) perfectly consistent. Photorealistic, no text.'
+};
 const PACKS = { // 點數包
   p10: { name: '10', credits: 10, price: 99 },
   p30: { name: '30', credits: 30, price: 249 },
@@ -377,7 +417,10 @@ async function handleTryon(request, env, cors, ctx) {
         else { if (isDataImage(it.image)) st.image_url = await putImage(env, `${base}/item${k}`, it.image); if (it.text) st.text = String(it.text).slice(0, 200); }
         steps.push(st);
       }
-      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, steps,
+      const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
+      const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
+      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
+        steps: useOutfit ? [{ type: 'outfit', engine: 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
         pay: payCredits, free: useFree, free_left: freeLeft, cost };
@@ -426,9 +469,25 @@ async function handleTryonStatus(request, env, cors, url) {
     await Promise.all(job.chains.map(async (ch, ci) => {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length; guard++) {
         const st = job.steps[ch.i];
+        if (st.type === 'outfit') {
+          if (!ch.req) { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint)); return; }
+          let r;
+          try { r = await falCheck(env, ch.req, '換裝服務'); }
+          catch (e) {
+            // 備援：換下一個整套引擎；都不行就改用逐件 FASHN
+            ch.req = null;
+            if ((st.engine || 0) + 1 < OUTFIT_ENGINES.length) { st.engine = (st.engine || 0) + 1; job.outfit_errors = [...(job.outfit_errors || []), String(e.message).slice(0, 120)]; return; }
+            job.outfit_errors = [...(job.outfit_errors || []), String(e.message).slice(0, 120)];
+            job.engine = 'fashn'; job.steps = job.item_steps; job.chains.forEach(c => { c.i = 0; c.cur = job.person_url; c.req = null; });
+            return;
+          }
+          if (!r) return;
+          ch.cur = r; ch.req = null; ch.i++;
+          continue;
+        }
         if (st.category) {
           if (!ch.req) { ch.req = await falSubmit(env, ch.cur, st.image_url, st.category, st.photo_type); return; }
-          const r = await falCheck(env, ch.req);
+          const r = await falCheck(env, ch.req, '衣服試穿服務');
           if (!r) return;                         // 還在排隊／處理中
           ch.cur = r; ch.req = null; ch.i++;      // 完成，換下一步
           continue;
@@ -443,18 +502,28 @@ async function handleTryonStatus(request, env, cors, url) {
     }));
     const chainsDone = job.chains.every(c => c.i >= job.steps.length);
     if (!chainsDone) { await save(); return json({ status: 'running', progress: progress() }, 200, cors); }
-    // 2) 360°
+    // 2) 360°（用 fal 的影像模型，送出後分次輪詢，不卡單次請求）
     if (job.want_views && !job.views && !job.views_error) {
-      try {
-        const front = await urlToDataUri(job.chains[0].cur);
-        const [side, back] = await Promise.all([geminiView(env, front, 'side', 55000, job.hints), geminiView(env, front, 'back', 55000, job.hints)]);
-        job.views = { side: await putImage(env, `${base}/side`, side), back: await putImage(env, `${base}/back`, back) };
-      } catch (e) {
-        job.views_error = String(e.message).slice(0, 160);
+      const refundViews = async (msg) => {
+        job.views_error = String(msg).slice(0, 160);
         const refund = Math.min(2, job.pay);
         if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
         job.free = job.free - (2 - refund); job.pay = job.pay - refund;
-      }
+      };
+      try {
+        if (!job.views_req) {
+          job.views_req = {};
+          for (const k of ['side', 'back']) job.views_req[k] = await outfitSubmit(env, 0, [job.chains[0].cur], VIEW_FAL_PROMPTS[k] + (job.hints ? ' Body proportions to preserve: ' + job.hints : ''));
+        } else {
+          const got = job.views_got || {};
+          for (const k of ['side', 'back']) if (!got[k]) { const u = await falCheck(env, job.views_req[k], '多角度服務'); if (u) got[k] = u; }
+          job.views_got = got;
+          if (got.side && got.back) {
+            job.views = {};
+            for (const k of ['side', 'back']) job.views[k] = await copyToStorage(env, `${base}/${k}-${Date.now()}`, got[k]).catch(() => got[k]);
+          }
+        }
+      } catch (e) { await refundViews(e.message); }
       await save(); return json({ status: 'running', progress: progress() }, 200, cors);
     }
     // 3) 收尾：結果複製到我們的 Storage（fal 的網址會過期）
@@ -465,7 +534,7 @@ async function handleTryonStatus(request, env, cors, url) {
     }
     const viewUrls = job.views || {};
     const prof = await getProfile(env, user).catch(() => null);
-    const result = { images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
+    const result = { items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
     for (let i = 1; i < urls.length; i++) await sbInsert(env, 'generations', { user_id: user.id, items: g.items, cost: 0, free_used: 0, status: 'ok', image_url: urls[i], variants: g.variants }).catch(() => {});
     job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
     await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { status: 'ok', image_url: urls[0], cost: job.pay, free_used: job.free, error: job.views_error, views: { ...viewUrls, result }, job });
@@ -502,18 +571,18 @@ async function falSubmit(env, personUrl, garmentUrl, category, photoType) {
   if (!j.status_url || !j.response_url) throw new Error('衣服試穿服務沒有回應工作編號');
   return { status_url: j.status_url, response_url: j.response_url, at: Date.now() };
 }
-async function falCheck(env, req) {
+async function falCheck(env, req, label = '衣服試穿服務') {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY') };
-  if (Date.now() - (req.at || 0) > UPSTREAM_TIMEOUT_MS) throw new Error('衣服試穿服務逾時，請稍後再試');
-  const sr = await fetchT(req.status_url, { headers }, '衣服試穿服務', 20000);
+  if (Date.now() - (req.at || 0) > UPSTREAM_TIMEOUT_MS) throw new Error(label + '逾時，請稍後再試');
+  const sr = await fetchT(req.status_url, { headers }, label, 20000);
   const sd = await sr.json().catch(() => ({}));
-  if (sd.status === 'FAILED' || (sr.status >= 400 && sr.status !== 202)) throw new Error('衣服試穿服務：' + friendlyFal(typeof sd.error === 'string' ? sd.error : (Array.isArray(sd.detail) ? sd.detail.map(x => x && x.msg || '').join('; ') : (sd.detail || '處理失敗'))));
+  if (sd.status === 'FAILED' || (sr.status >= 400 && sr.status !== 202)) throw new Error(label + '：' + friendlyFal(typeof sd.error === 'string' ? sd.error : (Array.isArray(sd.detail) ? sd.detail.map(x => x && x.msg || '').join('; ') : (sd.detail || '處理失敗'))));
   if (sd.status !== 'COMPLETED') return null;
-  const rr = await fetchT(req.response_url, { headers }, '衣服試穿服務', 30000);
+  const rr = await fetchT(req.response_url, { headers }, label, 30000);
   const rt = await rr.text();
-  if (!rr.ok) throw new Error('衣服試穿服務：' + extractErr(rt));
+  if (!rr.ok) throw new Error(label + '：' + extractErr(rt));
   const d = JSON.parse(rt); const u = d && d.images && d.images[0] && d.images[0].url;
-  if (!u) throw new Error('衣服試穿服務沒有回傳圖片');
+  if (!u) throw new Error(label + '沒有回傳圖片' + (d && d.description ? '（' + String(d.description).slice(0, 80) + '）' : ''));
   return u;
 }
 
