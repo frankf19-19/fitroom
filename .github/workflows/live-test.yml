@@ -1,6 +1,9 @@
 name: 正式站端到端測試
 on:
   workflow_dispatch:
+    inputs:
+      engine: { description: '換裝引擎（空白=Pro，fast=Nano Banana 2）', required: false, default: '' }
+      views: { description: '測 360°（1/0）', required: false, default: '1' }
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -13,6 +16,8 @@ jobs:
           SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           SITE_URL: https://frankf19-19.github.io/fitroom/
+          QA_ENGINE: ${{ inputs.engine }}
+          QA_VIEWS: ${{ inputs.views }}
         run: python3 qa/live_test.py
       - name: 結果推到 qa-live 分支
         if: always()

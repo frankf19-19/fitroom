@@ -1389,7 +1389,7 @@ $('btnRun').onclick=async()=>{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
     let aspect='auto'; try{ const pim=await loadImg(state.person); const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; aspect=opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }catch{}
-    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect }) });
+    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() }) });
     if (d && d.async && d.id) {
       // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
       const t0=Date.now(); let st; clearInterval(tick); const jobId=d.id;

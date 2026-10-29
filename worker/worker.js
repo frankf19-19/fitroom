@@ -422,7 +422,7 @@ async function handleTryon(request, env, cors, ctx) {
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto',
-        steps: useOutfit ? [{ type: 'outfit', engine: 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
+        steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'fast' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
         pay: payCredits, free: useFree, free_left: freeLeft, cost };
