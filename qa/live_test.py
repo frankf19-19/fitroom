@@ -55,11 +55,14 @@ with sync_playwright() as pw:
     ua = txt('#userArea'); step('登入後右上顯示點數', ua and '點' in ua and '–' not in ua, f'url={pg.url} userArea={ua}'); shot('01_home_after_login')
     # 3. 試衣間：上傳全身照
     pg.goto(SITE + '#tryon'); pg.wait_for_timeout(1500)
-    pg.set_input_files('#filePerson', 'demo/f-before.jpg'); pg.wait_for_timeout(2500)
+    pg.set_input_files('#filePerson', os.environ.get('QA_PERSON', 'demo/m-before.jpg')); pg.wait_for_timeout(2500)
     step('上傳全身照', 'has' in (pg.get_attribute('#personBox', 'class') or ''), pg.get_attribute('#personBox', 'class')); shot('02_tryon_person')
     # 4. 商店：放入第一件上衣
     pg.goto(SITE + '#shop'); pg.wait_for_timeout(3500)
     n = pg.locator('[data-try]').count(); step('商店載入商品', n > 0, f'{n} 件'); shot('03_shop')
+    pg.click('#shopGender [data-g="m"]'); pg.wait_for_timeout(1500)
+    pg.fill('#shopQ', os.environ.get('QA_TOP', 'PUFFTECH')); pg.press('#shopQ', 'Enter'); pg.wait_for_timeout(3000)
+    n = pg.locator('[data-try]').count()
     if n:
       pg.locator('[data-try]').first.click(); pg.wait_for_timeout(3000)
       slots = pg.evaluate("[...document.querySelectorAll('.slot.has')].map(e=>e.dataset.type)")
@@ -67,7 +70,7 @@ with sync_playwright() as pw:
       step('商店商品放進試衣間', len(slots) > 0, f'slots={slots} view={cur}')
       # 再放一件褲子（重現「上衣＋褲子」兩步合成）
       pg.goto(SITE + '#shop'); pg.wait_for_timeout(2000)
-      pg.click('#shopType [data-t="bottom"]'); pg.wait_for_timeout(3000)
+      pg.fill('#shopQ', os.environ.get('QA_BOTTOM', '繭型褲')); pg.press('#shopQ', 'Enter'); pg.wait_for_timeout(3000)
       if pg.locator('[data-try]').count():
         pg.locator('[data-try]').first.click(); pg.wait_for_timeout(3000)
       slots = pg.evaluate("[...document.querySelectorAll('.slot.has')].map(e=>e.dataset.type)")
@@ -84,6 +87,15 @@ with sync_playwright() as pw:
       if not statuses or statuses[-1] != rs: statuses.append(rs)
       if any(k in rs for k in ('失敗', '錯誤', '不足', '逾時')): break
     if done:
+      try:
+        import base64
+        imgs = pg.evaluate("[document.getElementById('cmpAfterFull')?.src, ...[...document.querySelectorAll('#usedItems .ui-it img')].map(i=>i.src), document.querySelector('#cmpAfter img')?.src]")
+        for k, src in enumerate(imgs):
+          if src and src.startswith('data:'):
+            open(f'{OUT}/img_{k}.jpg', 'wb').write(base64.b64decode(src.split(',', 1)[1]))
+          elif src and src.startswith('http'):
+            urllib.request.urlretrieve(src, f'{OUT}/img_{k}.jpg')
+      except Exception as e: print('save imgs', e)
       ui = pg.locator('#usedItems .ui-it').count()
       if ui: pg.locator('#usedItems .ui-it').first.click(); pg.wait_for_timeout(800)
       step('結果下方可點開選過的單品', ui > 0 and pg.locator('#itemView.on').count() > 0, f'items={ui}'); shot('05b_itemview')
