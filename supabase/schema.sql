@@ -66,6 +66,7 @@ begin
   return v_new is not null;
 end $$;
 revoke all on function public.add_credits(uuid, integer) from public, anon, authenticated;
+grant execute on function public.add_credits(uuid, integer) to service_role;
 
 -- RLS：使用者只能看自己的資料；寫入由 Worker（service key）負責
 alter table public.profiles enable row level security;
@@ -174,6 +175,7 @@ language sql security definer set search_path = public as $$
   );
 $$;
 revoke all on function public.admin_stats(timestamptz) from public, anon, authenticated;
+grant execute on function public.admin_stats(timestamptz) to service_role;
 
 -- v1.6：多角度（側面／背面）圖片網址
 alter table public.generations add column if not exists views jsonb;
