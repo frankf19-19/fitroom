@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.2.0';
+const VERSION = '2.2.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -38,7 +38,7 @@ function outfitPrompt(steps, hints, faceHint) {
     'GARMENT FIDELITY IS THE TOP PRIORITY. Copy each product exactly as it appears in its product photo:',
     '- identical silhouette, cut and proportions (wide or balloon-leg trousers must stay wide/balloon-shaped, oversized stays oversized, cropped stays cropped), the same length relative to the body, rise and fit;',
     '- identical color, fabric, texture, quilting and stitching, pattern, prints, logos, buttons, zippers, pockets, collar/hood and hem details;',
-    '- worn the same way as in the product photo (jacket open or closed, sleeves, tucked or untucked, how the hood falls).',
+    '- worn the same way as in the product photo (jacket open or closed, sleeves, tucked or untucked). A hood stays DOWN behind the neck unless it is worn up in the product photo. Do not add hats, scarves or extra layers that were not provided.',
     'From each product photo use ONLY that product. Ignore the model wearing it, any other clothes they wear, the background and any text overlays.',
     types.has('top') ? 'If the top is outerwear shown open over another garment, the customer keeps their own top underneath.' : '',
     "Fully replace the customer's current clothing in the provided categories (for example shorts become full-length trousers when the product is trousers). Keep the customer's clothing in categories that were not provided unchanged.",
@@ -47,13 +47,14 @@ function outfitPrompt(steps, hints, faceHint) {
     hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : ''
   ].filter(Boolean).join('\n');
 }
-async function outfitSubmit(env, engineIdx, imageUrls, prompt, hi = true) {
+const ASPECTS = ['1:1', '4:5', '3:4', '2:3', '9:16', '5:4', '4:3', '3:2', '16:9'];
+async function outfitSubmit(env, engineIdx, imageUrls, prompt, hi = true, aspect = 'auto') {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
-  const body = { prompt, image_urls: imageUrls, num_images: 1, aspect_ratio: 'auto', output_format: 'png' };
+  const body = { prompt, image_urls: imageUrls, num_images: 1, aspect_ratio: ASPECTS.includes(aspect) ? aspect : 'auto', output_format: 'png' };
   if (hi) body.resolution = '2K';
   const r = await fetchT(OUTFIT_ENGINES[engineIdx], { method: 'POST', headers, body: JSON.stringify(body) }, '換裝服務', 30000);
   const t = await r.text();
-  if (!r.ok) { if (hi && r.status === 422 && /resolution/i.test(t)) return outfitSubmit(env, engineIdx, imageUrls, prompt, false); throw new Error('換裝服務：' + extractErr(t)); }
+  if (!r.ok) { if (hi && r.status === 422 && /resolution/i.test(t)) return outfitSubmit(env, engineIdx, imageUrls, prompt, false, aspect); throw new Error('換裝服務：' + extractErr(t)); }
   const j = JSON.parse(t);
   if (!j.status_url || !j.response_url) throw new Error('換裝服務沒有回應工作編號');
   return { status_url: j.status_url, response_url: j.response_url, at: Date.now() };
@@ -420,6 +421,7 @@ async function handleTryon(request, env, cors, ctx) {
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
+        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto',
         steps: useOutfit ? [{ type: 'outfit', engine: 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
@@ -470,7 +472,7 @@ async function handleTryonStatus(request, env, cors, url) {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length; guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
-          if (!ch.req) { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint)); return; }
+          if (!ch.req) { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), true, job.aspect); return; }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
@@ -513,7 +515,7 @@ async function handleTryonStatus(request, env, cors, url) {
       try {
         if (!job.views_req) {
           job.views_req = {};
-          for (const k of ['side', 'back']) job.views_req[k] = await outfitSubmit(env, 0, [job.chains[0].cur], VIEW_FAL_PROMPTS[k] + (job.hints ? ' Body proportions to preserve: ' + job.hints : ''));
+          for (const k of ['side', 'back']) job.views_req[k] = await outfitSubmit(env, 0, [job.chains[0].cur], VIEW_FAL_PROMPTS[k] + (job.hints ? ' Body proportions to preserve: ' + job.hints : ''), true, job.aspect);
         } else {
           const got = job.views_got || {};
           for (const k of ['side', 'back']) if (!got[k]) { const u = await falCheck(env, job.views_req[k], '多角度服務'); if (u) got[k] = u; }
