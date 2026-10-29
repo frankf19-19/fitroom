@@ -251,6 +251,10 @@
   .polaroid .cap{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:11px;letter-spacing:1.5px;color:var(--ink)}
   .polaroid .cap small{font-size:10px;color:var(--muted);letter-spacing:1px}
   .polaroid .view-img{display:none}.polaroid .view-img.on{display:block;max-width:100%;max-height:680px}
+  .spinbox{position:relative;touch-action:pan-y;user-select:none;cursor:grab;background:var(--bg2)}
+  .spinbox.on{display:block!important}.spinbox canvas{display:block;width:100%;height:auto}
+  .spinbox .spinhint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(17,17,17,.72);color:#fff;font-size:11px;letter-spacing:2px;padding:6px 12px;pointer-events:none;transition:opacity .4s}
+  .spinbox .spinbar{position:absolute;left:12px;right:12px;bottom:4px;height:2px;background:rgba(0,0,0,.08)}.spinbox .spinbar i{display:block;height:100%;background:var(--ink);width:0}
   .angles{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
   .angles .seg{display:inline-flex;border:1px solid var(--ink)}
   .angles .seg button{border:none;background:#fff;padding:8px 16px;font-size:11px;letter-spacing:2px;color:var(--ink);cursor:pointer}
@@ -401,6 +405,16 @@
   .iv-img img{width:100%;max-height:60dvh;object-fit:contain;background:var(--bg2);display:block}
   .iv-info{padding-top:12px}
   @media(min-width:900px){.itemview{align-items:center}}
+  .rackhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:2px 0 8px;font-size:12px}
+  .rackrow{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:12px;-webkit-overflow-scrolling:touch}
+  .rk{position:relative;flex:0 0 auto;width:76px;border:1px solid var(--line);background:#fff;padding:3px;display:flex;flex-direction:column;align-items:stretch;gap:2px;cursor:pointer;text-align:left}
+  .rk img{width:100%;height:92px;object-fit:cover;background:var(--bg2)}.rk .t{font-size:10px;color:var(--muted);letter-spacing:1px}.rk .n{font-size:10px;line-height:1.3;color:var(--ink);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .rk.on{border:2px solid var(--ink);padding:2px}.rk.on::after{content:'✓';position:absolute;top:4px;left:4px;background:var(--ink);color:#fff;font-size:10px;width:16px;height:16px;display:grid;place-items:center}
+  .rk.loading{opacity:.5}.rk .rx{position:absolute;top:2px;right:2px;font-style:normal;font-size:10px;background:rgba(255,255,255,.9);width:16px;height:16px;display:grid;place-items:center;color:var(--ink)}
+  .rackempty{font-size:12px;margin-bottom:10px}
+  .rackbtn.on{background:var(--ink);color:#fff}
+  .rackbar{position:sticky;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 8px);margin:14px auto 0;max-width:520px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:8px;padding:10px 12px;z-index:5;font-size:13px}
+  .rackbar span{flex:1}.rackbar .btn.ghost{color:#fff;border-color:rgba(255,255,255,.5)}.rackbar .btn.primary{background:#fff;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -479,6 +493,7 @@
         </div>
         <div class="card">
           <h2>2 · 想試什麼？<span class="muted" style="font-weight:400">（點格子上傳或從衣櫃選）</span></h2>
+          <div id="rackBox"></div>
           <div class="slots" id="slots"></div>
           <div class="cost">
             <span>本次 <b id="costN">0</b> 點 <span class="muted" id="costNote"></span></span>
@@ -499,7 +514,7 @@
             <span class="muted hidden" id="cmpHint">拖曳中線比較前後</span>
           </div>
           <div class="angles hidden" id="angles">
-            <div class="seg"><button data-v="front" class="on">正面</button><button data-v="side">側面</button><button data-v="back">背面</button></div>
+            <div class="seg"><button data-v="front" class="on">正面比較</button><button data-v="spin">360° 旋轉</button><button data-v="side">側面</button><button data-v="back">背面</button></div>
             <button class="spin" id="spinBtn"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>自動旋轉</button>
           </div>
           <div class="result" id="result"><div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div></div>
@@ -691,8 +706,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.1.0';
-const BUILD = '2026-10-30-07';
+const APP_VERSION = '4.2.0';
+const BUILD = '2026-10-30-08';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -967,7 +982,7 @@ function renderSlots(){
   }).join('');
   $('slots').querySelectorAll('.slot').forEach(el=>{ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }; });
   $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } const v=state.slots[el.dataset.type]; if(v&&(v.image||v.text)) return openItemView({type:el.dataset.type,...v},'slot'); openSlotMenu(el.dataset.type); });
-  persistSlots();
+  persistSlots(); try{ renderRack(); }catch{}
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
   const nItems=Object.keys(state.slots).length;
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0); $('costN').textContent=n;
@@ -1191,13 +1206,15 @@ $('shopMore').onclick=()=>loadShop(false);
 function renderShop(){
   const box=$('shopList');
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${p.name}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${p.brand||''}</span><span class="name">${p.name}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${p.name}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${p.brand||''}</span><span class="name">${p.name}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}">${inRack(p.id)?'✓ 衣架':'＋衣架'}</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
+  box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); const on=inRack(b.dataset.rack); b.classList.toggle('on',on); b.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); });
+  renderRackBar();
 }
-async function tryProduct(p){
+async function tryProduct(p, opt={}){
   if(!p) return;
-  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}; renderSlots(); haptic(); toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); go('tryon'); }
+  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}; renderSlots(); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay) go('tryon'); }
   catch{ toast('商品圖載入失敗，請改用截圖上傳'); }
 }
 function buyProduct(p){ if(!p||!p.buy_url) return; fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'buy',anon_id:anonId}),keepalive:true}).catch(()=>{}); track('buy_click',{product:p.id}); if(IS_APP&&Plug('Browser')) Plug('Browser').open({url:p.buy_url}); else window.open(p.buy_url,'_blank','noopener'); }
@@ -1210,17 +1227,36 @@ $('importBtn').onclick=async()=>{
 // 合成結果區：若單品來自商店，顯示購買連結
 function renderBuyLinks(){ const items=Object.values(state.slots).filter(v=>v&&v.buy_url); const host=$('resultActions'); let bar=$('buyBar'); if(!items.length){ if(bar) bar.remove(); return; } if(!bar){ bar=document.createElement('div'); bar.id='buyBar'; bar.className='row'; bar.style.marginTop='10px'; host.after(bar); } bar.innerHTML='<span class="muted" style="letter-spacing:1px">喜歡嗎？</span>'+items.map(v=>`<button class="btn sm" data-buyurl="${v.buy_url}" data-pid="${v.product_id||''}">購買 ${v.name||''}</button>`).join(''); bar.querySelectorAll('[data-buyurl]').forEach(b=>b.onclick=()=>buyProduct({id:Number(b.dataset.pid)||null,buy_url:b.dataset.buyurl})); }
 
+/* ---------- 衣架：商店一次挑很多件，試衣間一點就換 ---------- */
+let rack=[]; try{ rack=JSON.parse(localStorage.getItem('tryon.rack')||'[]'); }catch{}
+const inRack=id=>rack.some(r=>String(r.id)===String(id));
+function saveRack(){ try{ localStorage.setItem('tryon.rack',JSON.stringify(rack.slice(0,60))); }catch{} renderRack(); renderRackBar(); }
+function toggleRack(p){ if(!p) return; if(inRack(p.id)) rack=rack.filter(r=>String(r.id)!==String(p.id)); else { rack.unshift({id:p.id,brand:p.brand,name:p.name,type:p.type,gender:p.gender,price:p.price,image_url:p.image_url,buy_url:p.buy_url,sizes:p.sizes||[]}); haptic(); } saveRack(); }
+function renderRackBar(){ let bar=$('rackBar'); const host=$('view-shop'); if(!host) return; if(!rack.length){ if(bar) bar.remove(); return; } if(!bar){ bar=document.createElement('div'); bar.id='rackBar'; bar.className='rackbar'; host.appendChild(bar); } bar.innerHTML=`<span>衣架 <b>${rack.length}</b> 件</span><button class="btn sm ghost" id="rackClear">清空</button><button class="btn sm primary" id="rackGo">去試衣間換穿</button>`; $('rackClear').onclick=async()=>{ if(!await ask('清空衣架？','',{ok:'清空'})) return; rack=[]; saveRack(); renderShop(); }; $('rackGo').onclick=()=>go('tryon'); }
+function renderRack(){
+  const box=$('rackBox'); if(!box) return;
+  if(!rack.length){ box.innerHTML='<div class="muted rackempty">小技巧：在商店按「＋衣架」一次挑很多件，這裡就能一點換穿。</div>'; return; }
+  const order=['top','bottom','dress','shoes','hat','accessory','hair'];
+  const list=[...rack].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type));
+  const wearing=new Set(Object.values(state.slots).map(v=>String(v.product_id||'')));
+  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${p.image_url}" referrerpolicy="no-referrer" loading="lazy" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${(p.name||'').slice(0,10)}</span><i class="rx" data-rkx="${p.id}">✕</i></button>`).join('')}</div>`;
+  box.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async e=>{ if(e.target.dataset.rkx){ e.stopPropagation(); rack=rack.filter(r=>String(r.id)!==e.target.dataset.rkx); saveRack(); return; } const p=rack.find(r=>String(r.id)===b.dataset.rk); if(!p) return; const cur=state.slots[p.type]; if(cur&&String(cur.product_id)===String(p.id)){ delete state.slots[p.type]; renderSlots(); renderRack(); return; } b.classList.add('loading'); await tryProduct(p, {stay:true}); renderRack(); });
+}
+
+renderRack();
+
 /* ---------- 360° 背景補圖 ---------- */
 async function followViews(id, forResult){
-  const note=$('runStatus'); const base=note.textContent; note.textContent=base+' 側面與背面生成中…';
+  const note=$('runStatus'); const base=note.textContent; note.textContent=base+' 360° 旋轉影片生成中（約 1–2 分鐘，可以先看正面）…';
   const t0=Date.now();
-  while(Date.now()-t0 < 4*60*1000){
+  while(Date.now()-t0 < 7*60*1000){
     await new Promise(r=>setTimeout(r,3000));
     if(state.result!==forResult) return;               // 使用者已開始下一張
     let st; try{ st=await api('/api/tryon/status?id='+id); }catch{ continue; }
     if(st.status==='failed'){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
     if(st.status==='ok'){
       const r=st.result||{}; const vu=r.view_urls||{};
+      if(vu.video){ try{ note.textContent=base+' 360° 載入中…'; await attachSpin(vu.video); if(state.result!==forResult) return; note.textContent=base+' 360° 好了：在圖上左右拖曳就能旋轉。'; toast('360° 好了，左右拖曳旋轉'); }catch(e){ note.textContent=base+' 360° 載入失敗：'+e.message; } refreshMe(); return; }
       if(r.views_error||!(vu.side||vu.back)){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
       try{ const side=vu.side?await urlToDataUri(vu.side):null, back=vu.back?await urlToDataUri(vu.back):null; if(state.result!==forResult) return; state.views={side,back}; renderCompare(state.personOrig, state.result); note.textContent=base+' 360° 完成，點上方「側面／背面」切換。'; toast('360° 側面與背面好了'); }catch{}
       refreshMe(); return;
@@ -1377,7 +1413,7 @@ $('btnRun').onclick=async()=>{
   $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
   const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
   const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
-  state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
+  state.views=null; state.preferSpin=false; spinState=null; spinAuto(false); stopSpin(); $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
   const order=['dress','top','bottom','hair','hat','accessory','shoes'];
   const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫你'+verbs[i.type]+'…');
   if($('wantViews').classList.contains('on')) seq.push('轉個身，生成側面與背面…');
@@ -1389,7 +1425,9 @@ $('btnRun').onclick=async()=>{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
     let aspect='auto'; try{ const pim=await loadImg(state.person); const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; aspect=opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }catch{}
-    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() , res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() }) });
+    let key; try{ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); key=[...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }catch{}
+    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, key, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() , res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() }) });
+    if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
     if (d && d.async && d.id) {
       // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
       const t0=Date.now(); let st; clearInterval(tick); const jobId=d.id;
@@ -1413,6 +1451,7 @@ $('btnRun').onclick=async()=>{
     const n = Math.max((d.images||[]).length, (d.image_urls||[]).length, 1);
     const imgsResolved = []; for (let i=0;i<n;i++) imgsResolved.push(await pick((d.images||[])[i], (d.image_urls||[])[i]));
     state.views = null;
+    const pendingVideo = d.view_urls && d.view_urls.video;
     if (d.views || (d.view_urls && (d.view_urls.side || d.view_urls.back))) {
       const v = d.views || {}, vu = d.view_urls || {};
       const side = await pick(v.side, vu.side), back = await pick(v.back, vu.back);
@@ -1438,6 +1477,7 @@ $('btnRun').onclick=async()=>{
     renderFit();
     toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
     if (d._pendingId) followViews(d._pendingId, state.result);
+    else if (pendingVideo) attachSpin(pendingVideo).catch(()=>{});
   }catch(e){
     clearInterval(tick);
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
@@ -1455,8 +1495,9 @@ function renderCompare(before, after){
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   const v=state.views||{};
   box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>${v.side?`<img class="view-img" data-v="side" src="${v.side}" alt="側面">`:''}${v.back?`<img class="view-img" data-v="back" src="${v.back}" alt="背面">`:''}<div class="cap"><span>${items}</span><small id="capAngle">${date}</small></div></div>`;
+  if(v.spin){ const pol=box.querySelector('.polaroid'); const sb=document.createElement('div'); sb.className='view-img spinbox'; sb.dataset.v='spin'; sb.innerHTML='<canvas id="spinCanvas"></canvas><span class="spinhint" id="spinHint">← 左右拖曳旋轉 →</span><div class="spinbar"><i id="spinBar"></i></div>'; pol.querySelector('.cmp').after(sb); initSpin(sb); }
   $('angles').querySelectorAll('[data-v]').forEach(b=>{ b.style.display=(b.dataset.v==='front'||v[b.dataset.v])?'':'none'; });
-  $('angles').classList.toggle('hidden', !(v.side||v.back)); setAngle('front');
+  $('angles').classList.toggle('hidden', !(v.side||v.back||v.spin)); setAngle(v.spin&&state.preferSpin?'spin':'front');
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
   const sync=()=>{ const w=cmp.clientWidth; aft.querySelector('img').style.width=w+'px'; };
   $('cmpAfterFull').onload=sync; sync(); if(window.__cmpResize) window.removeEventListener('resize',window.__cmpResize); window.__cmpResize=sync; window.addEventListener('resize',sync);
@@ -1467,7 +1508,7 @@ function renderCompare(before, after){
   cmp.addEventListener('pointermove',e=>{ if(dragging) set(e.clientX); });
   cmp.addEventListener('pointerup',()=>dragging=false); cmp.addEventListener('pointercancel',()=>dragging=false);
 }
-$('btnDownload').onclick=()=>{ if(state.result) saveImage(currentResultImage(),'試穿吧_'+({front:'正面',side:'側面',back:'背面'})[curAngle]+'_'+Date.now()+'.png'); };
+$('btnDownload').onclick=()=>{ if(curAngle==='spin'&&state.views&&state.views.spinData){ const a=document.createElement('a'); a.href=state.views.spinData.src; a.download='試穿吧_360_'+Date.now()+'.mp4'; document.body.appendChild(a); a.click(); a.remove(); return; } if(state.result) saveImage(currentResultImage(),'試穿吧_'+({front:'正面',side:'側面',back:'背面'})[curAngle]+'_'+Date.now()+'.png'); };
 async function shareImage(dataUri){
   if (IS_APP && Plug('Filesystem') && Plug('Share')) {
     try{ const ext=/^data:image\/jpe?g/i.test(dataUri)?'jpg':'png'; const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.'+ext, data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
@@ -1651,12 +1692,47 @@ function setAngle(a){
   pol.querySelectorAll('.view-img').forEach(im=>im.classList.toggle('on', im.dataset.v===a));
   $('angles').querySelectorAll('[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===a));
   $('cmpHint').classList.toggle('hidden', a!=='front');
-  const cap=$('capAngle'); if(cap) cap.textContent = ({front:'正面',side:'側面',back:'背面'})[a] + ' · ' + new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric'});
+  if(a!=='spin') spinAuto(false);
+  const cap=$('capAngle'); if(cap) cap.textContent = ({front:'正面',side:'側面',back:'背面',spin:'360°'})[a] + ' · ' + new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric'});
 }
 function stopSpin(){ if(spinT){ clearInterval(spinT); spinT=null; } const b=$('spinBtn'); if(b) b.classList.remove('on'); }
 $('angles').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ stopSpin(); setAngle(b.dataset.v); haptic(); });
-$('spinBtn').onclick=()=>{ if(spinT){ stopSpin(); return; } const v=state.views||{}; const order=['front',...(v.side?['side']:[]),...(v.back?['back']:[]),...(v.side&&v.back?['side']:[])]; if(order.length<2) return; let i=0; $('spinBtn').classList.add('on'); spinT=setInterval(()=>{ i=(i+1)%order.length; setAngle(order[i]); },1100); };
-function currentResultImage(){ if(curAngle!=='front' && state.views && state.views[curAngle]) return state.views[curAngle]; return state.result; }
+$('spinBtn').onclick=()=>{ if(state.views&&state.views.spin){ setAngle('spin'); spinAuto(!spinRAF); return; } if(spinT){ stopSpin(); return; } const v=state.views||{}; const order=['front',...(v.side?['side']:[]),...(v.back?['back']:[]),...(v.side&&v.back?['side']:[])]; if(order.length<2) return; let i=0; $('spinBtn').classList.add('on'); spinT=setInterval(()=>{ i=(i+1)%order.length; setAngle(order[i]); },1100); };
+function currentResultImage(){ if(curAngle==='spin'){ const c=$('spinCanvas'); if(c) return c.toDataURL('image/jpeg',.92); } if(curAngle!=='front' && state.views && state.views[curAngle]) return state.views[curAngle]; return state.result; }
+
+/* ---------- 360° 旋轉（影片 → 逐格，拖曳換格） ---------- */
+let spinState=null, spinRAF=null;
+async function loadSpin(videoUrl){
+  const blob=await (await fetch(videoUrl)).blob(); const src=URL.createObjectURL(blob);
+  const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.setAttribute('playsinline',''); v.preload='auto'; v.src=src;
+  await new Promise((res,rej)=>{ v.onloadeddata=res; v.onerror=()=>rej(new Error('影片載入失敗')); setTimeout(()=>rej(new Error('影片載入逾時')),25000); });
+  try{ await v.play(); v.pause(); }catch{}
+  const N=60, dur=v.duration||5, sc=Math.min(1, 900/v.videoHeight), W=Math.round(v.videoWidth*sc), H=Math.round(v.videoHeight*sc);
+  const frames=[];
+  for(let i=0;i<N;i++){
+    v.currentTime=Math.min(dur-0.04, i*dur/N);
+    await new Promise(r=>{ const f=()=>{ v.removeEventListener('seeked',f); r(); }; v.addEventListener('seeked',f); setTimeout(r,1500); });
+    const c=document.createElement('canvas'); c.width=W; c.height=H; c.getContext('2d').drawImage(v,0,0,W,H); frames.push(c);
+  }
+  return { frames, src, W, H };
+}
+function drawSpin(){ const st=spinState; const c=$('spinCanvas'); if(!st||!c) return; const n=st.frames.length; const i=((Math.round(st.pos)%n)+n)%n; c.getContext('2d').drawImage(st.frames[i],0,0); const b=$('spinBar'); if(b) b.style.width=((i+1)/n*100)+'%'; }
+function initSpin(box){
+  const st=state.views&&state.views.spinData; if(!st) return; spinState={...st, pos:spinState?spinState.pos:0};
+  const c=box.querySelector('canvas'); c.width=st.W; c.height=st.H; drawSpin();
+  let down=false, lastX=0, vel=0, lastT=0;
+  const perPx=()=>spinState.frames.length/(box.clientWidth*1.1);   // 拖過約一個寬度＝轉一圈
+  box.addEventListener('pointerdown',e=>{ down=true; lastX=e.clientX; lastT=performance.now(); vel=0; spinAuto(false); box.setPointerCapture(e.pointerId); const h=$('spinHint'); if(h) h.style.opacity=0; });
+  box.addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-lastX, now=performance.now(); spinState.pos-=dx*perPx(); vel=-dx*perPx()/Math.max(8,now-lastT); lastX=e.clientX; lastT=now; drawSpin(); });
+  const up=()=>{ if(!down) return; down=false; let v=vel*16; const glide=()=>{ if(Math.abs(v)<0.02||down) return; spinState.pos+=v; v*=0.93; drawSpin(); requestAnimationFrame(glide); }; requestAnimationFrame(glide); };
+  box.addEventListener('pointerup',up); box.addEventListener('pointercancel',up);
+}
+function spinAuto(on){ if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; } $('spinBtn').classList.toggle('on',!!on); if(!on||!spinState) return; let t=performance.now(); const step=now=>{ spinState.pos+=(now-t)/1000*12; t=now; drawSpin(); spinRAF=requestAnimationFrame(step); }; spinRAF=requestAnimationFrame(step); }
+async function attachSpin(videoUrl){
+  const data=await loadSpin(videoUrl);
+  state.views={...(state.views||{}), spin:true, video:videoUrl, spinData:data}; state.preferSpin=true;
+  renderCompare(state.personOrig, state.result); setAngle('spin'); spinAuto(true); setTimeout(()=>spinAuto(false), 5200);
+}
 
 /* ---------- 離線、安裝、原生事件 ---------- */
 function setOffline(){ $('offline').classList.toggle('on', !navigator.onLine); }

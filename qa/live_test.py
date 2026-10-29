@@ -75,6 +75,15 @@ with sync_playwright() as pw:
         pg.locator('[data-try]').first.click(); pg.wait_for_timeout(3000)
       slots = pg.evaluate("[...document.querySelectorAll('.slot.has')].map(e=>e.dataset.type)")
       step('再放入褲子', 'bottom' in slots, f'slots={slots}')
+    # 衣架多選
+    pg.goto(SITE + '#shop'); pg.wait_for_timeout(1500); pg.fill('#shopQ', ''); pg.wait_for_timeout(2500)
+    rb = pg.locator('[data-rack]'); nrb = rb.count()
+    for k in range(min(3, nrb)): rb.nth(k).click(); pg.wait_for_timeout(200)
+    bar = txt('#rackBar')
+    pg.goto(SITE + '#tryon'); pg.wait_for_timeout(1500)
+    nrk = pg.locator('#rackBox .rk').count()
+    step('衣架多選＋試衣間一點換穿', nrk >= 3 and bar is not None, f'bar={bar} rack={nrk}'); shot('03b_rack')
+    pg.evaluate("localStorage.removeItem('tryon.rack')")
     # 5. 尺寸建議
     pg.fill('#fBust', '86'); pg.fill('#fWaist', '68'); pg.fill('#fHip', '92'); pg.wait_for_timeout(300)
     fr = txt('#fitRows'); step('尺寸建議有內容', fr and '建議' in fr, fr); shot('04_fit')
@@ -108,12 +117,25 @@ with sync_playwright() as pw:
       try: pg.click('#ivClose', timeout=2000)
       except Exception: pass
       t1 = time.time(); vok = False
-      while time.time() - t1 < 150:
+      while time.time() - t1 < 300:
         pg.wait_for_timeout(3000)
         rs = txt('#runStatus') or ''
-        if '360° 完成' in rs: vok = True; break
+        if '360° 好了' in rs or '360° 完成' in rs: vok = True; break
         if '失敗' in rs: break
+      spin_ok = False
+      if vok:
+        try:
+          box = pg.locator('.spinbox.on'); bb = box.bounding_box()
+          before = pg.evaluate("document.getElementById('spinCanvas').toDataURL().length")
+          pg.mouse.move(bb['x']+bb['width']*0.7, bb['y']+bb['height']/2); pg.mouse.down(); pg.mouse.move(bb['x']+bb['width']*0.3, bb['y']+bb['height']/2, steps=8); pg.mouse.up(); pg.wait_for_timeout(600)
+          after = pg.evaluate("document.getElementById('spinCanvas').toDataURL().length")
+          spin_ok = before != after
+          frames = pg.evaluate("document.querySelectorAll('.spinbox').length")
+          for k, frac in enumerate([0, 0.25, 0.5, 0.75]):
+            pg.evaluate(f"(()=>{{}})()")
+        except Exception as e: print('spin', e)
       step('360° 背景補圖', vok, f'再等 {int(time.time()-t1)}s：{txt("#runStatus")}'); shot('05c_views')
+      step('360° 可拖曳旋轉', spin_ok, '')
       # 試衣間格子可點開大圖
       pg.evaluate("document.querySelector('#slots .slot.has')?.click()"); pg.wait_for_timeout(600)
       step('試衣間格子可點開大圖', pg.locator('#itemView.on').count() > 0, ''); shot('05d_slotview')

@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.4.1';
+const VERSION = '2.5.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -46,6 +46,16 @@ function outfitPrompt(steps, hints, faceHint) {
     'Realistic fit and drape on this body with natural folds and shadows. Photorealistic. No text, no watermark. Keep the same aspect ratio and framing as Image 1.',
     hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : ''
   ].filter(Boolean).join('\n');
+}
+const SPIN_VIDEO = 'https://queue.fal.run/fal-ai/kling-video/v2.6/pro/image-to-video';
+const SPIN_PROMPT = 'Fashion turntable shot. The camera is fixed and locked off. The person stands in place and slowly turns their whole body around a full 360 degrees at a constant speed, like on a rotating platform: from facing the camera, to the side profile, to the back, to the other side, and back to facing the camera. Arms relaxed at the sides. Keep the exact same person, face, hairstyle, body shape and every garment detail (color, silhouette, length, fit) perfectly consistent throughout. Same background and lighting. Smooth, realistic, no cuts.';
+async function falQueueSubmit(env, endpoint, payload, label) {
+  const r = await fetchT(endpoint, { method: 'POST', headers: { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }, label, 30000);
+  const t = await r.text();
+  if (!r.ok) throw new Error(label + '：' + extractErr(t));
+  const j = JSON.parse(t);
+  if (!j.status_url || !j.response_url) throw new Error(label + '沒有回應工作編號');
+  return { status_url: j.status_url, response_url: j.response_url, at: Date.now() };
 }
 const ASPECTS = ['1:1', '4:5', '3:4', '2:3', '9:16', '5:4', '4:3', '3:2', '16:9'];
 async function outfitSubmit(env, engineIdx, imageUrls, prompt, hi = true, aspect = 'auto') {
@@ -305,6 +315,13 @@ async function handleTryon(request, env, cors, ctx) {
   const recent = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&or=(status.eq.running,cost.gt.0,free_used.gt.0)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 60000).toISOString())}&select=status`);
   if (recent.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors);
 
+  // 同一張照片＋同樣單品組合 7 天內做過 → 直接用舊結果（秒出、不扣點）
+  const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + (wantViews ? '-v' : '') + '-' + variants : null;
+  if (ckey && body.async === true) {
+    const hit = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.ok&job->>key=eq.${ckey}&created_at=gte.${encodeURIComponent(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,views&order=created_at.desc&limit=1`).catch(() => []);
+    const r = hit[0] && hit[0].views && hit[0].views.result;
+    if (r) { const used = await freeUsedToday(env, user.id).catch(() => 0); const pr = await getProfile(env, user).catch(() => null); return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
+  }
   // 扣點：每個品項 1 點 × 張數；先用今日免費點數，不足再扣點數
   const cost = items.length * variants + (wantViews ? 2 : 0);
   const freeDaily = Number(env.FREE_DAILY || 2);
@@ -419,7 +436,7 @@ async function handleTryon(request, env, cors, ctx) {
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
-        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K',
+        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: ckey,
         steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
@@ -474,8 +491,17 @@ async function handleTryonStatus(request, env, cors, url) {
         if (st.type === 'outfit') {
           if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); return; }
           let r;
+          // 避險：超過 25 秒還沒好，就同時再送一個（另一個引擎），誰先好用誰
+          if (!ch.req2 && Date.now() - ch.req.at > 25000 && OUTFIT_ENGINES.length > 1) {
+            try { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req2 = await outfitSubmit(env, ((st.engine || 0) + 1) % OUTFIT_ENGINES.length, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); job.hedged = true; } catch { ch.req2 = { failed: true }; }
+          }
+          if (ch.req2 && !ch.req2.failed) {
+            try { const r2 = await falCheck(env, ch.req2, '換裝服務'); if (r2) { job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done; job.won = 'hedge'; ch.cur = r2; ch.req = null; ch.req2 = null; ch.i++; continue; } }
+            catch { ch.req2 = { failed: true }; }
+          }
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
+            if (ch.req2 && !ch.req2.failed) { ch.req = ch.req2; ch.req2 = { failed: true }; return; }   // 主要的失敗但避險的還在跑
             // 備援：換下一個整套引擎；都不行就改用逐件 FASHN
             ch.req = null;
             if ((st.engine || 0) + 1 < OUTFIT_ENGINES.length) { st.engine = (st.engine || 0) + 1; job.outfit_errors = [...(job.outfit_errors || []), String(e.message).slice(0, 120)]; return; }
@@ -485,7 +511,7 @@ async function handleTryonStatus(request, env, cors, url) {
           }
           if (!r) { if (ch.req.last_status === 'IN_PROGRESS' && !job.t.start) job.t.start = Date.now(); return; }
           job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done;
-          ch.cur = r; ch.req = null; ch.i++;
+          ch.cur = r; ch.req = null; ch.req2 = null; ch.i++;
           continue;
         }
         if (st.category) {
@@ -510,7 +536,7 @@ async function handleTryonStatus(request, env, cors, url) {
       job.front = [];
       for (let i = 0; i < job.chains.length; i++) { const u = job.chains[i].cur; job.front.push(u.startsWith(env.SUPABASE_URL) ? u : await copyToStorage(env, `${user.id}/${Date.now()}-${i}`, u).catch(() => u)); }
     }
-    // 2) 360°（用 fal 的影像模型，送出後分次輪詢，不卡單次請求）
+    // 2) 360°：用影片模型生成「原地轉一圈」的短片（首尾都是正面 → 無縫循環），前端拖曳即可旋轉
     if (job.want_views && !job.views && !job.views_error) {
       const refundViews = async (msg) => {
         job.views_error = String(msg).slice(0, 160);
@@ -520,15 +546,13 @@ async function handleTryonStatus(request, env, cors, url) {
       };
       try {
         if (!job.views_req) {
-          job.views_req = {};
-          for (const k of ['side', 'back']) job.views_req[k] = await outfitSubmit(env, 0, [job.chains[0].cur], VIEW_FAL_PROMPTS[k] + (job.hints ? ' Body proportions to preserve: ' + job.hints : ''), false, job.aspect);
+          job.views_req = await falQueueSubmit(env, SPIN_VIDEO, { prompt: SPIN_PROMPT, start_image_url: job.front[0], end_image_url: job.front[0], duration: '5', generate_audio: false, negative_prompt: 'blur, distortion, morphing, changing clothes, changing face, extra limbs, camera shake, cut, zoom, text' }, '360° 服務');
         } else {
-          const got = job.views_got || {};
-          for (const k of ['side', 'back']) if (!got[k]) { const u = await falCheck(env, job.views_req[k], '多角度服務'); if (u) got[k] = u; }
-          job.views_got = got;
-          if (got.side && got.back) {
-            job.views = {};
-            for (const k of ['side', 'back']) job.views[k] = await copyToStorage(env, `${base}/${k}-${Date.now()}`, got[k]).catch(() => got[k]);
+          const d = await falCheck(env, { ...job.views_req, at: job.views_req.at }, '360° 服務', true);
+          if (d) {
+            const vurl = d.video && d.video.url;
+            if (!vurl) throw new Error('360° 服務沒有回傳影片');
+            job.views = { video: await copyToStorage(env, `${base}/spin-${Date.now()}`, vurl).catch(() => vurl) };
           }
         }
       } catch (e) { await refundViews(e.message); }
@@ -575,9 +599,9 @@ async function falSubmit(env, personUrl, garmentUrl, category, photoType) {
   if (!j.status_url || !j.response_url) throw new Error('衣服試穿服務沒有回應工作編號');
   return { status_url: j.status_url, response_url: j.response_url, at: Date.now() };
 }
-async function falCheck(env, req, label = '衣服試穿服務') {
+async function falCheck(env, req, label = '衣服試穿服務', raw = false) {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY') };
-  if (Date.now() - (req.at || 0) > UPSTREAM_TIMEOUT_MS) throw new Error(label + '逾時，請稍後再試');
+  if (Date.now() - (req.at || 0) > (raw ? 6 * 60 * 1000 : UPSTREAM_TIMEOUT_MS)) throw new Error(label + '逾時，請稍後再試');
   const sr = await fetchT(req.status_url, { headers }, label, 20000);
   const sd = await sr.json().catch(() => ({}));
   req.last_status = sd.status;
@@ -586,7 +610,9 @@ async function falCheck(env, req, label = '衣服試穿服務') {
   const rr = await fetchT(req.response_url, { headers }, label, 30000);
   const rt = await rr.text();
   if (!rr.ok) throw new Error(label + '：' + extractErr(rt));
-  const d = JSON.parse(rt); const u = d && d.images && d.images[0] && d.images[0].url;
+  const d = JSON.parse(rt);
+  if (raw) return d;
+  const u = d && d.images && d.images[0] && d.images[0].url;
   if (!u) throw new Error(label + '沒有回傳圖片' + (d && d.description ? '（' + String(d.description).slice(0, 80) + '）' : ''));
   return u;
 }
