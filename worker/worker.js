@@ -451,7 +451,7 @@ async function handleTryonStatus(request, env, cors, url) {
     return json({ status: 'running' }, 200, cors);
   }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
-  const frontOut = () => job.front ? { items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
+  const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
   const running = () => json({ status: 'running', progress: progress(), front: frontOut() }, 200, cors);
   const fail = async (msg) => {
     if (job.pay > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: job.pay }).catch(() => {});
@@ -474,7 +474,7 @@ async function handleTryonStatus(request, env, cors, url) {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length; guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
-          if (!ch.req) { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), true, job.aspect); return; }
+          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), true, job.aspect); return; }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
@@ -485,7 +485,8 @@ async function handleTryonStatus(request, env, cors, url) {
             job.engine = 'fashn'; job.steps = job.item_steps; job.chains.forEach(c => { c.i = 0; c.cur = job.person_url; c.req = null; });
             return;
           }
-          if (!r) return;
+          if (!r) { if (ch.req.last_status === 'IN_PROGRESS' && !job.t.start) job.t.start = Date.now(); return; }
+          job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done;
           ch.cur = r; ch.req = null; ch.i++;
           continue;
         }
@@ -539,7 +540,7 @@ async function handleTryonStatus(request, env, cors, url) {
     const urls = job.front;
     const viewUrls = job.views || {};
     const prof = await getProfile(env, user).catch(() => null);
-    const result = { items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
+    const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
     for (let i = 1; i < urls.length; i++) await sbInsert(env, 'generations', { user_id: user.id, items: g.items, cost: 0, free_used: 0, status: 'ok', image_url: urls[i], variants: g.variants }).catch(() => {});
     job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
     await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { status: 'ok', image_url: urls[0], cost: job.pay, free_used: job.free, error: job.views_error, views: { ...viewUrls, result }, job });
@@ -581,6 +582,7 @@ async function falCheck(env, req, label = '衣服試穿服務') {
   if (Date.now() - (req.at || 0) > UPSTREAM_TIMEOUT_MS) throw new Error(label + '逾時，請稍後再試');
   const sr = await fetchT(req.status_url, { headers }, label, 20000);
   const sd = await sr.json().catch(() => ({}));
+  req.last_status = sd.status;
   if (sd.status === 'FAILED' || (sr.status >= 400 && sr.status !== 202)) throw new Error(label + '：' + friendlyFal(typeof sd.error === 'string' ? sd.error : (Array.isArray(sd.detail) ? sd.detail.map(x => x && x.msg || '').join('; ') : (sd.detail || '處理失敗'))));
   if (sd.status !== 'COMPLETED') return null;
   const rr = await fetchT(req.response_url, { headers }, label, 30000);

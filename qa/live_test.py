@@ -117,7 +117,8 @@ with sync_playwright() as pw:
       pg.evaluate("document.querySelector('#slots .slot.has')?.click()"); pg.wait_for_timeout(600)
       step('試衣間格子可點開大圖', pg.locator('#itemView.on').count() > 0, ''); shot('05d_slotview')
       pg.evaluate("document.getElementById('itemView')?.classList.remove('on')")
-    step('AI 試穿出結果', done, f'cost={cost} 耗時 {int(time.time()-t0)}s runStatus={txt("#runStatus")} statuses={statuses[-6:]}'); shot('05_result')
+    timing = pg.evaluate('window.__lastTiming')
+    step('AI 試穿出結果', done, f'timing={timing} cost={cost} 耗時 {int(time.time()-t0)}s runStatus={txt("#runStatus")} statuses={statuses[-6:]}'); shot('05_result')
     # 7. 身形分析
     pg.goto(SITE + '#body'); pg.wait_for_timeout(1200)
     pg.fill('#bHeight', '162'); pg.fill('#bWeight', '52'); pg.click('#btnAnalyze')

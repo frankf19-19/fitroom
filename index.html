@@ -1398,8 +1398,8 @@ $('btnRun').onclick=async()=>{
       while (true) {
         await new Promise(r=>setTimeout(r,2500));
         try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
-        if (st.status==='ok') { d = st.result; break; }
-        if (st.front) { d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
+        if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
+        if (st.front) { window.__lastTiming=st.front.timing; d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
         if (st.status==='failed') throw new Error(st.error||'合成失敗');
         const sec=Math.round((Date.now()-t0)/1000);
         if (st.progress) { const pg=st.progress; const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/pg.total*100))); bar.style.width=pc+'%'; const msg=`正在${STEP_TXT[pg.current]||'處理'}…（第 ${Math.min(pg.done+1,pg.total)}/${pg.total} 步，${sec} 秒）`; $('runStatus').textContent=msg; const w=$('waitMsg'); if(w) w.textContent=msg; }
