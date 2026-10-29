@@ -79,6 +79,8 @@ with sync_playwright() as pw:
     pg.fill('#fBust', '86'); pg.fill('#fWaist', '68'); pg.fill('#fHip', '92'); pg.wait_for_timeout(300)
     fr = txt('#fitRows'); step('尺寸建議有內容', fr and '建議' in fr, fr); shot('04_fit')
     # 6. AI 試穿（真的呼叫 fal）
+    pg.click('#wantViews') if 'on' not in (pg.get_attribute('#wantViews','class') or '') else None
+    pg.wait_for_timeout(300)
     cost = txt('#costN'); pg.click('#btnRun'); t0 = time.time(); done = False; statuses = []
     while time.time() - t0 < 300:
       pg.wait_for_timeout(3000)
@@ -101,6 +103,15 @@ with sync_playwright() as pw:
       step('結果下方可點開選過的單品', ui > 0 and pg.locator('#itemView.on').count() > 0, f'items={ui}'); shot('05b_itemview')
       try: pg.click('#ivClose', timeout=2000)
       except Exception: pass
+      t1 = time.time(); vok = False
+      while time.time() - t1 < 150:
+        pg.wait_for_timeout(3000)
+        rs = txt('#runStatus') or ''
+        if '360° 完成' in rs: vok = True; break
+        if '失敗' in rs: break
+      step('360° 背景補圖', vok, f'再等 {int(time.time()-t1)}s：{txt("#runStatus")}'); shot('05c_views')
+      # 試衣間格子可點開大圖
+      pg.evaluate("document.querySelector('#slots .slot.has')?.click()"); pg.wait_for_timeout(600)
     step('AI 試穿出結果', done, f'cost={cost} 耗時 {int(time.time()-t0)}s runStatus={txt("#runStatus")} statuses={statuses[-6:]}'); shot('05_result')
     # 7. 身形分析
     pg.goto(SITE + '#body'); pg.wait_for_timeout(1200)

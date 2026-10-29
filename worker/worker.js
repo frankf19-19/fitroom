@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.2.1';
+const VERSION = '2.3.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -319,7 +319,7 @@ async function handleTryon(request, env, cors, ctx) {
   // 先登記進行中（鎖住免費額度與限流），再扣點，失敗再退
   let gen;
   try { gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: payCredits, free_used: useFree, status: 'running', variants }); }
-  catch (e) { if (/409|duplicate|unique/i.test(String(e.message))) return json({ error: '上一張還在合成中，請稍候' }, 429, cors); throw e; }
+  catch (e) { if (/409|duplicate|unique/i.test(String(e.message))) return json({ error: '上一張還在合成中（360° 側面背面可能還在生成），請稍候再試' }, 429, cors); throw e; }
   if (payCredits > 0) {
     const ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits });
     if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '扣點失敗' }); return json({ error: '扣點失敗，請重試' }, 500, cors); }
@@ -451,6 +451,8 @@ async function handleTryonStatus(request, env, cors, url) {
     return json({ status: 'running' }, 200, cors);
   }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
+  const frontOut = () => job.front ? { items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
+  const running = () => json({ status: 'running', progress: progress(), front: frontOut() }, 200, cors);
   const fail = async (msg) => {
     if (job.pay > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: job.pay }).catch(() => {});
     await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
@@ -459,11 +461,11 @@ async function handleTryonStatus(request, env, cors, url) {
   // 太久沒進度（使用者關掉頁面等）→ 失敗並退點
   if (Date.now() - new Date(job.touched).getTime() > RUNNING_STALE_MS && (job.lock_until || 0) < Date.now()) return fail('合成逾時（已退回點數），請再試一次');
   // 取得鎖（避免兩個輪詢同時推進）
-  if ((job.lock_until || 0) > Date.now()) return json({ status: 'running', progress: progress() }, 200, cors);
+  if ((job.lock_until || 0) > Date.now()) return running();
   const v = job.v;
   job.v = v + 1; job.lock_until = Date.now() + 90000;
   const got = await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running&job->>v=eq.${v}`, { job }, true).catch(() => []);
-  if (!Array.isArray(got) || !got.length) return json({ status: 'running', progress: progress() }, 200, cors);
+  if (!Array.isArray(got) || !got.length) return running();
   const save = async (extra = {}) => { job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString(); await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { job, ...extra }); };
   const base = `${user.id}/jobs/${id}`;
   try {
@@ -503,7 +505,12 @@ async function handleTryonStatus(request, env, cors, url) {
       }
     }));
     const chainsDone = job.chains.every(c => c.i >= job.steps.length);
-    if (!chainsDone) { await save(); return json({ status: 'running', progress: progress() }, 200, cors); }
+    if (!chainsDone) { await save(); return running(); }
+    // 正面先完成就先存檔回傳，360° 在後面慢慢補
+    if (!job.front) {
+      job.front = [];
+      for (let i = 0; i < job.chains.length; i++) { const u = job.chains[i].cur; job.front.push(u.startsWith(env.SUPABASE_URL) ? u : await copyToStorage(env, `${user.id}/${Date.now()}-${i}`, u).catch(() => u)); }
+    }
     // 2) 360°（用 fal 的影像模型，送出後分次輪詢，不卡單次請求）
     if (job.want_views && !job.views && !job.views_error) {
       const refundViews = async (msg) => {
@@ -515,7 +522,7 @@ async function handleTryonStatus(request, env, cors, url) {
       try {
         if (!job.views_req) {
           job.views_req = {};
-          for (const k of ['side', 'back']) job.views_req[k] = await outfitSubmit(env, 0, [job.chains[0].cur], VIEW_FAL_PROMPTS[k] + (job.hints ? ' Body proportions to preserve: ' + job.hints : ''), true, job.aspect);
+          for (const k of ['side', 'back']) job.views_req[k] = await outfitSubmit(env, 0, [job.chains[0].cur], VIEW_FAL_PROMPTS[k] + (job.hints ? ' Body proportions to preserve: ' + job.hints : ''), false, job.aspect);
         } else {
           const got = job.views_got || {};
           for (const k of ['side', 'back']) if (!got[k]) { const u = await falCheck(env, job.views_req[k], '多角度服務'); if (u) got[k] = u; }
@@ -526,14 +533,10 @@ async function handleTryonStatus(request, env, cors, url) {
           }
         }
       } catch (e) { await refundViews(e.message); }
-      await save(); return json({ status: 'running', progress: progress() }, 200, cors);
+      await save(); return running();
     }
     // 3) 收尾：結果複製到我們的 Storage（fal 的網址會過期）
-    const urls = [];
-    for (let i = 0; i < job.chains.length; i++) {
-      const u = job.chains[i].cur;
-      urls.push(u.startsWith(env.SUPABASE_URL) ? u : await copyToStorage(env, `${user.id}/${Date.now()}-${i}`, u).catch(() => u));
-    }
+    const urls = job.front;
     const viewUrls = job.views || {};
     const prof = await getProfile(env, user).catch(() => null);
     const result = { items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };

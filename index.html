@@ -691,8 +691,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.0.0';
-const BUILD = '2026-10-30-04';
+const APP_VERSION = '4.1.0';
+const BUILD = '2026-10-30-05';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -966,7 +966,7 @@ function renderSlots(){
     return `<div class="slot" data-type="${s.type}" style="--tint:${s.tint}"><span class="ic">${s.ic}</span><span class="lb">${s.label}</span></div>`;
   }).join('');
   $('slots').querySelectorAll('.slot').forEach(el=>{ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }; });
-  $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } openSlotMenu(el.dataset.type); });
+  $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } const v=state.slots[el.dataset.type]; if(v&&(v.image||v.text)) return openItemView({type:el.dataset.type,...v},'slot'); openSlotMenu(el.dataset.type); });
   persistSlots();
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
   const nItems=Object.keys(state.slots).length;
@@ -1210,6 +1210,24 @@ $('importBtn').onclick=async()=>{
 // 合成結果區：若單品來自商店，顯示購買連結
 function renderBuyLinks(){ const items=Object.values(state.slots).filter(v=>v&&v.buy_url); const host=$('resultActions'); let bar=$('buyBar'); if(!items.length){ if(bar) bar.remove(); return; } if(!bar){ bar=document.createElement('div'); bar.id='buyBar'; bar.className='row'; bar.style.marginTop='10px'; host.after(bar); } bar.innerHTML='<span class="muted" style="letter-spacing:1px">喜歡嗎？</span>'+items.map(v=>`<button class="btn sm" data-buyurl="${v.buy_url}" data-pid="${v.product_id||''}">購買 ${v.name||''}</button>`).join(''); bar.querySelectorAll('[data-buyurl]').forEach(b=>b.onclick=()=>buyProduct({id:Number(b.dataset.pid)||null,buy_url:b.dataset.buyurl})); }
 
+/* ---------- 360° 背景補圖 ---------- */
+async function followViews(id, forResult){
+  const note=$('runStatus'); const base=note.textContent; note.textContent=base+' 側面與背面生成中…';
+  const t0=Date.now();
+  while(Date.now()-t0 < 4*60*1000){
+    await new Promise(r=>setTimeout(r,3000));
+    if(state.result!==forResult) return;               // 使用者已開始下一張
+    let st; try{ st=await api('/api/tryon/status?id='+id); }catch{ continue; }
+    if(st.status==='failed'){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
+    if(st.status==='ok'){
+      const r=st.result||{}; const vu=r.view_urls||{};
+      if(r.views_error||!(vu.side||vu.back)){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
+      try{ const side=vu.side?await urlToDataUri(vu.side):null, back=vu.back?await urlToDataUri(vu.back):null; if(state.result!==forResult) return; state.views={side,back}; renderCompare(state.personOrig, state.result); note.textContent=base+' 360° 完成，點上方「側面／背面」切換。'; toast('360° 側面與背面好了'); }catch{}
+      refreshMe(); return;
+    }
+  }
+}
+
 /* ---------- 這次試穿的單品（可再點開） ---------- */
 function renderUsedItems(){
   const list=state.runItems||[]; let box=$('usedItems');
@@ -1218,17 +1236,19 @@ function renderUsedItems(){
   box.innerHTML='<div class="muted" style="font-size:12px;letter-spacing:1px;margin-bottom:8px">這次試穿的單品（點一下看細節）</div><div class="ui-row">'+list.map((it,i)=>`<button class="ui-it" data-ui="${i}">${it.image?`<img src="${it.image}" alt="">`:`<span class="ui-txt">${(it.text||'').slice(0,12)}</span>`}<span>${TYPE_LABEL[it.type]||''}</span></button>`).join('')+'</div>';
   box.querySelectorAll('[data-ui]').forEach(b=>b.onclick=()=>openItemView(list[+b.dataset.ui]));
 }
-function openItemView(it){
+function openItemView(it, mode){
   if(!it) return; let ov=$('itemView');
   if(!ov){ ov=document.createElement('div'); ov.id='itemView'; ov.className='itemview'; document.body.appendChild(ov); ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('on'); }); }
   const fitTxt=(()=>{ try{ const row=[...document.querySelectorAll('#fitRows .fitrow')].find(r=>r.querySelector(`[data-fit="${it.type}"]`)); return row?row.querySelector('.rec')?.innerHTML||'':''; }catch{ return ''; } })();
   ov.innerHTML=`<div class="iv-card"><div class="iv-img">${it.image?`<img src="${it.image}" alt="">`:`<div class="muted" style="padding:40px">${it.text||''}</div>`}</div>
     <div class="iv-info"><div class="muted" style="font-size:11px;letter-spacing:2px">${TYPE_LABEL[it.type]||''}${it.brand?' · '+it.brand:''}</div><div style="font-size:15px;margin:4px 0 8px">${it.name||'你上傳的單品'}</div>
     ${fitTxt?`<div class="muted" style="font-size:12px;line-height:1.6;margin-bottom:10px">${fitTxt}</div>`:''}
-    <div class="row">${it.buy_url?'<button class="btn primary" id="ivBuy">購買</button>':''}<button class="btn" id="ivBack">放回試衣間</button><button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
+    <div class="row">${it.buy_url?'<button class="btn primary" id="ivBuy">購買</button>':''}${mode==='slot'?'<button class="btn" id="ivSwap">換一件</button><button class="btn" id="ivDel">移除</button>':'<button class="btn" id="ivBack">放回試衣間</button>'}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
   ov.classList.add('on');
   $('ivClose').onclick=()=>ov.classList.remove('on');
-  $('ivBack').onclick=()=>{ const {type,...v}=it; state.slots[type]=v; renderSlots(); ov.classList.remove('on'); toast('已放回試衣間：'+(TYPE_LABEL[type]||'')); };
+  if($('ivSwap')) $('ivSwap').onclick=()=>{ ov.classList.remove('on'); openSlotMenu(it.type); };
+  if($('ivDel')) $('ivDel').onclick=()=>{ delete state.slots[it.type]; renderSlots(); ov.classList.remove('on'); };
+  if($('ivBack')) $('ivBack').onclick=()=>{ const {type,...v}=it; state.slots[type]=v; renderSlots(); ov.classList.remove('on'); toast('已放回試衣間：'+(TYPE_LABEL[type]||'')); };
   if($('ivBuy')) $('ivBuy').onclick=()=>buyProduct({id:it.product_id||null,buy_url:it.buy_url});
 }
 
@@ -1372,13 +1392,14 @@ $('btnRun').onclick=async()=>{
     let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect }) });
     if (d && d.async && d.id) {
       // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
-      const t0=Date.now(); let st; clearInterval(tick);
+      const t0=Date.now(); let st; clearInterval(tick); const jobId=d.id;
       const STEP_TXT={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',finish:'整理結果'};
       try{ localStorage.setItem('tryon.pending', String(d.id)); }catch{}
       while (true) {
         await new Promise(r=>setTimeout(r,2500));
         try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
         if (st.status==='ok') { d = st.result; break; }
+        if (st.front) { d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
         if (st.status==='failed') throw new Error(st.error||'合成失敗');
         const sec=Math.round((Date.now()-t0)/1000);
         if (st.progress) { const pg=st.progress; const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/pg.total*100))); bar.style.width=pc+'%'; const msg=`正在${STEP_TXT[pg.current]||'處理'}…（第 ${Math.min(pg.done+1,pg.total)}/${pg.total} 步，${sec} 秒）`; $('runStatus').textContent=msg; const w=$('waitMsg'); if(w) w.textContent=msg; }
@@ -1403,8 +1424,8 @@ $('btnRun').onclick=async()=>{
     const needLock = $('faceLock').classList.contains('on') && (d.engine==='outfit' || items.some(i=>!['top','bottom','dress'].includes(i.type)));
     if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(state.personOrig, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
-    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點），剩餘 ${d.credits} 點。` + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '');
-    if (state.me){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); }
+    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '');
+    if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
     busy=false; $('btnRun').disabled=false;
     let finalImg = imgs[0];
     if (imgs.length > 1) {
@@ -1415,6 +1436,7 @@ $('btnRun').onclick=async()=>{
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems();
     renderFit();
     toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
+    if (d._pendingId) followViews(d._pendingId, state.result);
   }catch(e){
     clearInterval(tick);
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
