@@ -1,0 +1,15 @@
+name = "tryon-api"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+account_id = "92de4f61102c38e91e5e59ec0c86eb23"
+workers_dev = true
+
+[vars]
+SUPABASE_URL = "https://oksutiyvzxgssmgppdbz.supabase.co"
+SITE_URL = "https://frankf19-19.github.io/fitroom"
+FREE_DAILY = "2"
+ADMIN_EMAILS = "frankccc199@gmail.com"
+GEMINI_IMAGE_MODEL = "gemini-nano-banana-2.1"
+
+[observability]
+enabled = true

@@ -1,0 +1,26 @@
+name: 部署後端 Worker（Cloudflare）
+on:
+  push:
+    branches: [main]
+    paths: ['worker/**', '.github/workflows/worker-deploy.yml']
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # 綠界正式金鑰之後再加：secrets 加 ECPAY_MERCHANT_ID / ECPAY_HASH_KEY / ECPAY_HASH_IV 並補進下面清單
+      - name: 部署程式與變數
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: worker
+          command: deploy
+          secrets: |
+            SUPABASE_SERVICE_KEY
+            FAL_KEY
+            GEMINI_KEY
+        env:
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          GEMINI_KEY: ${{ secrets.GEMINI_KEY }}
