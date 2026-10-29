@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.4.0';
+const VERSION = '2.4.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -409,15 +409,13 @@ async function handleTryon(request, env, cors, ctx) {
     // 分段模式：先把輸入圖存到 Storage，之後每次前端輪詢推進一步（不靠長時間背景工作）
     try {
       const base = `${user.id}/jobs/${gen.id}`;
-      const personUrl = await putImage(env, `${base}/person`, person);
-      const steps = [];
-      for (let k = 0; k < sorted.length; k++) {
-        const it = sorted[k];
+      // 照片與單品圖同時上傳（省幾秒）
+      const [personUrl, ...steps] = await Promise.all([putImage(env, `${base}/person`, person), ...sorted.map(async (it, k) => {
         const st = { type: it.type };
         if (CLOTHING[it.type]) { st.category = CLOTHING[it.type]; st.photo_type = it.photo_type || null; st.image_url = await putImage(env, `${base}/item${k}`, it.image); }
         else { if (isDataImage(it.image)) st.image_url = await putImage(env, `${base}/item${k}`, it.image); if (it.text) st.text = String(it.text).slice(0, 200); }
-        steps.push(st);
-      }
+        return st;
+      })]);
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
