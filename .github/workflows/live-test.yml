@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       engine: { description: '換裝引擎（空白=Nano Banana 2，pro=Nano Banana Pro）', required: false, default: '' }
+      res: { description: '解析度（空白=2K，1K）', required: false, default: '' }
       views: { description: '測 360°（1/0）', required: false, default: '1' }
 jobs:
   e2e:
@@ -18,6 +19,7 @@ jobs:
           SITE_URL: https://frankf19-19.github.io/fitroom/
           QA_ENGINE: ${{ inputs.engine }}
           QA_VIEWS: ${{ inputs.views }}
+          QA_RES: ${{ inputs.res }}
         run: python3 qa/live_test.py
       - name: 結果推到 qa-live 分支
         if: always()

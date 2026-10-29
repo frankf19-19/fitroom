@@ -421,7 +421,7 @@ async function handleTryon(request, env, cors, ctx) {
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
-        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto',
+        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K',
         steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
@@ -474,7 +474,7 @@ async function handleTryonStatus(request, env, cors, url) {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length; guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
-          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), true, job.aspect); return; }
+          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); return; }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
