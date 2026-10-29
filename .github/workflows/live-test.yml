@@ -2,7 +2,7 @@ name: 正式站端到端測試
 on:
   workflow_dispatch:
     inputs:
-      engine: { description: '換裝引擎（空白=Pro，fast=Nano Banana 2）', required: false, default: '' }
+      engine: { description: '換裝引擎（空白=Nano Banana 2，pro=Nano Banana Pro）', required: false, default: '' }
       views: { description: '測 360°（1/0）', required: false, default: '1' }
 jobs:
   e2e:

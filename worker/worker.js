@@ -18,12 +18,12 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.3.0';
+const VERSION = '2.4.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 // 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
-const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-pro/edit', 'https://queue.fal.run/fal-ai/nano-banana-2/edit'];
+const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-2/edit', 'https://queue.fal.run/fal-ai/nano-banana-pro/edit'];
 const ITEM_LABEL = { top: 'TOP or OUTERWEAR (upper body garment)', bottom: 'BOTTOM (trousers / skirt / shorts)', dress: 'ONE-PIECE (dress / jumpsuit)', shoes: 'SHOES', hat: 'HAT', accessory: 'ACCESSORY (bag / jewelry / glasses / watch)', hair: 'HAIRSTYLE reference' };
 function outfitPrompt(steps, hints, faceHint) {
   const lines = []; let k = 2;
@@ -50,7 +50,7 @@ function outfitPrompt(steps, hints, faceHint) {
 const ASPECTS = ['1:1', '4:5', '3:4', '2:3', '9:16', '5:4', '4:3', '3:2', '16:9'];
 async function outfitSubmit(env, engineIdx, imageUrls, prompt, hi = true, aspect = 'auto') {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
-  const body = { prompt, image_urls: imageUrls, num_images: 1, aspect_ratio: ASPECTS.includes(aspect) ? aspect : 'auto', output_format: 'png' };
+  const body = { prompt, image_urls: imageUrls, num_images: 1, aspect_ratio: ASPECTS.includes(aspect) ? aspect : 'auto', output_format: 'jpeg' };
   if (hi) body.resolution = '2K';
   const r = await fetchT(OUTFIT_ENGINES[engineIdx], { method: 'POST', headers, body: JSON.stringify(body) }, '換裝服務', 30000);
   const t = await r.text();
@@ -422,7 +422,7 @@ async function handleTryon(request, env, cors, ctx) {
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto',
-        steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'fast' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
+        steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
         pay: payCredits, free: useFree, free_left: freeLeft, cost };
