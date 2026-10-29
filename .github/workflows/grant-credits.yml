@@ -1,0 +1,28 @@
+name: 管理：送點數給某個 Email
+on:
+  workflow_dispatch:
+    inputs:
+      email:  { description: '會員 Email', required: true }
+      amount: { description: '要加的點數（可負數扣回）', required: true, default: '200' }
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 加點
+        env:
+          URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os, json, urllib.request, urllib.parse
+          url, key = os.environ['URL'], os.environ['KEY']
+          email, amount = "${{ inputs.email }}".strip().lower(), int("${{ inputs.amount }}")
+          h = {'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'}
+          q = urllib.request.Request(f"{url}/rest/v1/profiles?select=id,email,credits&email=ilike.{urllib.parse.quote(email)}", headers=h)
+          rows = json.load(urllib.request.urlopen(q))
+          if not rows: raise SystemExit(f'找不到會員 {email}（要先在網站登入過一次）')
+          r = rows[0]
+          body = json.dumps({'p_user': r['id'], 'p_amount': amount}).encode()
+          ok = json.load(urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/rpc/add_credits", data=body, headers=h, method='POST')))
+          print(f"{email}: {r['credits']} → {r['credits']+amount}（{'成功' if ok else '失敗'}）")
+          PY
