@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.9.1';
+const VERSION = '2.9.2';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -361,7 +361,7 @@ async function handleTryon(request, env, cors, ctx) {
   }
   if (prefetch) {
     const pfToday = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>pf=eq.1&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`).catch(() => []);
-    if (pfToday.length >= 40) return json({ skip: true, reason: 'daily' }, 200, cors);
+    if (pfToday.length >= 15) return json({ skip: true, reason: 'daily' }, 200, cors);
     const realRunning = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&select=id`).catch(() => []);
     if (realRunning.length) return json({ skip: true, reason: 'busy' }, 200, cors);
   }
@@ -577,7 +577,7 @@ async function handleTryonStatus(request, env, cors, url) {
           if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); return; }
           let r;
           // 避險：超過 25 秒還沒好，就同時再送一個（另一個引擎），誰先好用誰
-          if (!ch.req2 && Date.now() - ch.req.at > 25000 && OUTFIT_ENGINES.length > 1) {
+          if (!ch.req2 && Date.now() - ch.req.at > 40000 && OUTFIT_ENGINES.length > 1) {
             try { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req2 = await outfitSubmit(env, ((st.engine || 0) + 1) % OUTFIT_ENGINES.length, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); job.hedged = true; } catch { ch.req2 = { failed: true }; }
           }
           if (ch.req2 && !ch.req2.failed) {

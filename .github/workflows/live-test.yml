@@ -4,7 +4,8 @@ on:
     inputs:
       engine: { description: '換裝引擎（空白=Nano Banana 2，pro=Nano Banana Pro）', required: false, default: '' }
       res: { description: '解析度（空白=2K，1K）', required: false, default: '' }
-      views: { description: '測 360°（1/0）', required: false, default: '1' }
+      views: { description: '測 360°（1/0，會花 AI 費用）', required: false, default: '0' }
+      nocache: { description: '不用快取、真的跑 AI（1/0，會花錢）', required: false, default: '0' }
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -20,6 +21,7 @@ jobs:
           QA_ENGINE: ${{ inputs.engine }}
           QA_VIEWS: ${{ inputs.views }}
           QA_RES: ${{ inputs.res }}
+          QA_NOCACHE: ${{ inputs.nocache }}
         run: python3 qa/live_test.py
       - name: 結果推到 qa-live 分支
         if: always()

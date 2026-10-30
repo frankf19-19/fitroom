@@ -90,10 +90,10 @@ with sync_playwright() as pw:
     pg.wait_for_timeout(int(os.environ.get('QA_THINK', '1000')))   # 模擬使用者看尺寸的時間
     step('預先合成提示', bool(txt('#pfHint')), txt('#pfHint'))
     # 6. AI 試穿（真的呼叫 fal）
-    pg.evaluate("localStorage.setItem('tryon.nocache','1')")
+    if os.environ.get('QA_NOCACHE') == '1': pg.evaluate("localStorage.setItem('tryon.nocache','1')")   # 預設用快取，不花 AI 費用
     if os.environ.get('QA_RES'): pg.evaluate(f"localStorage.setItem('tryon.res','{os.environ['QA_RES']}')")
     if os.environ.get('QA_ENGINE'): pg.evaluate(f"localStorage.setItem('tryon.engine','{os.environ['QA_ENGINE']}')")
-    if os.environ.get('QA_VIEWS') == '0': pass
+    if os.environ.get('QA_VIEWS', '0') == '0': pass
     elif 'on' not in (pg.get_attribute('#wantViews','class') or ''): pg.click('#wantViews')
     if False: pg.click('#wantViews') if 'on' not in (pg.get_attribute('#wantViews','class') or '') else None
     pg.wait_for_timeout(300)

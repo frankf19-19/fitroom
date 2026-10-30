@@ -713,8 +713,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.5.1';
-const BUILD = '2026-10-30-17';
+const APP_VERSION = '4.5.2';
+const BUILD = '2026-10-31-01';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1265,7 +1265,7 @@ async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', ne
 function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
 const pf={key:null,id:null,st:null,timer:null};
 function pfHint(){ const h=$('pfHint'); if(!h) return; h.textContent = pf.st==='ready' ? '⚡ 已經先幫你做好了，按下立刻出現' : pf.st==='running' ? '⚡ 已先在背景準備，按下會更快' : ''; }
-function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 2000); }
+function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 4000); }
 async function doPrefetch(){
   try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
   if(busy||!state.user||!state.person||!configured) return;
