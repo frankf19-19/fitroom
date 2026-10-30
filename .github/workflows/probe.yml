@@ -1,12 +1,15 @@
 name: 管理：探測商店資料來源
-on: { workflow_dispatch: {} }
+on:
+  workflow_dispatch:
+    inputs:
+      script: { description: "script", required: false, default: "probe_shops.py" }
 jobs:
   p:
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir out && cd out && python3 ../tools/probe_shops.py
+      - run: mkdir out && cd out && python3 ../tools/${{ inputs.script || 'probe_shops.py' }}
       - run: |
           cd out && git init -q && git checkout -q -b qa-debug && git add -A
           git -c user.name=bot -c user.email=b@b commit -q -m p
