@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.5.1';
+const VERSION = '2.6.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -317,10 +317,29 @@ async function handleTryon(request, env, cors, ctx) {
 
   // 同一張照片＋同樣單品組合 7 天內做過 → 直接用舊結果（秒出、不扣點）
   const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + (wantViews ? '-v' : '') + '-' + variants : null;
-  if (ckey && body.async === true) {
+  if (ckey && body.async === true && !body.nocache) {
     const hit = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.ok&job->>key=eq.${ckey}&created_at=gte.${encodeURIComponent(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,views&order=created_at.desc&limit=1`).catch(() => []);
     const r = hit[0] && hit[0].views && hit[0].views.result;
     if (r) { const used = await freeUsedToday(env, user.id).catch(() => 0); const pr = await getProfile(env, user).catch(() => null); return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
+  }
+  // ---- 預先合成（使用者還在挑尺寸時就先跑；按下「開始」才扣點）----
+  const prefetch = body.prefetch === true && stepMode && variants === 1;
+  const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + '-' + variants : null;
+  if (bkey && stepMode) {
+    const pfRows = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views&order=created_at.desc`).catch(() => []);
+    for (const g of pfRows) {
+      if (g.job && g.job.bkey === bkey) {
+        if (prefetch) return json({ id: g.id, prefetch: true, ready: g.status === 'ok' }, 202, cors);
+        return claimPrefetch(env, cors, user, g, { items, variants, wantViews, ckey });
+      }
+      if (g.status === 'running') await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}&status=eq.running`, { status: 'failed', error: '預先合成已被取代' }).catch(() => {});
+    }
+  }
+  if (prefetch) {
+    const pfToday = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>pf=eq.1&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`).catch(() => []);
+    if (pfToday.length >= 40) return json({ skip: true, reason: 'daily' }, 200, cors);
+    const realRunning = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&select=id`).catch(() => []);
+    if (realRunning.length) return json({ skip: true, reason: 'busy' }, 200, cors);
   }
   // 扣點：每個品項 1 點 × 張數；先用今日免費點數，不足再扣點數
   const cost = items.length * variants + (wantViews ? 2 : 0);
@@ -330,14 +349,15 @@ async function handleTryon(request, env, cors, ctx) {
   const freeLeft = Math.max(0, freeDaily - used);
   const useFree = Math.min(freeLeft, cost);
   const payCredits = cost - useFree;
+  if (prefetch && payCredits > profile.credits) return json({ skip: true, reason: 'credits' }, 200, cors);
   if (payCredits > profile.credits) {
     return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
   }
   // 先登記進行中（鎖住免費額度與限流），再扣點，失敗再退
   let gen;
-  try { gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: payCredits, free_used: useFree, status: 'running', variants }); }
+  try { gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: prefetch ? 0 : payCredits, free_used: prefetch ? 0 : useFree, status: 'running', variants }); }
   catch (e) { if (/409|duplicate|unique/i.test(String(e.message))) return json({ error: '上一張還在合成中（360° 側面背面可能還在生成），請稍候再試' }, 429, cors); throw e; }
-  if (payCredits > 0) {
+  if (payCredits > 0 && !prefetch) {
     const ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits });
     if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '扣點失敗' }); return json({ error: '扣點失敗，請重試' }, 500, cors); }
   }
@@ -435,22 +455,59 @@ async function handleTryon(request, env, cors, ctx) {
       })]);
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
-      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta,
-        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: ckey,
+      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
+        aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
         steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
-        pay: payCredits, free: useFree, free_left: freeLeft, cost };
+        pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
       await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { job: jobState });
     } catch (e) {
-      if (payCredits > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
+      if (payCredits > 0 && !prefetch) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
       await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '準備失敗：' + String(e.message).slice(0, 200), cost: 0, free_used: 0 }).catch(() => {});
       return json({ error: '準備合成失敗（已退回點數）：' + e.message }, 502, cors);
     }
-    return json({ id: gen.id, async: true, cost }, 202, cors);
+    return json(prefetch ? { id: gen.id, prefetch: true } : { id: gen.id, async: true, cost }, 202, cors);
   }
   try { return json(await job(), 200, cors); }
   catch (e) { return json({ error: e.message }, e.status || 502, cors); }
+}
+async function claimPrefetch(env, cors, user, g, { items, variants, wantViews, ckey }) {
+  const cost = items.length * variants + (wantViews ? 2 : 0);
+  const freeDaily = Number(env.FREE_DAILY || 2);
+  const profile = await getProfile(env, user);
+  const used = await freeUsedToday(env, user.id);
+  const freeLeft = Math.max(0, freeDaily - used);
+  const useFree = Math.min(freeLeft, cost);
+  const payCredits = cost - useFree;
+  if (payCredits > profile.credits) return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
+  // 等輪詢放開鎖再改（避免被覆寫）
+  let row = g;
+  for (let i = 0; i < 25; i++) {
+    const job = row.job;
+    if ((job.lock_until || 0) <= Date.now()) {
+      const v = job.v;
+      job.v = v + 1; job.prefetch = false; job.pay = payCredits; job.free = useFree; job.free_left = freeLeft; job.cost = cost; job.key = ckey; job.want_views = wantViews; job.touched = new Date().toISOString();
+      const patch = { cost: payCredits, free_used: useFree, job };
+      if (row.status === 'ok') {
+        if (wantViews) { patch.status = 'running'; job.views = null; job.views_error = null; job.views_req = null; job.spin_m = 0; }
+        else { const r = (row.views && row.views.result) || {}; patch.views = { ...(row.views || {}), result: { ...r, charged: payCredits, free_used: useFree, credits: profile.credits - payCredits, free_left: Math.max(0, freeLeft - useFree) } }; }
+      }
+      const got = await sbPatch(env, `/rest/v1/generations?id=eq.${row.id}&job->>v=eq.${v}`, patch, true).catch(() => []);
+      if (Array.isArray(got) && got.length) {
+        if (payCredits > 0) {
+          const ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits });
+          if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${row.id}`, { status: 'failed', error: '扣點失敗', cost: 0, free_used: 0 }).catch(() => {}); return json({ error: '扣點失敗，請重試' }, 500, cors); }
+        }
+        return json({ id: row.id, async: true, cost, claimed: true }, 202, cors);
+      }
+    }
+    await new Promise(r => setTimeout(r, 400));
+    const rr = await sb(env, `/rest/v1/generations?id=eq.${row.id}&select=id,status,job,views`).catch(() => []);
+    if (!rr[0] || !['running', 'ok'].includes(rr[0].status)) break;
+    row = rr[0];
+  }
+  return json({ error: '系統忙碌，請再按一次' }, 503, cors);
 }
 async function handleTryonStatus(request, env, cors, url) {
   let user;
@@ -458,20 +515,22 @@ async function handleTryonStatus(request, env, cors, url) {
   const id = Number(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
   const rows = await sb(env, `/rest/v1/generations?id=eq.${id}&user_id=eq.${user.id}&select=id,status,error,image_url,views,created_at,job,cost,free_used,items,variants`);
   const g = rows[0]; if (!g) return json({ error: '找不到這筆合成' }, 404, cors);
-  if (g.status === 'failed') return json({ status: 'failed', error: g.error || '合成失敗' }, 200, cors);
-  if (g.status === 'ok') { const r = (g.views && g.views.result) || null; return json({ status: 'ok', result: r || { images: [null], image_urls: [g.image_url], views: null, view_urls: g.views || {}, views_error: null } }, 200, cors); }
+  const pf = !!(g.job && g.job.prefetch);
+  const jout = (obj, st = 200, h = cors) => json(pf && obj && obj.status ? { status: obj.status === 'ok' ? 'prefetched' : obj.status, prefetch: true, error: obj.error } : obj, st, h);
+  if (g.status === 'failed') return jout({ status: 'failed', error: g.error || '合成失敗' }, 200, cors);
+  if (g.status === 'ok') { const r = (g.views && g.views.result) || null; return jout({ status: 'ok', result: r || { images: [null], image_urls: [g.image_url], views: null, view_urls: g.views || {}, views_error: null } }, 200, cors); }
   const job = g.job;
   if (!job) {
-    if (Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) return json({ status: 'failed', error: '合成逾時，點數會自動退回，請再試一次' }, 200, cors);
-    return json({ status: 'running' }, 200, cors);
+    if (Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) return jout({ status: 'failed', error: '合成逾時，點數會自動退回，請再試一次' }, 200, cors);
+    return jout({ status: 'running' }, 200, cors);
   }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
-  const running = () => json({ status: 'running', progress: progress(), front: frontOut() }, 200, cors);
+  const running = () => jout({ status: 'running', progress: progress(), front: frontOut() }, 200, cors);
   const fail = async (msg) => {
     if (job.pay > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: job.pay }).catch(() => {});
     await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
-    return json({ status: 'failed', error: msg }, 200, cors);
+    return jout({ status: 'failed', error: msg }, 200, cors);
   };
   // 太久沒進度（使用者關掉頁面等）→ 失敗並退點
   if (Date.now() - new Date(job.touched).getTime() > RUNNING_STALE_MS && (job.lock_until || 0) < Date.now()) return fail('合成逾時（已退回點數），請再試一次');
@@ -578,7 +637,7 @@ async function handleTryonStatus(request, env, cors, url) {
     for (let i = 1; i < urls.length; i++) await sbInsert(env, 'generations', { user_id: user.id, items: g.items, cost: 0, free_used: 0, status: 'ok', image_url: urls[i], variants: g.variants }).catch(() => {});
     job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
     await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { status: 'ok', image_url: urls[0], cost: job.pay, free_used: job.free, error: job.views_error, views: { ...viewUrls, result }, job });
-    return json({ status: 'ok', result }, 200, cors);
+    return jout({ status: 'ok', result }, 200, cors);
   } catch (e) {
     return fail('合成失敗（已退回點數）：' + e.message);
   }

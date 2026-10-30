@@ -87,6 +87,8 @@ with sync_playwright() as pw:
     # 5. 尺寸建議
     pg.fill('#fBust', '86'); pg.fill('#fWaist', '68'); pg.fill('#fHip', '92'); pg.wait_for_timeout(300)
     fr = txt('#fitRows'); step('尺寸建議有內容', fr and '建議' in fr, fr); shot('04_fit')
+    pg.wait_for_timeout(int(os.environ.get('QA_THINK', '20000')))   # 模擬使用者看尺寸的時間
+    step('預先合成提示', bool(txt('#pfHint')), txt('#pfHint'))
     # 6. AI 試穿（真的呼叫 fal）
     pg.evaluate("localStorage.setItem('tryon.nocache','1')")
     if os.environ.get('QA_RES'): pg.evaluate(f"localStorage.setItem('tryon.res','{os.environ['QA_RES']}')")

@@ -252,7 +252,8 @@
   .polaroid .cap small{font-size:10px;color:var(--muted);letter-spacing:1px}
   .polaroid .view-img{display:none}.polaroid .view-img.on{display:block;max-width:100%;max-height:680px}
   .spinbox{position:relative;touch-action:pan-y;user-select:none;cursor:grab;background:var(--bg2)}
-  .spinbox.on{display:block!important}.spinbox canvas{display:block;width:100%;height:auto}
+  .spinbox.on{display:block!important}.spinbox canvas,.spinbox video,.spinbox .spinposter{display:block;width:100%;height:auto}.spinbox [hidden]{display:none!important}
+  .spinbox .spinplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--ink);color:#fff;border:none;padding:12px 18px;font-size:13px;letter-spacing:2px;cursor:pointer}
   .spinbox .spinhint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(17,17,17,.72);color:#fff;font-size:11px;letter-spacing:2px;padding:6px 12px;pointer-events:none;transition:opacity .4s}
   .spinbox .spinbar{position:absolute;left:12px;right:12px;bottom:4px;height:2px;background:rgba(0,0,0,.08)}.spinbox .spinbar i{display:block;height:100%;background:var(--ink);width:0}
   .angles{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:14px;flex-wrap:wrap}
@@ -503,6 +504,7 @@
           <div class="opt-row" style="margin-top:0"><span>一次產 2 張挑一張 <span class="muted">（點數 ×2，更容易抽到滿意的）</span></span><div class="switch" id="twoVariants"></div></div>
           <div class="opt-row" style="margin-top:0"><span>鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是你本人）</span></span><div class="switch on" id="faceLock"></div></div>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
+          <div class="muted" id="pfHint" style="font-size:12px;margin-top:6px;min-height:1em"></div>
           <div class="progress hidden" id="prog"><i></i></div>
           <div class="muted" id="runStatus" style="margin-top:8px"></div>
         </div>
@@ -706,8 +708,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.2.0';
-const BUILD = '2026-10-30-10';
+const APP_VERSION = '4.3.0';
+const BUILD = '2026-10-30-11';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -982,7 +984,7 @@ function renderSlots(){
   }).join('');
   $('slots').querySelectorAll('.slot').forEach(el=>{ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }; });
   $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ delete state.slots[e.target.dataset.x]; renderSlots(); return; } const v=state.slots[el.dataset.type]; if(v&&(v.image||v.text)) return openItemView({type:el.dataset.type,...v},'slot'); openSlotMenu(el.dataset.type); });
-  persistSlots(); try{ renderRack(); }catch{}
+  persistSlots(); try{ renderRack(); }catch{} try{ schedulePrefetch(); }catch{}
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
   const nItems=Object.keys(state.slots).length;
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0); $('costN').textContent=n;
@@ -1245,6 +1247,35 @@ function renderRack(){
 
 renderRack();
 
+/* ---------- 預先合成：挑好就先在背景跑，按下「開始」才扣點 ---------- */
+async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
+const pf={key:null,id:null,st:null,timer:null};
+function pfHint(){ const h=$('pfHint'); if(!h) return; h.textContent = pf.st==='ready' ? '⚡ 已經先幫你做好了，按下立刻出現' : pf.st==='running' ? '⚡ 已先在背景準備，按下會更快' : ''; }
+function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 2000); }
+async function doPrefetch(){
+  try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
+  if(busy||!state.user||!state.person||!configured) return;
+  if($('twoVariants').classList.contains('on')) return;
+  const items=Object.entries(state.slots).map(([type,v])=>({type, image:v.image, text:v.text, photo_type:v.photo_type, name:v.name||null, product_id:v.product_id||null, buy_url:v.buy_url||null}));
+  if(!items.length) { pf.key=null; pf.st=null; pfHint(); return; }
+  let key; try{ key=await comboKey(items); }catch{ return; }
+  if(pf.key===key) return;
+  pf.key=key; pf.id=null; pf.st=null; pfHint();
+  try{
+    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect() })});
+    if(pf.key!==key||!d||!d.id) return;
+    pf.id=d.id; pf.st=d.ready?'ready':'running'; pfHint();
+    while(pf.key===key && pf.st==='running' && !busy){
+      await new Promise(r=>setTimeout(r,2500));
+      if(pf.key!==key||busy) return;
+      let st; try{ st=await api('/api/tryon/status?id='+d.id); }catch{ continue; }
+      if(st.status==='prefetched'){ pf.st='ready'; pfHint(); }
+      else if(st.status==='failed'){ pf.st=null; pfHint(); }
+    }
+  }catch{ if(pf.key===key){ pf.st=null; pfHint(); } }
+}
+
 /* ---------- 360° 背景補圖 ---------- */
 async function followViews(id, forResult){
   const note=$('runStatus'); const base=note.textContent; note.textContent=base+' 360° 旋轉影片生成中（約 1–2 分鐘，可以先看正面）…';
@@ -1256,7 +1287,7 @@ async function followViews(id, forResult){
     if(st.status==='failed'){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
     if(st.status==='ok'){
       const r=st.result||{}; const vu=r.view_urls||{};
-      if(vu.video){ try{ note.textContent=base+' 360° 載入中…'; await attachSpin(vu.video); if(state.result!==forResult) return; note.textContent=base+(state.views&&state.views.plain?' 360° 好了（循環播放）。':' 360° 好了：在圖上左右拖曳就能旋轉。'); toast('360° 好了，左右拖曳旋轉'); }catch(e){ note.textContent=base+' 360° 載入失敗：'+e.message; } refreshMe(); return; }
+      if(vu.video){ try{ note.textContent=base+' 360° 載入中…'; await attachSpin(vu.video); if(state.result!==forResult) return; note.textContent=base+' 360° 好了：在圖上左右拖曳就能旋轉。'; toast('360° 好了，左右拖曳旋轉'); }catch(e){ note.textContent=base+' 360° 載入失敗：'+e.message; } refreshMe(); return; }
       if(r.views_error||!(vu.side||vu.back)){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
       try{ const side=vu.side?await urlToDataUri(vu.side):null, back=vu.back?await urlToDataUri(vu.back):null; if(state.result!==forResult) return; state.views={side,back}; renderCompare(state.personOrig, state.result); note.textContent=base+' 360° 完成，點上方「側面／背面」切換。'; toast('360° 側面與背面好了'); }catch{}
       refreshMe(); return;
@@ -1424,9 +1455,11 @@ $('btnRun').onclick=async()=>{
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
-    let aspect='auto'; try{ const pim=await loadImg(state.person); const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; aspect=opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }catch{}
-    let key; try{ if(localStorage.getItem('tryon.nocache')) throw 0; const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); key=[...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }catch{}
-    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, key, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() , res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() }) });
+    let aspect=await personAspect(); if(false){ const pim=await loadImg(state.person); const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; aspect=opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }
+    let key; try{ key=await comboKey(items); }catch{}
+    const nocache=(()=>{ try{ return !!localStorage.getItem('tryon.nocache'); }catch{ return false; } })();
+    const wasReady=pf.key===key&&pf.st==='ready'; pf.key=null; pf.st=null; pfHint();
+    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, key, nocache, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() , res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() }) });
     if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
     if (d && d.async && d.id) {
       // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
@@ -1435,7 +1468,7 @@ $('btnRun').onclick=async()=>{
       try{ localStorage.setItem('tryon.pending', String(d.id)); }catch{}
       if ($('faceLock').classList.contains('on')) getFaceDetector().catch(()=>{});   // 等待時先載入臉部偵測，結果出來就能馬上鎖臉
       while (true) {
-        await new Promise(r=>setTimeout(r, Date.now()-t0 < 15000 ? 3000 : 1500));
+        await new Promise(r=>setTimeout(r, (d.claimed||wasReady) && Date.now()-t0 < 3000 ? 250 : (Date.now()-t0 < 15000 ? 2500 : 1500)));
         try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
         if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
         if (st.front) { window.__lastTiming=st.front.timing; d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
@@ -1495,8 +1528,9 @@ function renderCompare(before, after){
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   const v=state.views||{};
   box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>${v.side?`<img class="view-img" data-v="side" src="${v.side}" alt="側面">`:''}${v.back?`<img class="view-img" data-v="back" src="${v.back}" alt="背面">`:''}<div class="cap"><span>${items}</span><small id="capAngle">${date}</small></div></div>`;
-  if(v.spin&&v.plain){ const pol=box.querySelector('.polaroid'); const sb=document.createElement('div'); sb.className='view-img spinbox'; sb.dataset.v='spin'; sb.innerHTML=`<video src="${v.video}" autoplay loop muted playsinline style="width:100%;display:block"></video>`; pol.querySelector('.cmp').after(sb); }
-  else if(v.spin){ const pol=box.querySelector('.polaroid'); const sb=document.createElement('div'); sb.className='view-img spinbox'; sb.dataset.v='spin'; sb.innerHTML='<canvas id="spinCanvas"></canvas><span class="spinhint" id="spinHint">← 左右拖曳旋轉 →</span><div class="spinbar"><i id="spinBar"></i></div>'; pol.querySelector('.cmp').after(sb); initSpin(sb); }
+  if(v.spin){ const pol=box.querySelector('.polaroid'); const sb=document.createElement('div'); sb.className='view-img spinbox'; sb.dataset.v='spin';
+    sb.innerHTML=`<img class="spinposter" src="${after}" alt=""><video hidden muted playsinline loop preload="auto" crossorigin="anonymous" src="${v.video}"></video><canvas hidden></canvas><button class="spinplay" hidden>▶ 點一下播放 360°</button><span class="spinhint">轉一圈給你看，之後可以左右拖曳</span><div class="spinbar"><i></i></div>`;
+    pol.querySelector('.cmp').after(sb); initSpin(sb); }
   $('angles').querySelectorAll('[data-v]').forEach(b=>{ b.style.display=(b.dataset.v==='front'||v[b.dataset.v])?'':'none'; });
   $('angles').classList.toggle('hidden', !(v.side||v.back||v.spin)); setAngle(v.spin&&state.preferSpin?'spin':'front');
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
@@ -1509,7 +1543,7 @@ function renderCompare(before, after){
   cmp.addEventListener('pointermove',e=>{ if(dragging) set(e.clientX); });
   cmp.addEventListener('pointerup',()=>dragging=false); cmp.addEventListener('pointercancel',()=>dragging=false);
 }
-$('btnDownload').onclick=()=>{ if(curAngle==='spin'&&state.views&&(state.views.spinData||state.views.video)){ const a=document.createElement('a'); a.href=state.views.spinData?state.views.spinData.src:state.views.video; a.download='試穿吧_360_'+Date.now()+'.mp4'; document.body.appendChild(a); a.click(); a.remove(); return; } if(state.result) saveImage(currentResultImage(),'試穿吧_'+({front:'正面',side:'側面',back:'背面'})[curAngle]+'_'+Date.now()+'.png'); };
+$('btnDownload').onclick=async()=>{ if(curAngle==='spin'&&state.views&&state.views.video){ let href=state.views.video; try{ href=URL.createObjectURL(await (await fetch(state.views.video)).blob()); }catch{} const a=document.createElement('a'); a.href=href; a.download='試穿吧_360_'+Date.now()+'.mp4'; document.body.appendChild(a); a.click(); a.remove(); return; } if(state.result) saveImage(currentResultImage(),'試穿吧_'+({front:'正面',side:'側面',back:'背面'})[curAngle]+'_'+Date.now()+'.png'); };
 async function shareImage(dataUri){
   if (IS_APP && Plug('Filesystem') && Plug('Share')) {
     try{ const ext=/^data:image\/jpe?g/i.test(dataUri)?'jpg':'png'; const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.'+ext, data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
@@ -1699,46 +1733,56 @@ function setAngle(a){
 function stopSpin(){ if(spinT){ clearInterval(spinT); spinT=null; } const b=$('spinBtn'); if(b) b.classList.remove('on'); }
 $('angles').querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{ stopSpin(); setAngle(b.dataset.v); haptic(); });
 $('spinBtn').onclick=()=>{ if(state.views&&state.views.spin){ setAngle('spin'); spinAuto(!spinRAF); return; } if(spinT){ stopSpin(); return; } const v=state.views||{}; const order=['front',...(v.side?['side']:[]),...(v.back?['back']:[]),...(v.side&&v.back?['side']:[])]; if(order.length<2) return; let i=0; $('spinBtn').classList.add('on'); spinT=setInterval(()=>{ i=(i+1)%order.length; setAngle(order[i]); },1100); };
-function currentResultImage(){ if(curAngle==='spin'){ const c=$('spinCanvas'); if(c) return c.toDataURL('image/jpeg',.92); } if(curAngle!=='front' && state.views && state.views[curAngle]) return state.views[curAngle]; return state.result; }
+function currentResultImage(){ if(curAngle==='spin'&&spinState&&spinState.ready){ try{ return spinState.canvas.toDataURL('image/jpeg',.92); }catch{} } if(curAngle!=='front' && state.views && state.views[curAngle]) return state.views[curAngle]; return state.result; }
 
-/* ---------- 360° 旋轉（影片 → 逐格，拖曳換格） ---------- */
-let spinState=null, spinRAF=null;
-async function loadSpin(videoUrl){
-  const blob=await (await fetch(videoUrl)).blob(); const src=URL.createObjectURL(blob);
-  const v=document.createElement('video'); v.muted=true; v.playsInline=true; v.setAttribute('playsinline',''); v.preload='auto'; v.src=src;
-  await new Promise((res,rej)=>{ v.onloadeddata=res; v.onerror=()=>rej(new Error('影片載入失敗')); setTimeout(()=>rej(new Error('影片載入逾時')),25000); });
-  try{ await v.play(); v.pause(); }catch{}
-  const N=60, dur=v.duration||5, sc=Math.min(1, 900/v.videoHeight), W=Math.round(v.videoWidth*sc), H=Math.round(v.videoHeight*sc);
-  const frames=[];
-  for(let i=0;i<N;i++){
-    v.currentTime=Math.min(dur-0.04, i*dur/N);
-    await new Promise(r=>{ const f=()=>{ v.removeEventListener('seeked',f); r(); }; v.addEventListener('seeked',f); setTimeout(r,1500); });
-    const c=document.createElement('canvas'); c.width=W; c.height=H; c.getContext('2d').drawImage(v,0,0,W,H); frames.push(c);
-  }
-  return { frames, src, W, H };
-}
-function drawSpin(){ const st=spinState; const c=$('spinCanvas'); if(!st||!c) return; const n=st.frames.length; const i=((Math.round(st.pos)%n)+n)%n; c.getContext('2d').drawImage(st.frames[i],0,0); const b=$('spinBar'); if(b) b.style.width=((i+1)/n*100)+'%'; }
+/* ---------- 360° 旋轉：影片直接放在框裡播（不會空白），播放時順便抓格，抓完就能拖曳 ---------- */
+let spinState=null, spinRAF=null; const spinCache={};
+function drawSpin(){ const st=spinState; if(!st||!st.ready) return; const c=st.canvas; const n=st.frames.length; const i=((Math.round(st.pos)%n)+n)%n; c.getContext('2d').drawImage(st.frames[i],0,0); if(st.bar) st.bar.style.width=((i+1)/n*100)+'%'; }
 function initSpin(box){
-  const st=state.views&&state.views.spinData; if(!st) return; spinState={...st, pos:spinState?spinState.pos:0};
-  const c=box.querySelector('canvas'); c.width=st.W; c.height=st.H; drawSpin();
-  let down=false, lastX=0, vel=0, lastT=0;
-  const perPx=()=>spinState.frames.length/(box.clientWidth*1.1);   // 拖過約一個寬度＝轉一圈
-  box.addEventListener('pointerdown',e=>{ down=true; lastX=e.clientX; lastT=performance.now(); vel=0; spinAuto(false); box.setPointerCapture(e.pointerId); const h=$('spinHint'); if(h) h.style.opacity=0; });
-  box.addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-lastX, now=performance.now(); spinState.pos-=dx*perPx(); vel=-dx*perPx()/Math.max(8,now-lastT); lastX=e.clientX; lastT=now; drawSpin(); });
-  const up=()=>{ if(!down) return; down=false; let v=vel*16; const glide=()=>{ if(Math.abs(v)<0.02||down) return; spinState.pos+=v; v*=0.93; drawSpin(); requestAnimationFrame(glide); }; requestAnimationFrame(glide); };
+  const url=state.views&&state.views.video; if(!url) return;
+  const vid=box.querySelector('video'), cvs=box.querySelector('canvas'), poster=box.querySelector('.spinposter'), playBtn=box.querySelector('.spinplay'), hint=box.querySelector('.spinhint');
+  const cached=spinCache[url];
+  spinState={ url, frames:cached?cached.frames:[], ready:!!cached, pos:spinState&&spinState.url===url?spinState.pos:0, canvas:cvs, video:vid, bar:box.querySelector('.spinbar i') };
+  const N=48;
+  const showCanvas=()=>{ cvs.width=spinState.frames[0].width; cvs.height=spinState.frames[0].height; cvs.hidden=false; vid.hidden=true; poster.hidden=true; drawSpin(); };
+  if(spinState.ready){ showCanvas(); return; }
+  // 播放
+  const tryPlay=()=>vid.play().then(()=>{ playBtn.hidden=true; }).catch(()=>{ playBtn.hidden=false; });
+  vid.addEventListener('playing',()=>{ poster.hidden=true; vid.hidden=false; playBtn.hidden=true; },{once:true});
+  playBtn.onclick=e=>{ e.stopPropagation(); tryPlay(); };
+  tryPlay(); setTimeout(()=>{ if(vid.paused&&!spinState.ready) playBtn.hidden=false; },2500);
+  // 抓格（播第一圈時）
+  const slots=new Array(N); let got=0, tainted=false;
+  const grab=(t)=>{
+    if(tainted||spinState.ready||!vid.videoWidth) return;
+    const dur=vid.duration||5, k=Math.min(N-1,Math.floor(t/dur*N));
+    if(slots[k]) return;
+    try{ const sc=Math.min(1,900/vid.videoHeight), c=document.createElement('canvas'); c.width=Math.round(vid.videoWidth*sc); c.height=Math.round(vid.videoHeight*sc); const x=c.getContext('2d'); x.drawImage(vid,0,0,c.width,c.height); x.getImageData(0,0,1,1); slots[k]=c; got++; }
+    catch(e){ tainted=true; return; }
+    if(got>=N*0.9){ // 補洞
+      for(let i=0;i<N;i++) if(!slots[i]) slots[i]=slots[(i+N-1)%N]||slots.find(Boolean);
+      spinState.frames=slots; spinState.ready=true; spinCache[url]={frames:slots};
+      if(hint) hint.textContent='← 左右拖曳旋轉 →';
+    }
+  };
+  if('requestVideoFrameCallback' in vid){ const cb=(now,meta)=>{ grab(meta.mediaTime); if(!spinState.ready&&!tainted&&spinState.video===vid) vid.requestVideoFrameCallback(cb); }; vid.requestVideoFrameCallback(cb); }
+  else { const loop=()=>{ grab(vid.currentTime); if(!spinState.ready&&!tainted&&spinState.video===vid) requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+  // 拖曳
+  let down=false,lastX=0,vel=0,lastT=0;
+  const perPx=()=>N/(box.clientWidth*1.1);
+  box.addEventListener('pointerdown',e=>{ if(e.target===playBtn) return; down=true; lastX=e.clientX; lastT=performance.now(); vel=0; spinAuto(false); try{ box.setPointerCapture(e.pointerId); }catch{} if(hint) hint.style.opacity=0;
+    if(spinState.ready){ if(cvs.hidden) showCanvas(); } else { vid.pause(); spinState.pos=(vid.currentTime/(vid.duration||5))*N; } });
+  box.addEventListener('pointermove',e=>{ if(!down) return; const dx=e.clientX-lastX, now=performance.now(); spinState.pos-=dx*perPx(); vel=-dx*perPx()/Math.max(8,now-lastT); lastX=e.clientX; lastT=now;
+    if(spinState.ready) drawSpin(); else { const d=vid.duration||5; vid.currentTime=((spinState.pos/N%1)+1)%1*d; } });
+  const up=()=>{ if(!down) return; down=false; if(!spinState.ready) return; let v=vel*16; const glide=()=>{ if(Math.abs(v)<0.02||down) return; spinState.pos+=v; v*=0.93; drawSpin(); requestAnimationFrame(glide); }; requestAnimationFrame(glide); };
   box.addEventListener('pointerup',up); box.addEventListener('pointercancel',up);
 }
-function spinAuto(on){ if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; } $('spinBtn').classList.toggle('on',!!on); if(!on||!spinState) return; let t=performance.now(); const step=now=>{ spinState.pos+=(now-t)/1000*12; t=now; drawSpin(); spinRAF=requestAnimationFrame(step); }; spinRAF=requestAnimationFrame(step); }
+function spinAuto(on){ if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; } $('spinBtn').classList.toggle('on',!!on); if(!on||!spinState) return;
+  if(!spinState.ready){ const v=spinState.video; if(v){ v.hidden=false; if(spinState.canvas) spinState.canvas.hidden=true; v.play().catch(()=>{}); } return; }
+  let t=performance.now(); const step=now=>{ spinState.pos+=(now-t)/1000*10; t=now; drawSpin(); spinRAF=requestAnimationFrame(step); }; spinRAF=requestAnimationFrame(step); }
 async function attachSpin(videoUrl){
-  let data;
-  try{ data=await loadSpin(videoUrl); }
-  catch(e){
-    // 這台瀏覽器無法逐格解碼 → 退回循環播放影片
-    state.views={...(state.views||{}), spin:true, video:videoUrl, plain:true}; state.preferSpin=true;
-    renderCompare(state.personOrig, state.result); setAngle('spin'); return;
-  }
-  state.views={...(state.views||{}), spin:true, video:videoUrl, spinData:data}; state.preferSpin=true;
-  renderCompare(state.personOrig, state.result); setAngle('spin'); spinAuto(true); setTimeout(()=>spinAuto(false), 5200);
+  state.views={...(state.views||{}), spin:true, video:videoUrl}; state.preferSpin=true;
+  renderCompare(state.personOrig, state.result); setAngle('spin');
 }
 
 /* ---------- 離線、安裝、原生事件 ---------- */
