@@ -1,0 +1,33 @@
+name: 管理：查詢資料（除錯用）
+on:
+  workflow_dispatch:
+    inputs:
+      path: { description: 'REST 路徑，例如 /rest/v1/generations?select=id,status&order=id.desc&limit=3', required: true }
+jobs:
+  q:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - name: 查詢
+        env:
+          URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          FAL: ${{ secrets.FAL_KEY }}
+          P: ${{ inputs.path }}
+        run: |
+          mkdir out && cd out
+          python3 - <<'PY'
+          import os, json, urllib.request
+          p = os.environ['P']
+          if p.startswith('fal:'):
+            req = urllib.request.Request(p[4:], headers={'Authorization': 'Key ' + os.environ['FAL']})
+          else:
+            req = urllib.request.Request(os.environ['URL'] + p, headers={'apikey': os.environ['KEY'], 'Authorization': 'Bearer ' + os.environ['KEY']})
+          try:
+            with urllib.request.urlopen(req, timeout=60) as r: t = r.read().decode()
+          except urllib.error.HTTPError as e: t = f'HTTP {e.code}: ' + e.read().decode()
+          open('out.json', 'w').write(t)
+          PY
+          git init -q && git checkout -q -b qa-debug && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m q
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-debug
