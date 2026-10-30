@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>試穿吧 TryOn — 買之前，先看看穿在你身上的樣子</title>
 <meta name="description" content="女生男生都能用：上傳一張全身照，放入想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品或髮型，AI 直接合成穿上身的真實照片。">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src * data: blob:; connect-src * data: blob:; worker-src 'self' blob:; frame-src 'none'; base-uri 'self'; form-action 'self' https://payment.ecpay.com.tw https://payment-stage.ecpay.com.tw">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src * data: blob:; media-src 'self' blob: data: https://*.supabase.co https://*.fal.media https://fal.media; connect-src * data: blob:; worker-src 'self' blob:; frame-src 'none'; base-uri 'self'; form-action 'self' https://payment.ecpay.com.tw https://payment-stage.ecpay.com.tw">
 <meta name="theme-color" content="#ffffff">
 <meta property="og:title" content="試穿吧 TryOn — 一張照片，先看穿上身的樣子再買">
 <meta property="og:description" content="上傳全身照，放入想試的衣服、鞋子、帽子、飾品、髮型，AI 直接合成真實穿搭照。">
@@ -708,8 +708,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.3.0';
-const BUILD = '2026-10-30-11';
+const APP_VERSION = '4.3.1';
+const BUILD = '2026-10-30-12';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
