@@ -83,18 +83,20 @@ def pick(rows):
 # ---------- 91APP ----------
 SHOPS91 = [('www.obdesign.com.tw', 'OB嚴選', 'f'), ('www.giordano.com.tw', 'GIORDANO', 'u'), ('www.vans.com.tw', 'VANS', 'u'), ('www.adidas.com.tw', 'adidas', 'u'),
            ('www.roots.com.tw', 'Roots', 'u'), ('www.edwin.com.tw', 'EDWIN', 'u'), ('www.timberland.com.tw', 'Timberland', 'u'), ("www.levis.com.tw", "Levi's", 'u')]
+stats = {'blocked': 0}
 def sync91(host, brand, gdef):
   rp, rt = robots(host)
   m = re.search(r'Sitemap/(\d+)/Sitemap_Index', rt); shop = m and m.group(1)
   if not shop: print(host, 'no shop id'); return
   st, x = get(f'https://{host}/Sitemap/sitemap_ShopSalePage.xml.gz')
-  ids = sorted({int(i) for i in re.findall(r'SalePage/Index/(\d+)', x)}, reverse=True)[:420]
+  ids = sorted({int(i) for i in re.findall(r'SalePage/Index/(\d+)', x)}, reverse=True)[:int(os.environ.get('MAXIDS', '240'))]
   if not ids: print(host, 'no salepages'); return
   def one(sid):
     url = f'https://{host}/webapi/SalePageV2/GetSalePageV2Info/{shop}/{sid}'
     if not rp.can_fetch(UA, f'https://{host}/SalePage/Index/{sid}'): return None
-    time.sleep(0.25)
+    time.sleep(0.4)
     s, t = get(url, 600000)
+    if s in (403, 429): stats['blocked'] += 1
     if s != 200: return None
     try: d = json.loads(t).get('Data') or {}
     except Exception: return None
@@ -115,11 +117,12 @@ def sync91(host, brand, gdef):
             'price': int(price), 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': f'https://{host}/SalePage/Index/{sid}', 'tags': [cat.split('>')[-1].strip(' -')[:20]] if cat else [],
             'sizes': norm_sizes(sizes), 'active': True, 'featured': False}
   rows = []
-  with cf.ThreadPoolExecutor(4) as ex:
+  with cf.ThreadPoolExecutor(3) as ex:
     for r in ex.map(one, ids):
       if r: rows.append(r)
   rows, counts = pick(rows)
-  save('91app:' + host, rows); print(host, shop, len(ids), '->', counts)
+  if not rows and stats['blocked']: print(host, 'blocked', stats); return   # 被擋時不要把舊商品下架
+  save('91app:' + host, rows); print(host, shop, len(ids), '->', counts, stats)
 
 # ---------- 商品頁 JSON-LD（網站地圖） ----------
 def ld_product(html):
@@ -141,7 +144,8 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn):
   urls = []
   for sm in maps[:4]:
     s, x = get(sm); locs = re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x)
-    for sub in [l for l in locs if '.xml' in l.lower() and re.search(r'product', l, re.I)][:4]:
+    subs = [l for l in locs if '.xml' in l.lower()]
+    for sub in ([l for l in subs if re.search(r'product', l, re.I)] or subs)[:4]:
       s2, x2 = get(sub); locs += re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x2)
     urls += [l for l in locs if re.search(pat, l) and '.xml' not in l.lower()]
   urls = [u for u in dict.fromkeys(urls) if '/en/' not in u or host == 'www.vacanza.com.tw'][-maxn:][::-1]
@@ -165,6 +169,7 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn):
     for r in ex.map(one, urls):
       if r: rows.append(r)
   rows, counts = pick(rows)
+  if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
 
 only = os.environ.get('ONLY', '')

@@ -18,4 +18,19 @@ jobs:
         run: |
           python3 tools/sync_uniqlo.py "${{ inputs.per_cat || '12' }}"
           python3 tools/sync_shopify.py 10
-          python3 tools/sync_tw.py 12
+  tw:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        shop: [obdesign, giordano, vans, adidas, roots, edwin, timberland, levis, lativ, crocs, vacanza]
+    steps:
+      - uses: actions/checkout@v4
+      - name: 台灣品牌（每家一台機器）
+        env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ONLY: ${{ matrix.shop }}
+        run: python3 tools/sync_tw.py 12
