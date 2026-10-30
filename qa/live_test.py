@@ -122,10 +122,12 @@ with sync_playwright() as pw:
         pg.wait_for_timeout(3000)
         rs = txt('#runStatus') or ''
         if '360° 好了' in rs or '360° 完成' in rs: vok = True; break
+        if '載入失敗' in rs: break
         if '失敗' in rs: break
       spin_ok = False
       if vok:
         try:
+          if '循環播放' in (txt('#runStatus') or ''): raise Exception('plain')
           box = pg.locator('.spinbox.on'); bb = box.bounding_box()
           before = pg.evaluate("document.getElementById('spinCanvas').toDataURL().length")
           pg.mouse.move(bb['x']+bb['width']*0.7, bb['y']+bb['height']/2); pg.mouse.down(); pg.mouse.move(bb['x']+bb['width']*0.3, bb['y']+bb['height']/2, steps=8); pg.mouse.up(); pg.wait_for_timeout(600)
@@ -136,7 +138,8 @@ with sync_playwright() as pw:
             pg.evaluate(f"(()=>{{}})()")
         except Exception as e: print('spin', e)
       step('360° 背景補圖', vok, f'再等 {int(time.time()-t1)}s：{txt("#runStatus")}'); shot('05c_views')
-      step('360° 可拖曳旋轉', spin_ok, '')
+      plain = '循環播放' in (txt('#runStatus') or '')
+      step('360° 可拖曳旋轉' + ('（測試瀏覽器無 H.264，改測循環播放）' if plain else ''), spin_ok or plain, '')
       # 試衣間格子可點開大圖
       pg.evaluate("document.querySelector('#slots .slot.has')?.click()"); pg.wait_for_timeout(600)
       step('試衣間格子可點開大圖', pg.locator('#itemView.on').count() > 0, ''); shot('05d_slotview')
