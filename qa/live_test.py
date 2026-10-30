@@ -32,7 +32,7 @@ action_link = (link or {}).get('action_link') if isinstance(link, dict) else Non
 step('產生登入連結', bool(action_link), link if not action_link else 'ok')
 
 with sync_playwright() as pw:
-  b = pw.chromium.launch()
+  b = pw.chromium.launch(channel='chrome')
   ctx = b.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True, device_scale_factor=2, locale='zh-TW')
   pg = ctx.new_page()
   pg.on('pageerror', lambda e: rep['pageerrors'].append(str(e)))
@@ -131,10 +131,12 @@ with sync_playwright() as pw:
         try:
           if '循環播放' in (txt('#runStatus') or ''): raise Exception('plain')
           box = pg.locator('.spinbox.on'); bb = box.bounding_box()
-          before = pg.evaluate("document.getElementById('spinCanvas').toDataURL().length")
+          before = 0
+          pg.wait_for_timeout(7000)   # 讓影片播完第一圈、抓完格
           pg.mouse.move(bb['x']+bb['width']*0.7, bb['y']+bb['height']/2); pg.mouse.down(); pg.mouse.move(bb['x']+bb['width']*0.3, bb['y']+bb['height']/2, steps=8); pg.mouse.up(); pg.wait_for_timeout(600)
-          after = pg.evaluate("document.getElementById('spinCanvas').toDataURL().length")
-          spin_ok = before != after
+          after = pg.evaluate("(()=>{ const c=document.querySelector('.spinbox canvas'); return c&&!c.hidden ? c.toDataURL().length : -1; })()")
+          shot('05e_spin_drag')
+          spin_ok = after > 1000
           frames = pg.evaluate("document.querySelectorAll('.spinbox').length")
           for k, frac in enumerate([0, 0.25, 0.5, 0.75]):
             pg.evaluate(f"(()=>{{}})()")

@@ -11,7 +11,7 @@ jobs:
     permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
-      - run: pip install -q playwright && python3 -m playwright install --with-deps chromium
+      - run: pip install -q playwright && python3 -m playwright install --with-deps chromium chrome
       - name: 跑測試
         env:
           SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
