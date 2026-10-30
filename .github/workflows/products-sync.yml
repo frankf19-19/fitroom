@@ -1,4 +1,4 @@
-name: 同步商店商品（UNIQLO＋Shopify 品牌，測試用）
+name: 同步商店商品（UNIQLO＋台灣品牌＋Shopify 品牌，測試用）
 on:
   workflow_dispatch:
     inputs:
@@ -8,6 +8,7 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - name: 抓商品並寫入 Supabase
@@ -17,3 +18,4 @@ jobs:
         run: |
           python3 tools/sync_uniqlo.py "${{ inputs.per_cat || '12' }}"
           python3 tools/sync_shopify.py 10
+          python3 tools/sync_tw.py 12
