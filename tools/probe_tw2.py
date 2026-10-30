@@ -1,7 +1,8 @@
-import json, re, gzip, urllib.request, urllib.robotparser, concurrent.futures as cf
+import json, re, gzip, urllib.request, urllib.robotparser, urllib.parse, concurrent.futures as cf
 UA = 'Mozilla/5.0 (compatible; TryOnBot/1.0; +https://frankf19-19.github.io/fitroom/)'
 H = {'User-Agent': UA, 'Accept-Language': 'zh-TW'}
 def get(u, n=3000000):
+  u = urllib.parse.quote(u, safe=':/?&=%#+,;@~')
   try:
     with urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=25) as r:
       b = r.read(n)
@@ -25,7 +26,8 @@ def ld_product(html):
   og = lambda p: (re.search(r'<meta[^>]+property=["\']%s["\'][^>]+content=["\']([^"\']+)' % p, html) or [None, None])[1]
   if og('og:title') and og('og:image'): return {'name': og('og:title'), 'image': og('og:image'), 'price': og('product:price:amount'), 'og': True}
   return None
-SITES = '''www.queenshop.com.tw www.pazzo.com.tw www.meierq.com www.obdesign.com.tw www.gracegift.com.tw www.lativ.com.tw www.mercci22.com www.lovfee.com www.cozyfee.com www.plain-me.com www.daf-shoes.com www.vacanza.com.tw www.giordano.com.tw bossini.com.tw www.leon.com.tw www.mamaway.com.tw www.wakeup.com.tw annies.com.tw www.wonderland.com.tw tofu.com.tw www.mo-bo.com.tw www.abby.com.tw www.roots.com.tw www.timberland.com.tw www.crocs.com.tw www.vans.com.tw www.adidas.com.tw www.levis.com.tw www.edwin.com.tw www.sanding.com.tw www.wstyle.com.tw'''.split()
+SITES_ALL = '''www.queenshop.com.tw www.pazzo.com.tw www.meierq.com www.obdesign.com.tw www.gracegift.com.tw www.lativ.com.tw www.mercci22.com www.lovfee.com www.cozyfee.com www.plain-me.com www.daf-shoes.com www.vacanza.com.tw www.giordano.com.tw bossini.com.tw www.leon.com.tw www.mamaway.com.tw www.wakeup.com.tw annies.com.tw www.wonderland.com.tw tofu.com.tw www.mo-bo.com.tw www.abby.com.tw www.roots.com.tw www.timberland.com.tw www.crocs.com.tw www.vans.com.tw www.adidas.com.tw www.levis.com.tw www.edwin.com.tw www.sanding.com.tw www.wstyle.com.tw'''.split()
+SITES = 'www.pazzo.com.tw www.meierq.com www.obdesign.com.tw www.mercci22.com www.mamaway.com.tw bossini.com.tw www.giordano.com.tw www.roots.com.tw www.timberland.com.tw www.vans.com.tw www.adidas.com.tw www.levis.com.tw www.edwin.com.tw www.leon.com.tw www.abby.com.tw www.crocs.com.tw www.queenshop.com.tw www.lovfee.com www.cozyfee.com www.plain-me.com www.daf-shoes.com'.split()
 PROD = re.compile(r'(SalePage/Index/\d+|/products?/[^<\s"]+|/product/[^<\s"]+|/goods/[^<\s"]+|/item/[^<\s"]+|/Product/[^<\s"]+|/p/[^<\s"]+|\.html)', re.I)
 def probe(host):
   base = 'https://' + host; o = {}
@@ -44,7 +46,7 @@ def probe(host):
     urls += prods
     if len(urls) > 50: break
   cand = [u for u in urls if PROD.search(u) and host.split('www.')[-1] in u]
-  o['n_urls'] = len(urls); o['n_prod'] = len(cand); o['ex'] = cand[:2]
+  o['n_urls'] = len(urls); o['n_prod'] = len(cand); o['ex'] = cand[:2]; o['sample_urls'] = urls[:3] + urls[len(urls)//2:len(urls)//2+3] + urls[-3:]; o['maps'] = maps[:4]
   o['robots_ok'] = all(rp.can_fetch(UA, u) for u in cand[:3]) if cand else None
   got = []
   for u in cand[:4]:
