@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.7.0';
+const VERSION = '2.8.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -128,6 +128,7 @@ export default {
       if (p === '/api/outfit' && m === 'POST') return handleOutfit(request, env, cors);
       if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors, ctx);
       if (p === '/api/products' && m === 'GET') return handleProducts(request, env, cors, url);
+      if (p === '/api/brands' && m === 'GET') return handleBrands(env, cors);
       if (p === '/api/img' && m === 'GET') return handleImgProxy(request, env, cors, url);
       if (p === '/api/product-click' && m === 'POST') return handleProductClick(request, env, cors);
       if (p === '/api/admin/products/import' && m === 'POST') return handleProductImport(request, env, cors);
@@ -895,10 +896,18 @@ async function handleProducts(request, env, cors, url) {
   let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
   if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
   if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)`;
+  const brand = (url.searchParams.get('brand') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 60);
+  if (brand) qs += `&brand=eq.${encodeURIComponent(brand)}`;
   if (q) qs += `&or=(name.ilike.*${encodeURIComponent(q)}*,brand.ilike.*${encodeURIComponent(q)}*)`;
   let rows;
   try { rows = await sb(env, qs); } catch (e) { rows = await sb(env, qs.replace(',sizes,', ',')); }  // 舊資料庫尚未加 sizes 欄位時仍可用
   return json({ products: rows, page, has_more: rows.length === size }, 200, { ...cors, 'Cache-Control': 'public, max-age=60' });
+}
+async function handleBrands(env, cors) {
+  const rows = await sb(env, '/rest/v1/products?active=eq.true&select=brand&limit=5000').catch(() => []);
+  const c = {}; for (const r of rows) if (r.brand) c[r.brand] = (c[r.brand] || 0) + 1;
+  const brands = Object.entries(c).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).map(([name, n]) => ({ name, n }));
+  return json({ brands }, 200, { ...cors, 'Cache-Control': 'public, max-age=600' });
 }
 async function handleProductClick(request, env, cors) {
   let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }

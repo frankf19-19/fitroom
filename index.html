@@ -416,6 +416,7 @@
   .rackbtn.on{background:var(--ink);color:#fff}
   .rackbar{position:sticky;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 8px);margin:14px auto 0;max-width:520px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:8px;padding:10px 12px;z-index:5;font-size:13px}
   .rackbar span{flex:1}.rackbar .btn.ghost{color:#fff;border-color:rgba(255,255,255,.5)}.rackbar .btn.primary{background:#fff;color:var(--ink)}
+  .brandfilt{margin-top:-8px}.brandfilt .chip{flex:0 0 auto;font-size:11px}
 </style>
 </head>
 <body>
@@ -597,6 +598,7 @@
       <div class="chips" id="shopGender" style="margin:0"><span class="chip on" data-g="">全部</span><span class="chip" data-g="f">女</span><span class="chip" data-g="m">男</span></div>
     </div>
     <div class="filt" id="shopType"></div>
+    <div class="filt brandfilt" id="shopBrand"></div>
     <div id="shopList"><div class="skel"><i></i><i></i><i></i><i></i></div></div>
     <div class="row" style="justify-content:center;margin-top:14px"><button class="btn hidden" id="shopMore">載入更多</button></div>
     <div class="card admin-import hidden" id="shopAdmin" style="margin-top:24px">
@@ -708,8 +710,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.3.1';
-const BUILD = '2026-10-30-12';
+const APP_VERSION = '4.4.0';
+const BUILD = '2026-10-30-13';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1189,16 +1191,23 @@ $('onbAgain').onclick=e=>{ e.preventDefault(); showOnb(0); };
 try{ if(!localStorage.getItem('tryon.onb') && (IS_APP || matchMedia('(max-width:899px)').matches)) setTimeout(()=>showOnb(0),400); }catch{}
 
 /* ---------- 商店 ---------- */
-let shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false;
+let shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false, shopBrand='', shopBrands=null;
+async function shopBrandChips(){
+  const f=$('shopBrand'); if(!f) return;
+  if(!shopBrands){ try{ const r=await fetch(CONFIG.WORKER_URL+'/api/brands'); shopBrands=(await r.json()).brands||[]; }catch{ shopBrands=[]; } }
+  if(!shopBrands.length){ f.innerHTML=''; return; }
+  f.innerHTML=`<span class="chip ${!shopBrand?'on':''}" data-b="">所有品牌</span>`+shopBrands.map(b=>`<span class="chip ${shopBrand===b.name?'on':''}" data-b="${b.name.replace(/"/g,'&quot;')}">${b.name}</span>`).join('');
+  f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopBrand=c.dataset.b; loadShop(true); });
+}
 function shopTypeChips(){ const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
 $('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopGender=c.dataset.g; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); loadShop(true); });
 let shopQT; $('shopQ').addEventListener('input',()=>{ clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
 async function loadShop(reset){
   if(shopBusy) return; shopBusy=true;
-  if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
+  if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); shopBrandChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
   try{
     if(!CONFIG.WORKER_URL) throw new Error('商店尚未設定');
-    const qs=new URLSearchParams({page:shopPage}); if(shopFilterType) qs.set('type',shopFilterType); if(shopGender) qs.set('gender',shopGender); const q=$('shopQ').value.trim(); if(q) qs.set('q',q);
+    const qs=new URLSearchParams({page:shopPage}); if(shopFilterType) qs.set('type',shopFilterType); if(shopGender) qs.set('gender',shopGender); if(shopBrand) qs.set('brand',shopBrand); const q=$('shopQ').value.trim(); if(q) qs.set('q',q);
     const d=await api('/api/products?'+qs.toString());
     shopItems=shopItems.concat(d.products||[]); renderShop(); $('shopMore').classList.toggle('hidden',!d.has_more); shopPage++;
   }catch(e){ $('shopList').innerHTML=`<div class="empty-note">${e.message}</div>`; }
