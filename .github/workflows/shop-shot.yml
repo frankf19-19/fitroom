@@ -1,0 +1,14 @@
+name: 截圖：商店畫面
+on: { workflow_dispatch: {} }
+jobs:
+  s:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q playwright && python3 -m playwright install --with-deps chrome
+      - run: python3 qa/shop_shot.py
+      - run: |
+          cd qa-live && git init -q && git checkout -q -b qa-shot && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m s
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-shot
