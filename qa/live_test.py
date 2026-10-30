@@ -140,6 +140,7 @@ with sync_playwright() as pw:
             if sp and sp.get('ready'): break
           diag1 = pg.evaluate("(()=>{ const v=document.querySelector('.spinbox video'); const c=document.querySelector('.spinbox canvas'); return v?{err:v.error&&v.error.code,net:v.networkState,ready:v.readyState,paused:v.paused,t:v.currentTime,w:v.videoWidth,canvasHidden:c&&c.hidden}:null })()")
           rep['spin_diag'] = [diag0, diag1, pg.evaluate('window.__spin && window.__spin()'), pg.evaluate('window.__spinTainted||null')]; print('spin diag', diag0, diag1)
+          pg.locator('.spinbox.on').scroll_into_view_if_needed(); pg.wait_for_timeout(300); bb = pg.locator('.spinbox.on').bounding_box()
           pg.mouse.move(bb['x']+bb['width']*0.7, bb['y']+bb['height']/2); pg.mouse.down(); pg.mouse.move(bb['x']+bb['width']*0.3, bb['y']+bb['height']/2, steps=8); pg.mouse.up(); pg.wait_for_timeout(600)
           after = pg.evaluate("(()=>{ const c=document.querySelector('.spinbox canvas'); return c&&!c.hidden ? c.toDataURL().length : -1; })()")
           shot('05e_spin_drag')
