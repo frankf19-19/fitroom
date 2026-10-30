@@ -37,7 +37,7 @@ OVERFLOW_JS = """() => {
 def tour(pg, tag, views):
   for v in views:
     try:
-      pg.evaluate(f"go('{v}')"); pg.wait_for_timeout(3500 if v in ('shop', 'history', 'admin', 'wardrobe') else 1500)
+      pg.evaluate(f"location.hash='#{v}'"); pg.wait_for_timeout(3500 if v in ('shop', 'history', 'admin', 'wardrobe') else 1500)
       info = pg.evaluate(OVERFLOW_JS)
       info['view'] = f'{tag}_{v}'; info['text'] = (pg.inner_text('.view.on') or '')[:1500]
       rep['pages'].append(info)
@@ -65,7 +65,7 @@ with sync_playwright() as pw:
     try: pg.click('#onbSkip', timeout=2500); pg.wait_for_timeout(800)
     except Exception: pass
     tour(pg, tag, ['home', 'tryon', 'shop'])
-    try: pg.evaluate("openLogin()"); pg.wait_for_timeout(1000); pg.screenshot(path=f'{OUT}/{tag}_login.png')
+    try: pg.click('#userArea button, #userArea a, #userArea'); pg.wait_for_timeout(1000); pg.screenshot(path=f'{OUT}/{tag}_login.png')
     except Exception as e: print('login', e)
     pg.context.close()
   # 登入
@@ -79,15 +79,15 @@ with sync_playwright() as pw:
     tour(pg, tag, ['home', 'tryon', 'shop', 'wardrobe', 'history', 'credits', 'body', 'settings', 'admin'])
     # 試衣間：放照片 + 從商店放兩件（不按生成）
     try:
-      pg.evaluate("go('tryon')"); pg.wait_for_timeout(800)
+      pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(800)
       pg.set_input_files('#filePerson', 'qa/person.jpg'); pg.wait_for_timeout(2500)
-      pg.evaluate("go('shop')"); pg.wait_for_timeout(4000)
+      pg.evaluate("location.hash='#shop'"); pg.wait_for_timeout(4000)
       btns = pg.query_selector_all('[data-try]')
       if btns: btns[0].click(); pg.wait_for_timeout(2500)
       pg.screenshot(path=f'{OUT}/{tag}_tryon_filled.png', full_page=True)
       rr = pg.query_selector_all('[data-rack]')
       for x in rr[1:4]: x.click(); pg.wait_for_timeout(300)
-      pg.evaluate("go('tryon')"); pg.wait_for_timeout(1500)
+      pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(1500)
       pg.screenshot(path=f'{OUT}/{tag}_tryon_rack.png', full_page=True)
       it = pg.query_selector('.pitem .img img')
     except Exception as e: rep['pages'].append({'view': tag + '_flow', 'err': str(e)[:300]})
