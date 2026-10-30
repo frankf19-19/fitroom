@@ -1737,6 +1737,7 @@ function currentResultImage(){ if(curAngle==='spin'&&spinState&&spinState.ready)
 
 /* ---------- 360° 旋轉：影片直接放在框裡播（不會空白），播放時順便抓格，抓完就能拖曳 ---------- */
 let spinState=null, spinRAF=null; const spinCache={};
+window.__spin=()=>spinState?{ready:spinState.ready,frames:spinState.frames.filter(Boolean).length}:null;
 function drawSpin(){ const st=spinState; if(!st||!st.ready) return; const c=st.canvas; const n=st.frames.length; const i=((Math.round(st.pos)%n)+n)%n; c.getContext('2d').drawImage(st.frames[i],0,0); if(st.bar) st.bar.style.width=((i+1)/n*100)+'%'; }
 function initSpin(box){
   const url=state.views&&state.views.video; if(!url) return;
@@ -1758,7 +1759,7 @@ function initSpin(box){
     const dur=vid.duration||5, k=Math.min(N-1,Math.floor(t/dur*N));
     if(slots[k]) return;
     try{ const sc=Math.min(1,900/vid.videoHeight), c=document.createElement('canvas'); c.width=Math.round(vid.videoWidth*sc); c.height=Math.round(vid.videoHeight*sc); const x=c.getContext('2d'); x.drawImage(vid,0,0,c.width,c.height); x.getImageData(0,0,1,1); slots[k]=c; got++; }
-    catch(e){ tainted=true; return; }
+    catch(e){ tainted=true; window.__spinTainted=String(e&&e.message||e); return; }
     if(got>=N*0.9){ // 補洞
       for(let i=0;i<N;i++) if(!slots[i]) slots[i]=slots[(i+N-1)%N]||slots.find(Boolean);
       spinState.frames=slots; spinState.ready=true; spinCache[url]={frames:slots};

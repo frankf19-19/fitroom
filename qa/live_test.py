@@ -134,9 +134,12 @@ with sync_playwright() as pw:
           before = 0
           diag0 = pg.evaluate("(()=>{ const v=document.querySelector('.spinbox video'); return v?{err:v.error&&v.error.code,net:v.networkState,ready:v.readyState,paused:v.paused,hidden:v.hidden,w:v.videoWidth}:null })()")
           if pg.locator('.spinbox .spinplay:not([hidden])').count(): pg.click('.spinbox .spinplay')
-          pg.wait_for_timeout(7000)   # 讓影片播完第一圈、抓完格
+          for _ in range(20):
+            pg.wait_for_timeout(1000)
+            sp = pg.evaluate('window.__spin && window.__spin()')
+            if sp and sp.get('ready'): break
           diag1 = pg.evaluate("(()=>{ const v=document.querySelector('.spinbox video'); const c=document.querySelector('.spinbox canvas'); return v?{err:v.error&&v.error.code,net:v.networkState,ready:v.readyState,paused:v.paused,t:v.currentTime,w:v.videoWidth,canvasHidden:c&&c.hidden}:null })()")
-          rep['spin_diag'] = [diag0, diag1]; print('spin diag', diag0, diag1)
+          rep['spin_diag'] = [diag0, diag1, pg.evaluate('window.__spin && window.__spin()'), pg.evaluate('window.__spinTainted||null')]; print('spin diag', diag0, diag1)
           pg.mouse.move(bb['x']+bb['width']*0.7, bb['y']+bb['height']/2); pg.mouse.down(); pg.mouse.move(bb['x']+bb['width']*0.3, bb['y']+bb['height']/2, steps=8); pg.mouse.up(); pg.wait_for_timeout(600)
           after = pg.evaluate("(()=>{ const c=document.querySelector('.spinbox canvas'); return c&&!c.hidden ? c.toDataURL().length : -1; })()")
           shot('05e_spin_drag')
