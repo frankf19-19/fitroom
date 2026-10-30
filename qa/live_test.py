@@ -132,7 +132,11 @@ with sync_playwright() as pw:
           if '循環播放' in (txt('#runStatus') or ''): raise Exception('plain')
           box = pg.locator('.spinbox.on'); bb = box.bounding_box()
           before = 0
+          diag0 = pg.evaluate("(()=>{ const v=document.querySelector('.spinbox video'); return v?{err:v.error&&v.error.code,net:v.networkState,ready:v.readyState,paused:v.paused,hidden:v.hidden,w:v.videoWidth}:null })()")
+          if pg.locator('.spinbox .spinplay:not([hidden])').count(): pg.click('.spinbox .spinplay')
           pg.wait_for_timeout(7000)   # 讓影片播完第一圈、抓完格
+          diag1 = pg.evaluate("(()=>{ const v=document.querySelector('.spinbox video'); const c=document.querySelector('.spinbox canvas'); return v?{err:v.error&&v.error.code,net:v.networkState,ready:v.readyState,paused:v.paused,t:v.currentTime,w:v.videoWidth,canvasHidden:c&&c.hidden}:null })()")
+          rep['spin_diag'] = [diag0, diag1]; print('spin diag', diag0, diag1)
           pg.mouse.move(bb['x']+bb['width']*0.7, bb['y']+bb['height']/2); pg.mouse.down(); pg.mouse.move(bb['x']+bb['width']*0.3, bb['y']+bb['height']/2, steps=8); pg.mouse.up(); pg.wait_for_timeout(600)
           after = pg.evaluate("(()=>{ const c=document.querySelector('.spinbox canvas'); return c&&!c.hidden ? c.toDataURL().length : -1; })()")
           shot('05e_spin_drag')
@@ -143,7 +147,7 @@ with sync_playwright() as pw:
         except Exception as e: print('spin', e)
       step('360° 背景補圖', vok, f'再等 {int(time.time()-t1)}s：{txt("#runStatus")}'); shot('05c_views')
       plain = '循環播放' in (txt('#runStatus') or '')
-      step('360° 可拖曳旋轉' + ('（測試瀏覽器無 H.264，改測循環播放）' if plain else ''), spin_ok or plain, '')
+      step('360° 可拖曳旋轉', spin_ok, str(rep.get('spin_diag')))
       # 試衣間格子可點開大圖
       pg.evaluate("document.querySelector('#slots .slot.has')?.click()"); pg.wait_for_timeout(600)
       step('試衣間格子可點開大圖', pg.locator('#itemView.on').count() > 0, ''); shot('05d_slotview')
