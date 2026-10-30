@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.6.0';
+const VERSION = '2.7.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -93,6 +93,20 @@ const EDIT_PROMPTS = {
   hair: 'Photo edit task. Change the hairstyle of the person in the first photo to the hairstyle shown in the second image: same length, cut, texture and hair color. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP,
   hair_text: 'Photo edit task. Change the hairstyle of the person in the photo to: {{desc}}. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP
 };
+// 文字／看圖模型走 fal（OpenRouter 轉接，用 fal 儲值），失敗再用 Google 免費額度
+async function falLLM(env, prompt, imageUrl) {
+  if (!env.FAL_KEY) throw new Error('未設定 FAL_KEY');
+  const body = { model: 'google/gemini-2.5-flash', prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000 };
+  if (imageUrl) body.image_urls = [imageUrl];
+  const r = await fetchT('https://fal.run/openrouter/router' + (imageUrl ? '/vision' : ''), { method: 'POST', headers: { 'Authorization': 'Key ' + env.FAL_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'AI 文字服務', 60000);
+  const t = await r.text();
+  if (!r.ok) throw new Error('AI 文字服務：' + extractErr(t));
+  let d; try { d = JSON.parse(t); } catch { throw new Error('AI 文字服務回傳格式異常'); }
+  const txt = String(d.output ?? d.text ?? (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) ?? '');
+  const m = txt.replace(/```json|```/g, '').match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('AI 文字服務沒有回傳 JSON');
+  return JSON.parse(m[0]);
+}
 const TEXT_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
 const GEMINI_FALLBACKS = ['gemini-nano-banana-2.1', 'gemini-3-pro-image', 'gemini-3.1-flash-image', 'gemini-2.5-flash-image'];
 const VIEW_PROMPTS = {
@@ -237,7 +251,7 @@ Be specific and honest but kind. Base body_shape on both the photo and the numbe
 async function handleAnalyze(request, env, cors, ctx) {
   let user;
   try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
-  if (!env.GEMINI_KEY) return json({ error: '身形分析服務尚未啟用' }, 503, cors);
+  if (!env.GEMINI_KEY && !env.FAL_KEY) return json({ error: '身形分析服務尚未啟用' }, 503, cors);
   let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
   const { person } = body || {}; const b = body.body || {};
   if (!isDataImage(person)) return json({ error: '請提供全身照' }, 400, cors);
@@ -252,8 +266,9 @@ async function handleAnalyze(request, env, cors, ctx) {
   const startedAt = new Date().toISOString();
   const job = async () => {
     const parts = [{ text: ANALYZE_PROMPT + '\n' + meas }, inlinePart(person)];
-    const models = TEXT_MODELS;
     let out = null, lastErr = '';
+    try { const pu = await putImage(env, `${user.id}/analyze-${Date.now()}`, person); out = await falLLM(env, ANALYZE_PROMPT + '\n' + meas, pu); } catch (e) { lastErr = e.message; }
+    const models = out || !env.GEMINI_KEY ? [] : TEXT_MODELS;
     for (const model of models) {
       const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', 45000);
       const t = await r.text();
@@ -832,7 +847,7 @@ async function urlToDataUri(u) {
 async function handleOutfit(request, env, cors) {
   let user;
   try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
-  if (!env.GEMINI_KEY) return json({ error: '搭配建議服務尚未啟用' }, 503, cors);
+  if (!env.GEMINI_KEY && !env.FAL_KEY) return json({ error: '搭配建議服務尚未啟用' }, 503, cors);
   let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
   const have = Array.isArray(body.have) ? body.have.slice(0, 8) : [];
   const gender = body.gender === 'm' ? 'm' : 'f';
@@ -855,8 +870,9 @@ ${list}
 
 Build ${have.length ? '2' : '3'} outfits that go with what the user already has (or complete looks if nothing yet). Use ONLY candidate ids. Each outfit: 2–4 products, at most one product per type, never two of the same type. Prefer items flattering the user's body shape and skin tone; keep colors coherent; mix price points sensibly.
 Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"one Traditional Chinese sentence on why this look suits the user's body","items":[{"id":123,"reason":"short Traditional Chinese reason (<=25 chars)"}]}],"note":"one short Traditional Chinese sentence of overall advice"}`;
-  const models = TEXT_MODELS;
   let out = null, lastErr = '';
+  try { out = await falLLM(env, prompt); } catch (e) { lastErr = e.message; }
+  const models = out || !env.GEMINI_KEY ? [] : TEXT_MODELS;
   for (const model of models) {
     const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.6, responseMimeType: 'application/json' } }) }, '搭配建議服務', 45000);
     const t = await r.text();
