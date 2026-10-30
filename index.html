@@ -417,6 +417,7 @@
   .rackbar{position:sticky;bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 8px);margin:14px auto 0;max-width:520px;background:var(--ink);color:#fff;display:flex;align-items:center;gap:8px;padding:10px 12px;z-index:5;font-size:13px}
   .rackbar span{flex:1}.rackbar .btn.ghost{color:#fff;border-color:rgba(255,255,255,.5)}.rackbar .btn.primary{background:#fff;color:var(--ink)}
   .brandfilt{margin-top:-8px}.brandfilt .chip{flex:0 0 auto;font-size:11px}
+  .updbar{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:200;background:var(--ink);color:#fff;font-size:12px;padding:8px 10px 8px 14px;display:flex;gap:10px;align-items:center;letter-spacing:1px}.updbar button{background:#fff;color:var(--ink);border:0;padding:5px 10px;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -710,8 +711,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.4.1';
-const BUILD = '2026-10-30-14';
+const APP_VERSION = '4.4.2';
+const BUILD = '2026-10-30-15';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1827,6 +1828,26 @@ const bootHash=location.hash.replace('#','');
 (function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } go(VIEWS.includes(bootHash)&&bootHash!=='home' ? bootHash : 'home'); })();
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',__tryonBoot); else __tryonBoot();
+/* ---------- 新版本自動更新（GitHub Pages 會讓瀏覽器暫存舊頁約 10 分鐘） ---------- */
+(function(){
+  const cur=(document.documentElement.innerHTML.match(/const BUILD = '([^']+)'/)||[])[1];
+  let shown=false;
+  const go=b=>{ const u=new URL(location.href); u.searchParams.set('v',b); location.replace(u.pathname+u.search+location.hash); };
+  async function check(eager){
+    try{
+      const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
+      const b=((await r.text()).match(/const BUILD = '([^']+)'/)||[])[1];
+      if(!b||!cur||b===cur) return;
+      const working=!!document.querySelector('#prog:not(.hidden)');
+      if(!working && (eager || document.visibilityState==='hidden')) return go(b);
+      if(!shown){ shown=true; const bar=document.createElement('div'); bar.className='updbar'; bar.innerHTML='有新版本 <button>立即更新</button>'; bar.querySelector('button').onclick=()=>go(b); document.body.appendChild(bar); }
+    }catch{}
+  }
+  setTimeout(()=>check(true),1200);
+  setInterval(()=>check(false),5*60*1000);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(true); });
+})();
+
 </script>
 </body>
 </html>
