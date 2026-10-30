@@ -713,8 +713,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.5.0';
-const BUILD = '2026-10-30-16';
+const APP_VERSION = '4.5.1';
+const BUILD = '2026-10-30-17';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -904,6 +904,7 @@ window.addEventListener('error',e=>{ if(!CONFIG.WORKER_URL) return; fetch(CONFIG
 window.addEventListener('unhandledrejection',e=>{ if(!CONFIG.WORKER_URL) return; const r=e.reason||{}; fetch(CONFIG.WORKER_URL+'/api/error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'unhandled: '+(r.message||String(r)),stack:r.stack,url:location.href,platform:PLATFORM,version:APP_VERSION}),keepalive:true}).catch(()=>{}); });
 
 /* ---------- API ---------- */
+async function jobStatus(id){ try{ return await api('/api/tryon/status?id='+id); }catch(e){ if(e.data&&e.data.status) return e.data; throw e; } }
 async function api(path, opts={}){
   if (!CONFIG.WORKER_URL) throw new Error('尚未設定合成服務');
   const token = state.session && state.session.access_token;
@@ -1281,7 +1282,7 @@ async function doPrefetch(){
     while(pf.key===key && pf.st==='running' && !busy){
       await new Promise(r=>setTimeout(r,2500));
       if(pf.key!==key||busy) return;
-      let st; try{ st=await api('/api/tryon/status?id='+d.id); }catch{ continue; }
+      let st; try{ st=await jobStatus(d.id); }catch{ continue; }
       if(st.status==='prefetched'){ pf.st='ready'; pfHint(); }
       else if(st.status==='failed'){ pf.st=null; pfHint(); }
     }
@@ -1295,7 +1296,7 @@ async function followViews(id, forResult){
   while(Date.now()-t0 < 7*60*1000){
     await new Promise(r=>setTimeout(r,3000));
     if(state.result!==forResult) return;               // 使用者已開始下一張
-    let st; try{ st=await api('/api/tryon/status?id='+id); }catch{ continue; }
+    let st; try{ st=await jobStatus(id); }catch{ continue; }
     if(st.status==='failed'){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
     if(st.status==='ok'){
       const r=st.result||{}; const vu=r.view_urls||{};
@@ -1481,7 +1482,7 @@ $('btnRun').onclick=async()=>{
       if ($('faceLock').classList.contains('on')) getFaceDetector().catch(()=>{});   // 等待時先載入臉部偵測，結果出來就能馬上鎖臉
       while (true) {
         await new Promise(r=>setTimeout(r, (d.claimed||wasReady) && Date.now()-t0 < 3000 ? 250 : (Date.now()-t0 < 15000 ? 2500 : 1500)));
-        try { st = await api('/api/tryon/status?id='+d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
+        try { st = await jobStatus(d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
         if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
         if (st.preview && st.preview.url && st.preview.url!==shownPv && !st.front) { shownPv=st.preview.url; $('result').innerHTML=`<div class="pvwrap"><img src="${shownPv}" alt="快速預覽"><span class="pvtag">快速預覽${st.preview.partial?'（還在換其他單品）':''} · 高畫質版完成中…</span></div>`; window.__sawPreview=Date.now()-t0; }
         if (st.front) { window.__lastTiming=st.front.timing; d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }

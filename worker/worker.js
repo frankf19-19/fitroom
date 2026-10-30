@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.9.0';
+const VERSION = '2.9.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -95,12 +95,20 @@ const EDIT_PROMPTS = {
 };
 // 文字／看圖模型走 fal（OpenRouter 轉接，用 fal 儲值），失敗再用 Google 免費額度
 async function falLLM(env, prompt, imageUrl) {
+  let last;
+  for (const model of ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash-lite']) {
+    try { return await falLLMOnce(env, prompt, imageUrl, model); } catch (e) { last = e; if (/額度不足|locked|balance/i.test(e.message)) break; }
+  }
+  throw last;
+}
+async function falLLMOnce(env, prompt, imageUrl, model) {
   if (!env.FAL_KEY) throw new Error('未設定 FAL_KEY');
-  const body = { model: 'google/gemini-2.5-flash', prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000 };
+  const body = { model, prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000 };
   if (imageUrl) body.image_urls = [imageUrl];
   const r = await fetchT('https://fal.run/openrouter/router' + (imageUrl ? '/vision' : ''), { method: 'POST', headers: { 'Authorization': 'Key ' + env.FAL_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'AI 文字服務', 60000);
   const t = await r.text();
   if (!r.ok) throw new Error('AI 文字服務：' + extractErr(t));
+  try { const e0 = JSON.parse(t); if (e0 && e0.error && !e0.output) throw new Error('AI 文字服務：' + String(e0.error.message || e0.error).slice(0, 120)); } catch (e1) { if (String(e1.message).startsWith('AI 文字服務')) throw e1; }
   let d; try { d = JSON.parse(t); } catch { throw new Error('AI 文字服務回傳格式異常'); }
   const txt = String(d.output ?? d.text ?? (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) ?? '');
   const m = txt.replace(/```json|```/g, '').match(/\{[\s\S]*\}/);
@@ -753,6 +761,7 @@ async function fashnTryon(env, person, garment, category, photoType) {
 }
 function friendlyFal(msg) {
   const m = String(msg || '');
+  if (/exhausted balance|user is locked|insufficient (credit|balance)/i.test(m)) return 'AI 服務暫時無法使用（系統額度不足），請稍後再試';
   if (/detect body pose|person_image|no person|pose/i.test(m)) return '照片裡偵測不到完整的人體，請換一張正面、全身入鏡、光線清楚的照片';
   if (/garment_image|garment/i.test(m)) return '衣服圖看不清楚，請換一張正面、背景乾淨的衣服照';
   if (/content|nsfw|safety/i.test(m)) return '這張照片不符合安全規範，請換一張';
