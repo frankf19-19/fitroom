@@ -19,6 +19,8 @@ jobs:
           python3 - <<'PY'
           import os, json, urllib.request
           p = os.environ['P']
+          if p.startswith('get:'):
+            urllib.request.urlretrieve(p[4:], 'file.bin'); open('out.json','w').write('saved'); raise SystemExit(0)
           if p.startswith('fal:'):
             req = urllib.request.Request(p[4:], headers={'Authorization': 'Key ' + os.environ['FAL']})
           else:
