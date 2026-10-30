@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.5.0';
+const VERSION = '2.5.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -47,7 +47,7 @@ function outfitPrompt(steps, hints, faceHint) {
     hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : ''
   ].filter(Boolean).join('\n');
 }
-const SPIN_VIDEO = 'https://queue.fal.run/fal-ai/kling-video/v2.6/pro/image-to-video';
+const SPIN_MODELS = ['https://queue.fal.run/minimax/h3-max-turbo/image-to-video', 'https://queue.fal.run/minimax/h3-max/image-to-video', 'https://queue.fal.run/fal-ai/kling-video/v2.6/pro/image-to-video'];
 const SPIN_PROMPT = 'Fashion turntable shot. The camera is fixed and locked off. The person stands in place and slowly turns their whole body around a full 360 degrees at a constant speed, like on a rotating platform: from facing the camera, to the side profile, to the back, to the other side, and back to facing the camera. Arms relaxed at the sides. Keep the exact same person, face, hairstyle, body shape and every garment detail (color, silhouette, length, fit) perfectly consistent throughout. Same background and lighting. Smooth, realistic, no cuts.';
 async function falQueueSubmit(env, endpoint, payload, label) {
   const r = await fetchT(endpoint, { method: 'POST', headers: { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }, label, 30000);
@@ -545,11 +545,23 @@ async function handleTryonStatus(request, env, cors, url) {
         job.free = job.free - (2 - refund); job.pay = job.pay - refund;
       };
       try {
+        const spinSubmit = async () => {
+          // 依序嘗試：送出失敗（端點或參數不符）就換下一個
+          job.spin_m = job.spin_m || 0;
+          while (job.spin_m < SPIN_MODELS.length) {
+            try { job.views_req = await falQueueSubmit(env, SPIN_MODELS[job.spin_m], { prompt: SPIN_PROMPT, image_url: job.front[0], start_image_url: job.front[0], first_frame_image: job.front[0], end_image_url: job.front[0], duration: '5', generate_audio: false, prompt_optimizer: false, negative_prompt: 'blur, distortion, morphing, changing clothes, changing face, extra limbs, camera shake, cut, zoom, text' }, '360° 服務'); job.views_req.m = job.spin_m; return; }
+            catch (e) { job.spin_errors = [...(job.spin_errors || []), SPIN_MODELS[job.spin_m].split('fal.run/')[1] + ': ' + String(e.message).slice(0, 160)]; job.spin_m++; }
+          }
+          throw new Error('360° 服務暫時無法使用');
+        };
         if (!job.views_req) {
-          job.views_req = await falQueueSubmit(env, SPIN_VIDEO, { prompt: SPIN_PROMPT, start_image_url: job.front[0], end_image_url: job.front[0], duration: '5', generate_audio: false, negative_prompt: 'blur, distortion, morphing, changing clothes, changing face, extra limbs, camera shake, cut, zoom, text' }, '360° 服務');
+          await spinSubmit();
         } else {
-          const d = await falCheck(env, { ...job.views_req, at: job.views_req.at }, '360° 服務', true);
+          let d;
+          try { d = await falCheck(env, { ...job.views_req, at: job.views_req.at }, '360° 服務', true); }
+          catch (e) { job.spin_errors = [...(job.spin_errors || []), 'run ' + job.spin_m + ': ' + String(e.message).slice(0, 160)]; job.spin_m++; job.views_req = null; await spinSubmit(); d = null; }
           if (d) {
+            job.spin_done_at = Date.now();
             const vurl = d.video && d.video.url;
             if (!vurl) throw new Error('360° 服務沒有回傳影片');
             job.views = { video: await copyToStorage(env, `${base}/spin-${Date.now()}`, vurl).catch(() => vurl) };
