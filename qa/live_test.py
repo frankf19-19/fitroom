@@ -88,6 +88,7 @@ with sync_playwright() as pw:
     pg.fill('#fBust', '86'); pg.fill('#fWaist', '68'); pg.fill('#fHip', '92'); pg.wait_for_timeout(300)
     fr = txt('#fitRows'); step('尺寸建議有內容', fr and '建議' in fr, fr); shot('04_fit')
     # 6. AI 試穿（真的呼叫 fal）
+    pg.evaluate("localStorage.setItem('tryon.nocache','1')")
     if os.environ.get('QA_RES'): pg.evaluate(f"localStorage.setItem('tryon.res','{os.environ['QA_RES']}')")
     if os.environ.get('QA_ENGINE'): pg.evaluate(f"localStorage.setItem('tryon.engine','{os.environ['QA_ENGINE']}')")
     if os.environ.get('QA_VIEWS') == '0': pass

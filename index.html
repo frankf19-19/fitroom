@@ -707,7 +707,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '4.2.0';
-const BUILD = '2026-10-30-08';
+const BUILD = '2026-10-30-09';
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -1425,7 +1425,7 @@ $('btnRun').onclick=async()=>{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
     let aspect='auto'; try{ const pim=await loadImg(state.person); const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; aspect=opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }catch{}
-    let key; try{ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); key=[...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }catch{}
+    let key; try{ if(localStorage.getItem('tryon.nocache')) throw 0; const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); key=[...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }catch{}
     let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, key, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() , res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() }) });
     if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
     if (d && d.async && d.id) {
@@ -1477,7 +1477,7 @@ $('btnRun').onclick=async()=>{
     renderFit();
     toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
     if (d._pendingId) followViews(d._pendingId, state.result);
-    else if (pendingVideo) attachSpin(pendingVideo).catch(()=>{});
+    else if (pendingVideo) { const nb=$('runStatus').textContent; attachSpin(pendingVideo).then(()=>{ $('runStatus').textContent=nb+' 360° 好了：在圖上左右拖曳就能旋轉。'; }).catch(()=>{}); }
   }catch(e){
     clearInterval(tick);
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
