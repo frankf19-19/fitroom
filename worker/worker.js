@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.8.0';
+const VERSION = '2.9.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
@@ -473,6 +473,7 @@ async function handleTryon(request, env, cors, ctx) {
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
+        pv: (!prefetch && useOutfit && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null,
         steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
@@ -503,6 +504,7 @@ async function claimPrefetch(env, cors, user, g, { items, variants, wantViews, c
     const job = row.job;
     if ((job.lock_until || 0) <= Date.now()) {
       const v = job.v;
+      if (!job.front && !job.pv && job.engine === 'outfit' && (job.item_steps || []).some(x => x.category)) job.pv = { i: 0, cur: job.person_url, req: null };
       job.v = v + 1; job.prefetch = false; job.pay = payCredits; job.free = useFree; job.free_left = freeLeft; job.cost = cost; job.key = ckey; job.want_views = wantViews; job.touched = new Date().toISOString();
       const patch = { cost: payCredits, free_used: useFree, job };
       if (row.status === 'ok') {
@@ -542,7 +544,7 @@ async function handleTryonStatus(request, env, cors, url) {
   }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
-  const running = () => jout({ status: 'running', progress: progress(), front: frontOut() }, 200, cors);
+  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !job.pv.done } : undefined }, 200, cors);
   const fail = async (msg) => {
     if (job.pay > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: job.pay }).catch(() => {});
     await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
@@ -604,6 +606,17 @@ async function handleTryonStatus(request, env, cors, url) {
         return;                                   // 一次只做一個 Gemini（控制單次請求時間）
       }
     }));
+    // 快速預覽：FASHN 快速模式逐件換上，先給使用者看（高畫質版好了就換掉）
+    if (job.pv && !job.pv.done && !job.front && !job.prefetch) {
+      const pv = job.pv, cl = job.item_steps.filter(x => x.category);
+      try {
+        if (pv.i < cl.length) {
+          if (!pv.req) pv.req = await falSubmit(env, pv.cur, cl[pv.i].image_url, cl[pv.i].category, cl[pv.i].photo_type, 'performance');
+          else { const r = await falCheck(env, pv.req, '預覽'); if (r) { pv.cur = r; pv.req = null; pv.i++; pv.shown = r; if (pv.i < cl.length) pv.req = await falSubmit(env, pv.cur, cl[pv.i].image_url, cl[pv.i].category, cl[pv.i].photo_type, 'performance'); } }
+        }
+        if (pv.i >= cl.length) pv.done = true;
+      } catch { pv.done = true; }
+    }
     const chainsDone = job.chains.every(c => c.i >= job.steps.length);
     if (!chainsDone) { await save(); return running(); }
     // 正面先完成就先存檔回傳，360° 在後面慢慢補
@@ -677,9 +690,9 @@ async function copyToStorage(env, pathNoExt, srcUrl) {
   return `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
 }
 /* ---- FASHN 分段：送出／查一次 ---- */
-async function falSubmit(env, personUrl, garmentUrl, category, photoType) {
+async function falSubmit(env, personUrl, garmentUrl, category, photoType, mode = 'quality') {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
-  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode: 'quality', garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: 'png', seed: Math.floor(Math.random() * 1e9) }) }, '衣服試穿服務', 30000);
+  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode, garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: mode === 'performance' ? 'jpeg' : 'png', seed: Math.floor(Math.random() * 1e9) }) }, '衣服試穿服務', 30000);
   const t = await r.text();
   if (!r.ok) throw new Error('衣服試穿服務：' + extractErr(t));
   const j = JSON.parse(t);
