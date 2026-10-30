@@ -420,6 +420,30 @@
   .updbar{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:200;background:var(--ink);color:#fff;font-size:12px;padding:8px 10px 8px 14px;display:flex;gap:10px;align-items:center;letter-spacing:1px}.updbar button{background:#fff;color:var(--ink);border:0;padding:5px 10px;font-size:12px;cursor:pointer}
   .pvwrap{position:relative;width:100%;background:var(--bg2)}.pvwrap img{display:block;width:100%;max-height:680px;object-fit:contain}
   .pvtag{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);background:rgba(17,17,17,.78);color:#fff;font-size:11px;letter-spacing:1.5px;padding:7px 12px;white-space:nowrap}
+  /* v4.6 簡化與易讀 */
+  .herocta{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0 8px}.herocta .btn{flex:1;min-width:140px}
+  .herocta-note{font-size:13px;margin-bottom:6px}
+  .linkrow{margin-top:6px;gap:4px}.linkrow .btn{padding-left:0;padding-right:12px}
+  details.adv{border-top:1px solid var(--line);margin-top:10px}
+  details.adv>summary{list-style:none;cursor:pointer;padding:12px 0;font-size:13px;letter-spacing:.5px;display:flex;justify-content:space-between;gap:8px}
+  details.adv>summary::-webkit-details-marker{display:none}
+  details.adv>summary::after{content:'＋';color:var(--muted)} details.adv[open]>summary::after{content:'－'}
+  details.fold>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary h2{margin:0}
+  details.fold>summary::after{content:'＋';font-size:18px;color:var(--muted)} details.fold[open]>summary::after{content:'－'}
+  details.fold[open]>summary{margin-bottom:12px}
+  #resultActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}#resultActions .wide{grid-column:1/-1}
+  @media(min-width:900px){#resultActions{grid-template-columns:repeat(4,1fr)}}
+  @media(max-width:899px){.result{min-height:220px}.result .empty{padding:20px}}
+  .slot .lb,.slot.has .lb{font-size:12px}
+  .steps3{font-size:12px}.steps3 i{font-size:11px}
+  .pitem .brand{font-size:11px}.pitem .img .feat{font-size:10px}
+  .balance .l,.bodyreport dt,.bodyreport b,#historyList span{font-size:12px}
+  .topnav button{padding-top:9px;padding-bottom:9px}
+  .setrow a{display:inline-block;padding:10px 4px;min-width:44px;text-align:right}
+  .demo .gcard span{font-size:11px}.demo .tag{font-size:11px}
+  .bottomnav button{min-height:52px}
 </style>
 </head>
 <body>
@@ -446,7 +470,9 @@
         <div class="kicker">AI VIRTUAL TRY-ON · 女生男生都能用</div>
         <h1>買之前，<br>先看看穿在你身上的樣子</h1>
         <p class="sub">一張全身照，放進想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照，還能轉到側面與背面看整體。</p>
-        <div class="card login" id="loginCard">
+        <div class="herocta"><button class="btn primary lg" data-go="tryon">開始試穿</button><button class="btn lg" id="heroLogin">登入 / 註冊</button></div>
+        <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入，每天送免費額度。</div>
+        <div class="card login hidden" id="loginCard">
           <h2>登入開始試穿</h2>
           <button class="btn block abtn hidden" id="btnApple"><svg viewBox="0 0 24 24"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.8 1.3 10.3.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.4-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM13.9 4.9c.7-.9 1.2-2.1 1.1-3.3-1 0-2.3.7-3 1.6-.7.8-1.3 2-1.1 3.2 1.1.1 2.3-.6 3-1.5z"/></svg>使用 Apple 登入</button>
           <button class="btn block gbtn" id="btnGoogle"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.5l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.3l7.8 6C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.9l-7.8 6C6.5 42.6 14.6 48 24 48z"/></svg>使用 Google 登入</button>
@@ -485,28 +511,30 @@
     <div class="tryon">
       <div>
         <div class="card">
-          <h2>1 · 你的全身照</h2>
+          <h2>你的全身照</h2>
           <div class="person" id="personBox">
             <input type="file" accept="image/*" id="filePerson">
             <div class="tip"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>放一張你的全身照</b>正面站好、光線均勻、衣服貼身<br>手機拍的就可以</div>
           </div>
-          <div class="analyze-cta" id="analyzeCta" style="margin-top:12px"><span id="analyzeCtaText">填身高體重並分析身形，合成會依你的真實比例調整版型與髮型。</span><button class="btn sm" id="btnAnalyzeGo">我的身形</button></div>
-          <div class="row" style="margin-top:10px">
-            <button class="btn sm" id="btnPersonFromHistory">從合成紀錄選底圖</button>
-            <button class="btn sm ghost" id="btnTips">怎麼拍效果最好？</button>
+          <div class="analyze-cta" id="analyzeCta" style="margin-top:12px"><span id="analyzeCtaText">填身高體重，合成會更貼合你的身形。</span><button class="btn sm" id="btnAnalyzeGo">我的身形</button></div>
+          <div class="row linkrow">
+            <button class="btn ghost sm" id="btnTips">怎麼拍效果最好？</button>
+            <button class="btn ghost sm" id="btnPersonFromHistory">用以前的合成照</button>
           </div>
         </div>
         <div class="card">
-          <h2>2 · 想試什麼？<span class="muted" style="font-weight:400">（點格子上傳或從衣櫃選）</span></h2>
+          <h2>想試什麼？<span class="muted" style="font-weight:400">點格子放衣服，或到商店挑</span></h2>
           <div id="rackBox"></div>
           <div class="slots" id="slots"></div>
           <div class="cost">
             <span>本次 <b id="costN">0</b> 點 <span class="muted" id="costNote"></span></span>
             <span class="muted">每個品項 1 點</span>
           </div>
-          <div class="opt-row"><span>360° 多角度 <span class="muted">（再生成側面與背面，+2 點）</span></span><div class="switch" id="wantViews"></div></div>
-          <div class="opt-row" style="margin-top:0"><span>一次產 2 張挑一張 <span class="muted">（點數 ×2，更容易抽到滿意的）</span></span><div class="switch" id="twoVariants"></div></div>
-          <div class="opt-row" style="margin-top:0"><span>鎖定本人臉部 <span class="muted">（配件、髮型合成後把原本的臉貼回去，確保是你本人）</span></span><div class="switch on" id="faceLock"></div></div>
+          <details class="adv" id="advOpts"><summary>更多選項 <span class="muted" id="advSummary"></span></summary>
+          <div class="opt-row"><span>360° 旋轉 <span class="muted">轉一圈看側面背面，+2 點</span></span><div class="switch" id="wantViews" aria-label="360° 旋轉"></div></div>
+          <div class="opt-row" style="margin-top:0"><span>一次 2 張挑一張 <span class="muted">點數 ×2</span></span><div class="switch" id="twoVariants" aria-label="一次 2 張挑一張"></div></div>
+          <div class="opt-row" style="margin-top:0"><span>保留我的臉 <span class="muted">確保合成後還是你本人</span></span><div class="switch on" id="faceLock" aria-label="保留我的臉"></div></div>
+          </details>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
           <div class="muted" id="pfHint" style="font-size:12px;margin-top:6px;min-height:1em"></div>
           <div class="progress hidden" id="prog"><i></i></div>
@@ -516,7 +544,7 @@
       <div>
         <div class="card">
           <div class="row" style="justify-content:space-between;margin-bottom:10px">
-            <h2 style="margin:0">3 · 合成結果</h2>
+            <h2 style="margin:0">試穿結果</h2>
             <span class="muted hidden" id="cmpHint">拖曳中線比較前後</span>
           </div>
           <div class="angles hidden" id="angles">
@@ -527,13 +555,12 @@
           <div class="row hidden" style="margin-top:12px" id="resultActions">
             <button class="btn primary" id="btnDownload">下載</button>
             <button class="btn" id="btnShare">分享</button>
-            <button class="btn" id="btnStory">做成限動圖</button>
             <button class="btn" id="btnContinue">用這張繼續搭</button>
-            <button class="btn ghost" id="btnRetry" title="換一組隨機結果，會再扣一次點數">不滿意，再試一次</button>
+            <button class="btn" id="btnStory">做成限動圖</button>
+            <button class="btn ghost wide" id="btnRetry" title="換一組隨機結果，會再扣一次點數">不滿意，再試一次（會扣點）</button>
           </div>
         </div>
-        <div class="card">
-          <h2>4 · 尺寸建議 <span class="muted" style="font-weight:400">（依各品牌尺碼表，不扣點）</span></h2>
+        <details class="card fold" id="fitCard"><summary><h2>尺寸建議 <span class="muted" style="font-weight:400">免費</span></h2><span class="muted" id="fitBadge"></span></summary>
           <div class="chips" id="fitGender"><span class="chip on" data-g="f">女裝尺碼</span><span class="chip" data-g="m">男裝尺碼</span></div>
           <div class="fitgrid">
             <label>身高 cm<input type="number" id="fHeight" placeholder="162"></label>
@@ -545,13 +572,12 @@
           <div class="muted" id="fitHint" style="margin-top:6px;font-size:12px">沒量過三圍？到「我的身形」做分析，AI 會從照片與身高體重估一組，這裡自動帶入。</div>
           <div id="fitRows" style="margin-top:10px"><div class="muted">放入上衣、下身、洋裝或鞋子後，這裡會依品牌尺碼表建議尺寸；你選了別的尺寸會提醒哪裡會緊或鬆。</div></div>
           <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">尺碼表怎麼來的</summary><div class="muted" style="margin-top:6px;line-height:1.7">內建 UNIQLO／GU（亞洲尺碼）、ZARA、H&amp;M 的身體尺寸對照表，其他品牌用通用亞洲尺碼。判斷方式：你的圍度落在該尺碼範圍內＝合身；超過上限＝會緊；低於下限＝會鬆。鞋子以腳長＋0.5–1 cm 餘裕換算該品牌標示。各品牌版型仍有差異，僅供參考，賣場有平量尺寸時以賣場為準。</div></details>
-        </div>
-        <div class="card" id="outfitCard">
-          <h2>5 · AI 搭配建議 <span class="muted" style="font-weight:400">（依你的身形與商店商品，不扣點）</span></h2>
-          <div class="muted" style="font-size:12px;line-height:1.7">把目前試衣間的單品交給 AI，從商店裡挑出能一起搭的下身、鞋子、配件，說明為什麼適合你的身形與膚色。還沒放單品也可以，會依你的身形直接推薦整套。</div>
+        </details>
+        <details class="card fold" id="outfitCard"><summary><h2>AI 幫我搭配 <span class="muted" style="font-weight:400">免費</span></h2></summary>
+          <div class="muted" style="font-size:13px;line-height:1.7">AI 依你的身形和目前的單品，從商店挑出能一起搭的衣服、鞋子和配件。</div>
           <div class="row" style="margin-top:10px"><button class="btn" id="btnOutfit">幫我搭配</button><span class="muted" id="outfitStatus" style="font-size:12px"></span></div>
           <div id="outfitBox" style="margin-top:12px"></div>
-        </div>
+        </details>
       </div>
     </div>
   </section>
@@ -713,8 +739,9 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.5.2';
-const BUILD = '2026-10-31-01';
+const APP_VERSION = '4.6.0';
+const BUILD = '2026-10-31-02';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
@@ -778,12 +805,13 @@ const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=m
 function go(v, keepHash){
   if (window.__pickResolve) window.__pickResolve();
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
-  if (NEED_LOGIN.includes(v) && !state.user) { if(!document.querySelector('.view.on')) go('home', true); if(state.authReady) openLogin(); return; }
+  const navBooted=!!document.querySelector('.view.on');
+  if (NEED_LOGIN.includes(v) && !state.user) { state.wantView=v; if(!document.querySelector('.view.on')) go('home', true); if(state.authReady) openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
   document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.toggle('slide', on); });
   haptic();
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v));
-  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want) history.replaceState(null,'',location.pathname+location.search+want); }
+  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want){ const url=location.pathname+location.search+want; if(navBooted) history.pushState(null,'',url); else history.replaceState(null,'',url); } }
   if(v==='home') setTimeout(applyDemo,0);
   window.scrollTo({top:0});
   if (v==='wardrobe') loadWardrobe();
@@ -792,14 +820,14 @@ function go(v, keepHash){
   if (v==='admin') loadAdmin();
   if (v==='settings') renderSettings();
   if (v==='body') renderBody();
-  if (v==='shop') loadShop(true);
+  if (v==='shop' && (!shopLoaded || !shopItems.length)) loadShop(true); else if (v==='shop') $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin));
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
 
 /* ---------- 登入 ---------- */
 async function initAuth(){
   try{ const hp=new URLSearchParams(location.hash.replace(/^#/,'')); if(hp.get('error_description')||hp.get('error_code')){ const code=hp.get('error_code')||''; toast(code.includes('expired')?'登入連結已失效（可能已點過或超過時限），請重新寄一封':'登入失敗：'+(hp.get('error_description')||code)); history.replaceState(null,'',location.pathname+location.search); } }catch{}
-  if (!supa) { state.authReady=true; renderUser(); showSetup(); return; }
+  if (!supa) { state.authReady=true; renderUser(); if(!window.supabase && CONFIG.SUPABASE_URL){ const b=$('setupBanner'); b.classList.remove('hidden'); b.innerHTML='<b>連線不穩，登入元件沒有載入。</b> 請檢查網路後重新整理頁面。'; } else showSetup(); return; }
   const { data } = await supa.auth.getSession();
   state.authReady=true;
   setSession(data.session);
@@ -810,15 +838,15 @@ function setSession(s){
   const was = !!state.user;
   state.session = s; state.user = s ? s.user : null;
   renderUser();
-  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=location.hash.replace('#','')||bootHash; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
+  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=state.wantView||location.hash.replace('#','')||bootHash; state.wantView=null; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
   if (!state.user && was) go('home');
   if (state.user) { if (new URLSearchParams(location.search).get('paid')==='1') { toast('付款完成，點數已入帳'); history.replaceState(null,'',location.pathname+location.hash); } }
 }
 function renderUser(){
   const a=$('userArea');
-  if (!state.user) { a.innerHTML='<button class="btn sm primary" data-go="home">登入</button>'; a.firstChild.onclick=()=>go('home'); const lc=$('loginCard'); if(lc) lc.classList.remove('hidden'); return; }
+  if (!state.user) { a.innerHTML='<button class="btn sm primary">登入</button>'; a.firstChild.onclick=()=>openLogin(); const hl=$('heroLogin'); if(hl) hl.classList.remove('hidden'); return; }
   const em = state.user.email || '';
-  const lc=$('loginCard'); if(lc) lc.classList.add('hidden');
+  const hl=$('heroLogin'); if(hl) hl.classList.add('hidden');
   a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
   a.querySelectorAll('.free,.userchip').forEach(el=>el.onclick=()=>go('credits'));
 }
@@ -891,6 +919,10 @@ function openLogin(){
     if(error) toast('寄送失敗：'+error.message); else { const b=$('sheetSent'); b.classList.remove('hidden'); b.innerHTML='✉️ 已寄到 '+email+'，輸入信中的驗證碼：<div class="otp"><input type="text" inputmode="numeric" autocomplete="one-time-code" id="sheetOtp" placeholder="驗證碼"><button class="btn primary" id="sheetOtpBtn">登入</button></div>'; $('sheetOtp').focus(); $('sheetOtpBtn').onclick=()=>verifyOtp(email,$('sheetOtp').value,$('sheetOtpBtn')); $('sheetOtp').addEventListener('keydown',ev=>{ if(ev.key==='Enter') $('sheetOtpBtn').click(); }); } };
 }
 $('guestLogin').onclick=openLogin;
+if($('heroLogin')) $('heroLogin').onclick=openLogin;
+function advSummary(){ const on=[]; if($('wantViews').classList.contains('on')) on.push('360°'); if($('twoVariants').classList.contains('on')) on.push('2 張'); if(!$('faceLock').classList.contains('on')) on.push('不鎖臉'); $('advSummary').textContent=on.length?'已開：'+on.join('、'):''; }
+['wantViews','twoVariants','faceLock'].forEach(id=>new MutationObserver(advSummary).observe($(id),{attributes:true,attributeFilter:['class']})); advSummary();
+let fitTouched=false; $('fitCard').querySelector('summary').addEventListener('click',()=>{ fitTouched=true; });
 function showSetup(flash){
   const b=$('setupBanner'); b.classList.remove('hidden');
   b.innerHTML='<b>網站還在準備中。</b> 管理者需在 index.html 的 CONFIG 填入 Supabase 與 Worker 設定（見 設定指南.md）。';
@@ -944,7 +976,7 @@ function downscale(img, maxSide, type, q){
   const x=c.getContext('2d'); if(type==='image/jpeg'){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);} x.drawImage(img,0,0,c.width,c.height);
   return c.toDataURL(type||'image/jpeg', q||0.9);
 }
-async function urlToDataUri(url){ const b=await (await fetch(url)).blob(); return new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.readAsDataURL(b); }); }
+async function urlToDataUri(url){ const r=await fetch(url); if(!r.ok) throw new Error('img '+r.status); const b=await r.blob(); if(b.type&&!/^image\//.test(b.type)) throw new Error('not image'); return new Promise(res=>{ const rd=new FileReader(); rd.onload=()=>res(rd.result); rd.readAsDataURL(b); }); }
 function dataUriToBlob(uri){ const [h,b]=uri.split(','); const mime=/data:(.*?);/.exec(h)[1]; const bin=atob(b); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i); return new Blob([u],{type:mime}); }
 
 /* ---------- 全身照 ---------- */
@@ -1118,6 +1150,7 @@ function renderFit(){
   const body=bodyVals();
   try{ localStorage.setItem('tryon.body', JSON.stringify({height:$('fHeight').value,bust:$('fBust').value,waist:$('fWaist').value,hip:$('fHip').value,foot:$('fFoot').value})); }catch{}
   const cl=['top','bottom','dress','shoes'].filter(t=>state.slots[t]);
+  const fb=$('fitBadge'); if(fb) fb.textContent=cl.length?cl.length+' 件可看建議尺寸':''; if(cl.length&&!fitTouched&&$('fitCard')) $('fitCard').open=true;
   const box=$('fitRows'); if(!cl.length){ box.innerHTML='<div class="muted">放入上衣、下身、洋裝或鞋子後，這裡會依品牌尺碼表建議尺寸；你選了別的尺寸會提醒哪裡會緊或鬆。</div>'; return; }
   box.innerHTML=cl.map(t=>{ const item=state.slots[t]; if(t==='shoes') return shoeRow(item);
     const bk=brandKey(item.brand); const bc=BRAND_CHARTS[bk]; const g=(item.pgender==='m'||item.pgender==='f')?item.pgender:fitGender; const chart=bc[g]||bc.f;
@@ -1148,7 +1181,7 @@ $('btnOutfit').onclick=async()=>{
     const d=await api('/api/outfit',{method:'POST',body:JSON.stringify({have, gender:(state.me&&state.me.body&&state.me.body.gender)||fitGender})});
     const outs=d.outfits||[]; if(!outs.length){ $('outfitStatus').textContent='目前商店裡找不到合適的搭配，再放一件單品試試。'; return; }
     $('outfitStatus').textContent=d.note||'';
-    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${o.title||'搭配'}</h3><div class="tip">${o.tip||''}</div><div class="items">${(o.items||[]).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${it.product.brand||''}</b> ${it.product.name}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${it.reason||''}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
+    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${esc(o.title||'搭配')}</h3><div class="tip">${esc(o.tip)}</div><div class="items">${(o.items||[]).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${esc(it.product.brand)}</b> ${esc(it.product.name)}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${esc(it.reason)}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
     const all=outs.flatMap(o=>(o.items||[]).map(i=>i.product));
     $('outfitBox').querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>{ const p=all.find(x=>String(x.id)===b.dataset.oid); if(p) tryProduct(p); });
     track('outfit',{n:all.length});
@@ -1195,33 +1228,34 @@ $('onbAgain').onclick=e=>{ e.preventDefault(); showOnb(0); };
 try{ if(!localStorage.getItem('tryon.onb') && (IS_APP || matchMedia('(max-width:899px)').matches)) setTimeout(()=>showOnb(0),400); }catch{}
 
 /* ---------- 商店 ---------- */
-let shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false, shopBrand='', shopBrands=null;
+let shopSeq=0, shopLoaded=false, shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false, shopBrand='', shopBrands=null;
 async function shopBrandChips(){
   const f=$('shopBrand'); if(!f) return;
   if(!shopBrands){ try{ const r=await fetch(CONFIG.WORKER_URL+'/api/brands'); shopBrands=(await r.json()).brands||[]; }catch{ shopBrands=[]; } }
   if(!shopBrands.length){ f.innerHTML=''; return; }
-  f.innerHTML=`<span class="chip ${!shopBrand?'on':''}" data-b="">所有品牌</span>`+shopBrands.map(b=>`<span class="chip ${shopBrand===b.name?'on':''}" data-b="${b.name.replace(/"/g,'&quot;')}">${b.name}</span>`).join('');
+  f.innerHTML=`<span class="chip ${!shopBrand?'on':''}" data-b="">所有品牌</span>`+shopBrands.map(b=>`<span class="chip ${shopBrand===b.name?'on':''}" data-b="${esc(b.name)}">${esc(b.name)}</span>`).join('');
   f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopBrand=c.dataset.b; loadShop(true); });
 }
 function shopTypeChips(){ const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
 $('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopGender=c.dataset.g; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); loadShop(true); });
 let shopQT; $('shopQ').addEventListener('input',()=>{ clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
 async function loadShop(reset){
-  if(shopBusy) return; shopBusy=true;
+  if(shopBusy && !reset) return; shopBusy=true; const seq=++shopSeq; shopLoaded=true;
   if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); shopBrandChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
   try{
     if(!CONFIG.WORKER_URL) throw new Error('商店尚未設定');
     const qs=new URLSearchParams({page:shopPage}); if(shopFilterType) qs.set('type',shopFilterType); if(shopGender) qs.set('gender',shopGender); if(shopBrand) qs.set('brand',shopBrand); const q=$('shopQ').value.trim(); if(q) qs.set('q',q);
     const d=await api('/api/products?'+qs.toString());
+    if(seq!==shopSeq) return;
     shopItems=shopItems.concat(d.products||[]); renderShop(); $('shopMore').classList.toggle('hidden',!d.has_more); shopPage++;
-  }catch(e){ $('shopList').innerHTML=`<div class="empty-note">${e.message}</div>`; }
-  finally{ shopBusy=false; $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin)); }
+  }catch(e){ if(seq===shopSeq) $('shopList').innerHTML=`<div class="empty-note">${esc(e.message)}</div>`; }
+  finally{ if(seq===shopSeq) shopBusy=false; $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin)); }
 }
 $('shopMore').onclick=()=>loadShop(false);
 function renderShop(){
   const box=$('shopList');
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${p.name}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${p.brand||''}</span><span class="name">${p.name}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}">${inRack(p.id)?'✓ 衣架':'＋衣架'}</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}">${inRack(p.id)?'✓ 衣架':'＋衣架'}</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
   box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); const on=inRack(b.dataset.rack); b.classList.toggle('on',on); b.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); });
@@ -1229,7 +1263,7 @@ function renderShop(){
 }
 async function tryProduct(p, opt={}){
   if(!p) return;
-  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}; renderSlots(); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay) go('tryon'); }
+  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } try{ delete fitSizes[p.type]; }catch{} state.slots[p.type]={image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}; renderSlots(); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay) go('tryon'); }
   catch{ toast('商品圖載入失敗，請改用截圖上傳'); }
 }
 function buyProduct(p){ if(!p||!p.buy_url) return; fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'buy',anon_id:anonId}),keepalive:true}).catch(()=>{}); track('buy_click',{product:p.id}); if(IS_APP&&Plug('Browser')) Plug('Browser').open({url:p.buy_url}); else window.open(p.buy_url,'_blank','noopener'); }
@@ -1240,7 +1274,7 @@ $('importBtn').onclick=async()=>{
   catch(e){ $('importStatus').textContent=e.message; }
 };
 // 合成結果區：若單品來自商店，顯示購買連結
-function renderBuyLinks(){ const items=Object.values(state.slots).filter(v=>v&&v.buy_url); const host=$('resultActions'); let bar=$('buyBar'); if(!items.length){ if(bar) bar.remove(); return; } if(!bar){ bar=document.createElement('div'); bar.id='buyBar'; bar.className='row'; bar.style.marginTop='10px'; host.after(bar); } bar.innerHTML='<span class="muted" style="letter-spacing:1px">喜歡嗎？</span>'+items.map(v=>`<button class="btn sm" data-buyurl="${v.buy_url}" data-pid="${v.product_id||''}">購買 ${v.name||''}</button>`).join(''); bar.querySelectorAll('[data-buyurl]').forEach(b=>b.onclick=()=>buyProduct({id:Number(b.dataset.pid)||null,buy_url:b.dataset.buyurl})); }
+function renderBuyLinks(){ const items=(state.runItems&&state.result?state.runItems:Object.values(state.slots)).filter(v=>v&&v.buy_url); const host=$('resultActions'); let bar=$('buyBar'); if(!items.length){ if(bar) bar.remove(); return; } if(!bar){ bar=document.createElement('div'); bar.id='buyBar'; bar.className='row'; bar.style.marginTop='10px'; host.after(bar); } bar.innerHTML='<span class="muted" style="letter-spacing:1px">喜歡嗎？</span>'+items.map(v=>`<button class="btn sm" data-buyurl="${esc(v.buy_url)}" data-pid="${esc(v.product_id)}">購買 ${esc(v.name)}</button>`).join(''); bar.querySelectorAll('[data-buyurl]').forEach(b=>b.onclick=()=>buyProduct({id:Number(b.dataset.pid)||null,buy_url:b.dataset.buyurl})); }
 
 /* ---------- 衣架：商店一次挑很多件，試衣間一點就換 ---------- */
 let rack=[]; try{ rack=JSON.parse(localStorage.getItem('tryon.rack')||'[]'); }catch{}
@@ -1410,7 +1444,7 @@ async function loadAdmin(){
     const types=Object.entries(d.by_type||{}).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`${TYPE_LABEL[t]||t} ${n}`).join('、')||'—';
     const F=d.funnel||{}; const fn=['open','photo','item','tryon_start','tryon_ok','share','buy_click','paid']; const fl={open:'開啟',photo:'放照片',item:'放單品',tryon_start:'開始合成',tryon_ok:'合成成功',share:'分享',buy_click:'點購買',paid:'付款'};
     const funnelHtml=`<div class="card" style="margin-top:14px"><h3>近 7 天漏斗（不重複人數）</h3><table class="tb"><tr>${fn.map(k=>`<th>${fl[k]}</th>`).join('')}</tr><tr>${fn.map(k=>`<td><b>${F[k]||0}</b></td>`).join('')}</tr></table></div>`;
-    const errHtml=`<div class="card"><h3>前端錯誤（最近 20 筆）</h3>${(d.client_errors||[]).length?`<table class="tb"><tr><th>時間</th><th>平台/版本</th><th>訊息</th></tr>${d.client_errors.map(e=>`<tr><td>${new Date(e.created_at).toLocaleString('zh-TW')}</td><td>${e.platform||''} ${e.app_version||''}</td><td>${(e.message||'').slice(0,120)}</td></tr>`).join('')}</table>`:'<div class="muted">沒有錯誤 🎉</div>'}</div>`;
+    const errHtml=`<div class="card"><h3>前端錯誤（最近 20 筆）</h3>${(d.client_errors||[]).length?`<table class="tb"><tr><th>時間</th><th>平台/版本</th><th>訊息</th></tr>${d.client_errors.map(e=>`<tr><td>${new Date(e.created_at).toLocaleString('zh-TW')}</td><td>${esc(e.platform)} ${esc(e.app_version)}</td><td>${esc((e.message||'').slice(0,120))}</td></tr>`).join('')}</table>`:'<div class="muted">沒有錯誤 🎉</div>'}</div>`;
     box.innerHTML=`<div class="stats">
       <div class="stat"><div class="v">${d.users}</div><div class="l">會員數</div></div>
       <div class="stat"><div class="v">${d.gen_today}</div><div class="l">今日合成</div></div>
@@ -1422,10 +1456,10 @@ async function loadAdmin(){
       <div class="stat"><div class="v" style="font-size:14px;line-height:1.5">${types}</div><div class="l">近 7 天品項分布</div></div>
     </div>
     ${funnelHtml}
-    <div class="card"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${d.failures.length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${d.failures.map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${f.error||''}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
+    <div class="card"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${d.failures.length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${d.failures.map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${esc(f.error)}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
     ${errHtml}
-    <div class="card"><h3>最近加入的會員</h3><table class="tb"><tr><th>Email</th><th>點數</th><th>加入</th></tr>${d.recent_users.map(u=>`<tr><td>${u.email||''}</td><td>${u.credits}</td><td>${new Date(u.created_at).toLocaleDateString('zh-TW')}</td></tr>`).join('')}</table></div>`;
-  }catch(e){ box.innerHTML='<span style="color:var(--bad)">'+e.message+'</span>'; }
+    <div class="card"><h3>最近加入的會員</h3><table class="tb"><tr><th>Email</th><th>點數</th><th>加入</th></tr>${d.recent_users.map(u=>`<tr><td>${esc(u.email)}</td><td>${u.credits}</td><td>${new Date(u.created_at).toLocaleDateString('zh-TW')}</td></tr>`).join('')}</table></div>`;
+  }catch(e){ box.innerHTML='<span style="color:var(--bad)">'+esc(e.message)+'</span>'; }
 }
 $('adminRefresh').onclick=loadAdmin;
 
@@ -1438,8 +1472,12 @@ function offerSave(type){
 function openPick(title, html){ $('pickTitle').textContent=title; $('pickBody').innerHTML=html; $('pickmenu').classList.add('on'); }
 function closePick(){ $('pickmenu').classList.remove('on'); }
 $('pickClose').onclick=closePick; $('pickmenu').addEventListener('click',e=>{ if(e.target===$('pickmenu')) closePick(); });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('pickmenu').classList.contains('on')) closePick(); if($('lightbox').classList.contains('on')) $('lightbox').classList.remove('on'); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const iv=$('itemView'); if(iv&&iv.classList.contains('on')) iv.classList.remove('on'); if($('cropmenu').classList.contains('on')&&window.__cropCancel) window.__cropCancel(); if($('pickmenu').classList.contains('on')) closePick(); if($('lightbox').classList.contains('on')) $('lightbox').classList.remove('on'); } });
 document.querySelectorAll('.bottomnav button').forEach(b=>b.setAttribute('aria-label',b.textContent.trim()));
+// 標籤（chip）可用鍵盤操作
+const chipA11y=()=>document.querySelectorAll('.chip:not([tabindex])').forEach(c=>{ c.tabIndex=0; c.setAttribute('role','button'); });
+chipA11y(); new MutationObserver(()=>chipA11y()).observe(document.body,{childList:true,subtree:true});
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('chip')){ e.preventDefault(); e.target.click(); } });
 document.querySelectorAll('.switch').forEach(sw=>{ sw.setAttribute('role','switch'); sw.setAttribute('tabindex','0'); sw.addEventListener('keydown',e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); sw.click(); } }); const obs=new MutationObserver(()=>sw.setAttribute('aria-checked',sw.classList.contains('on'))); obs.observe(sw,{attributes:true,attributeFilter:['class']}); sw.setAttribute('aria-checked',sw.classList.contains('on')); });
 
 /* ---------- 執行試穿 ---------- */
@@ -1452,6 +1490,7 @@ $('btnRun').onclick=async()=>{
   if (!items.length) return toast('請至少放一個單品');
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
+  const person0=state.personOrig; const isPhone=window.matchMedia('(max-width:899px)').matches;
   track('tryon_start',{n:items.length}); busy=true; state.result=null; $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='8%';
   $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
@@ -1464,7 +1503,7 @@ $('btnRun').onclick=async()=>{
   seq.push('快好了，調整光線與細節…');
   let si=0; $('runStatus').textContent=seq[0];
   let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; const ni=Math.min(seq.length-1, Math.floor(pct/90*seq.length)); if(ni!==si){ si=ni; $('runStatus').textContent=seq[si]; const w=$('waitMsg'); if(w) w.textContent=seq[si]; } }, 800);
-  setStep(3);
+  setStep(3); if(isPhone) setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),100);
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
@@ -1509,19 +1548,19 @@ $('btnRun').onclick=async()=>{
     let imgs = imgsResolved.filter(Boolean);
     if (!imgs.length) throw new Error('沒有收到合成結果');
     const needLock = $('faceLock').classList.contains('on') && (d.engine==='outfit' || items.some(i=>!['top','bottom','dress'].includes(i.type)));
-    if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(state.personOrig, im); }catch(e){ return im; } })); }
+    if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(person0, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
     $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '');
     if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
-    busy=false; $('btnRun').disabled=false;
     let finalImg = imgs[0];
     if (imgs.length > 1) {
       finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
-    state.result = finalImg;
-    renderCompare(state.personOrig, finalImg);
+    state.result = finalImg; state.resultPerson = person0;
+    renderCompare(person0, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems();
     renderFit();
+    if(isPhone) $('result').scrollIntoView({behavior:'smooth',block:'start'});
     toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
     if (d._pendingId) followViews(d._pendingId, state.result);
     else if (pendingVideo) { const nb=$('runStatus').textContent; attachSpin(pendingVideo).then(()=>{ $('runStatus').textContent=nb+' 360° 好了：在圖上左右拖曳就能旋轉。'; }).catch(()=>{}); }
@@ -1531,13 +1570,13 @@ $('btnRun').onclick=async()=>{
     $('runStatus').innerHTML = '<span style="color:var(--bad)">'+e.message+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
     const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
   }finally{
-    busy=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
+    busy=false; $('btnRun').disabled=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
     if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>再試一次，或換一張更清楚的照片</div>'; }
   }
 };
 function renderCompare(before, after){
   const box=$('result');
-  const items=Object.keys(state.slots).map(t=>TYPE_LABEL[t]).join('＋')||'穿搭';
+  const items=(state.runItems&&state.runItems.length?state.runItems.map(i=>i.type):Object.keys(state.slots)).map(t=>TYPE_LABEL[t]).join('＋')||'穿搭';
   const date=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   const v=state.views||{};
@@ -1549,7 +1588,7 @@ function renderCompare(before, after){
   $('angles').classList.toggle('hidden', !(v.side||v.back||v.spin)); setAngle(v.spin&&state.preferSpin?'spin':'front');
   const cmp=$('cmp'), aft=$('cmpAfter'), hd=$('cmpHd');
   const sync=()=>{ const w=cmp.clientWidth; aft.querySelector('img').style.width=w+'px'; };
-  $('cmpAfterFull').onload=sync; sync(); if(window.__cmpResize) window.removeEventListener('resize',window.__cmpResize); window.__cmpResize=sync; window.addEventListener('resize',sync);
+  $('cmpAfterFull').onload=sync; sync(); if(window.__cmpRO) window.__cmpRO.disconnect(); if(window.ResizeObserver){ window.__cmpRO=new ResizeObserver(sync); window.__cmpRO.observe(cmp); } else { if(window.__cmpResize) window.removeEventListener('resize',window.__cmpResize); window.__cmpResize=sync; window.addEventListener('resize',sync); }
   const set=x=>{ const r=cmp.getBoundingClientRect(); const pct=Math.max(2,Math.min(98,(x-r.left)/r.width*100)); aft.style.width=pct+'%'; hd.style.left=pct+'%'; };
   set(cmp.getBoundingClientRect().left + cmp.getBoundingClientRect().width*0.35);
   let dragging=false;
@@ -1562,7 +1601,7 @@ async function shareImage(dataUri){
   if (IS_APP && Plug('Filesystem') && Plug('Share')) {
     try{ const ext=/^data:image\/jpe?g/i.test(dataUri)?'jpg':'png'; const w=await Plug('Filesystem').writeFile({ path:'tryon-'+Date.now()+'.'+ext, data:dataUri.split(',')[1], directory:'CACHE' }); await Plug('Share').share({ title:'我的 AI 試穿', files:[w.uri] }); return; }catch(e){ if(!/cancel/i.test(String(e.message||e))) toast('分享失敗'); return; }
   }
-  try{ const file=new File([dataUriToBlob(dataUri)],'試穿吧.png',{type:'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else { toast('此裝置不支援分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); } }catch(e){ if(e&&e.name==='AbortError') return; toast('無法分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); }
+  try{ const blob=dataUriToBlob(dataUri); const file=new File([blob],/jpe?g/.test(blob.type)?'試穿吧.jpg':'試穿吧.png',{type:blob.type||'image/png'}); if(navigator.canShare&&navigator.canShare({files:[file]})) await navigator.share({files:[file],title:'我的 AI 試穿'}); else { toast('此裝置不支援分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); } }catch(e){ if(e&&e.name==='AbortError') return; toast('無法分享，已改為下載'); saveImage(dataUri,'試穿吧_'+Date.now()+'.png'); }
 }
 async function saveImage(dataUri, name){
   if (IS_APP && Plug('Filesystem')) {
@@ -1584,7 +1623,7 @@ async function storyImage(before, after){
   x.fillStyle='#6f5a62'; x.font='400 32px "Noto Sans TC", sans-serif'; x.fillText('買之前，先看看穿在你身上的樣子', W/2, 1760);
   return c.toDataURL('image/jpeg',0.92);
 }
-$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
+$('btnStory').onclick=async()=>{ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.resultPerson||state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } };
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
 function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); state.result=null; state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
@@ -1816,6 +1855,7 @@ if (IS_APP) {
     if($('cropmenu').classList.contains('on')){ if(window.__cropCancel) window.__cropCancel(); return; }
     if($('pickmenu').classList.contains('on')){ closePick(); return; }
     if($('lightbox').classList.contains('on')){ $('lightbox').classList.remove('on'); return; }
+    const iv=$('itemView'); if(iv&&iv.classList.contains('on')){ iv.classList.remove('on'); return; }
     const cur=document.querySelector('.view.on'); const id=cur?cur.id.replace('view-',''):'';
     if(id==='tryon'||id==='home') App.exitApp(); else go('tryon');
   }); } }catch{}
@@ -1827,7 +1867,7 @@ restoreSession();
 renderSlots();
 loadPrefs();
 initAuth();
-window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h); });
+window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const iv=$('itemView'); if(iv&&iv.classList.contains('on')) iv.classList.remove('on'); closePick(); const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h); });
 const bootHash=location.hash.replace('#','');
 (function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } go(VIEWS.includes(bootHash)&&bootHash!=='home' ? bootHash : 'home'); })();
 }
@@ -1842,14 +1882,14 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
       const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
       const b=((await r.text()).match(/const BUILD = '([^']+)'/)||[])[1];
       if(!b||!cur||b===cur) return;
-      const working=!!document.querySelector('#prog:not(.hidden)');
-      if(!working && (eager || document.visibilityState==='hidden')) return go(b);
+      const working=!!document.querySelector('#prog:not(.hidden)') || !!document.querySelector('.polaroid') || !!document.querySelector('.pickmenu.on,.dlg.on,.itemview.on,.lightbox.on') || !document.querySelector('#emailSent.hidden') || !!document.querySelector('#sheetSent:not(.hidden)');
+      if(!working && (eager===1 || document.visibilityState==='hidden')) return go(b);
       if(!shown){ shown=true; const bar=document.createElement('div'); bar.className='updbar'; bar.innerHTML='有新版本 <button>立即更新</button>'; bar.querySelector('button').onclick=()=>go(b); document.body.appendChild(bar); }
     }catch{}
   }
-  setTimeout(()=>check(true),1200);
+  setTimeout(()=>check(1),1200);
   setInterval(()=>check(false),5*60*1000);
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(true); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') check(false); });
 })();
 
 </script>
