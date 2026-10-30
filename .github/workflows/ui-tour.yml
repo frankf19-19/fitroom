@@ -1,0 +1,18 @@
+name: UI 巡檢截圖（不花 AI 費用）
+on: { workflow_dispatch: {} }
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q playwright && python3 -m playwright install --with-deps chrome
+      - env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python3 qa/ui_tour.py
+      - if: always()
+        run: |
+          cd qa-live && git init -q && git checkout -q -b qa-ui && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m ui
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-ui
