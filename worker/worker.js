@@ -18,9 +18,13 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.9.2';
+const VERSION = '2.10.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
+const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
+const POLL_HARD_MS = 70000;                  // 單次輪詢：所有外部呼叫的硬上限
+const LOCK_MS = 90000;                       // 輪詢鎖（> POLL_HARD_MS）
+const PREFETCH_DAILY = 5;                    // 每人每天預先合成上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 // 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
 const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-2/edit', 'https://queue.fal.run/fal-ai/nano-banana-pro/edit'];
@@ -50,7 +54,7 @@ function outfitPrompt(steps, hints, faceHint) {
 const SPIN_MODELS = ['https://queue.fal.run/minimax/h3-max-turbo/image-to-video', 'https://queue.fal.run/minimax/h3-max/image-to-video', 'https://queue.fal.run/fal-ai/kling-video/v2.6/pro/image-to-video'];
 const SPIN_PROMPT = 'Fashion turntable shot. The camera is fixed and locked off. The person stands in place and slowly turns their whole body around a full 360 degrees at a constant speed, like on a rotating platform: from facing the camera, to the side profile, to the back, to the other side, and back to facing the camera. Arms relaxed at the sides. Keep the exact same person, face, hairstyle, body shape and every garment detail (color, silhouette, length, fit) perfectly consistent throughout. Same background and lighting. Smooth, realistic, no cuts.';
 async function falQueueSubmit(env, endpoint, payload, label) {
-  const r = await fetchT(endpoint, { method: 'POST', headers: { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }, label, 30000);
+  const r = await fetchT(endpoint, { method: 'POST', headers: { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }, label, 15000);
   const t = await r.text();
   if (!r.ok) throw new Error(label + '：' + extractErr(t));
   const j = JSON.parse(t);
@@ -62,7 +66,7 @@ async function outfitSubmit(env, engineIdx, imageUrls, prompt, hi = true, aspect
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
   const body = { prompt, image_urls: imageUrls, num_images: 1, aspect_ratio: ASPECTS.includes(aspect) ? aspect : 'auto', output_format: 'jpeg' };
   if (hi) body.resolution = '2K';
-  const r = await fetchT(OUTFIT_ENGINES[engineIdx], { method: 'POST', headers, body: JSON.stringify(body) }, '換裝服務', 30000);
+  const r = await fetchT(OUTFIT_ENGINES[engineIdx], { method: 'POST', headers, body: JSON.stringify(body) }, '換裝服務', 15000);
   const t = await r.text();
   if (!r.ok) { if (hi && r.status === 422 && /resolution/i.test(t)) return outfitSubmit(env, engineIdx, imageUrls, prompt, false, aspect); throw new Error('換裝服務：' + extractErr(t)); }
   const j = JSON.parse(t);
@@ -94,18 +98,20 @@ const EDIT_PROMPTS = {
   hair_text: 'Photo edit task. Change the hairstyle of the person in the photo to: {{desc}}. Blend the hairline naturally with the face and keep the lighting consistent. ' + KEEP
 };
 // 文字／看圖模型走 fal（OpenRouter 轉接，用 fal 儲值），失敗再用 Google 免費額度
-async function falLLM(env, prompt, imageUrl) {
+async function falLLM(env, prompt, imageUrl, deadline) {
   let last;
   for (const model of ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini', 'google/gemini-2.5-flash-lite']) {
-    try { return await falLLMOnce(env, prompt, imageUrl, model); } catch (e) { last = e; if (/額度不足|locked|balance/i.test(e.message)) break; }
+    const rem = deadline ? deadline - Date.now() : 60000;
+    if (rem < 3000) break;
+    try { return await falLLMOnce(env, prompt, imageUrl, model, Math.min(60000, rem)); } catch (e) { last = e; if (/額度不足|locked|balance/i.test(e.message)) break; }
   }
-  throw last;
+  throw last || new Error('AI 文字服務逾時');
 }
-async function falLLMOnce(env, prompt, imageUrl, model) {
+async function falLLMOnce(env, prompt, imageUrl, model, maxMs = 60000) {
   if (!env.FAL_KEY) throw new Error('未設定 FAL_KEY');
   const body = { model, prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000 };
   if (imageUrl) body.image_urls = [imageUrl];
-  const r = await fetchT('https://fal.run/openrouter/router' + (imageUrl ? '/vision' : ''), { method: 'POST', headers: { 'Authorization': 'Key ' + env.FAL_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'AI 文字服務', 60000);
+  const r = await fetchT('https://fal.run/openrouter/router' + (imageUrl ? '/vision' : ''), { method: 'POST', headers: { 'Authorization': 'Key ' + env.FAL_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'AI 文字服務', maxMs);
   const t = await r.text();
   if (!r.ok) throw new Error('AI 文字服務：' + extractErr(t));
   try { const e0 = JSON.parse(t); if (e0 && e0.error && !e0.output) throw new Error('AI 文字服務：' + String(e0.error.message || e0.error).slice(0, 120)); } catch (e1) { if (String(e1.message).startsWith('AI 文字服務')) throw e1; }
@@ -130,25 +136,25 @@ export default {
     try {
       const p = url.pathname, m = request.method;
       if (p === '/api/health') return json({ ok: true, version: VERSION }, 200, cors);
-      if (p === '/api/me' && m === 'GET') return handleMe(request, env, cors);
-      if (p === '/api/tryon' && m === 'POST') return handleTryon(request, env, cors, ctx);
-      if (p === '/api/tryon/status' && m === 'GET') return handleTryonStatus(request, env, cors, url);
-      if (p === '/api/outfit' && m === 'POST') return handleOutfit(request, env, cors);
-      if (p === '/api/analyze' && m === 'POST') return handleAnalyze(request, env, cors, ctx);
-      if (p === '/api/products' && m === 'GET') return handleProducts(request, env, cors, url);
-      if (p === '/api/brands' && m === 'GET') return handleBrands(env, cors);
-      if (p === '/api/img' && m === 'GET') return handleImgProxy(request, env, cors, url);
-      if (p === '/api/product-click' && m === 'POST') return handleProductClick(request, env, cors);
-      if (p === '/api/admin/products/import' && m === 'POST') return handleProductImport(request, env, cors);
-      if (p === '/api/admin/products' && m === 'POST') return handleProductUpsert(request, env, cors);
-      if (p === '/api/admin/products' && m === 'DELETE') return handleProductDelete(request, env, cors, url);
-      if (p === '/api/checkout' && m === 'POST') return handleCheckout(request, env, cors);
-      if (p === '/api/ecpay/notify' && m === 'POST') return handleEcpayNotify(request, env);
-      if (p === '/api/ecpay/return') return handleEcpayReturn(request, env);
-      if (p === '/api/delete-account' && m === 'POST') return handleDeleteAccount(request, env, cors);
-      if (p === '/api/admin/stats' && m === 'GET') return handleAdminStats(request, env, cors);
-      if (p === '/api/event' && m === 'POST') return handleEvent(request, env, cors);
-      if (p === '/api/error' && m === 'POST') return handleClientError(request, env, cors);
+      if (p === '/api/me' && m === 'GET') return await handleMe(request, env, cors);
+      if (p === '/api/tryon' && m === 'POST') return await handleTryon(request, env, cors, ctx);
+      if (p === '/api/tryon/status' && m === 'GET') return await handleTryonStatus(request, env, cors, url);
+      if (p === '/api/outfit' && m === 'POST') return await handleOutfit(request, env, cors);
+      if (p === '/api/analyze' && m === 'POST') return await handleAnalyze(request, env, cors, ctx);
+      if (p === '/api/products' && m === 'GET') return await handleProducts(request, env, cors, url);
+      if (p === '/api/brands' && m === 'GET') return await handleBrands(env, cors);
+      if (p === '/api/img' && m === 'GET') return await handleImgProxy(request, env, cors, url);
+      if (p === '/api/product-click' && m === 'POST') return await handleProductClick(request, env, cors);
+      if (p === '/api/admin/products/import' && m === 'POST') return await handleProductImport(request, env, cors);
+      if (p === '/api/admin/products' && m === 'POST') return await handleProductUpsert(request, env, cors);
+      if (p === '/api/admin/products' && m === 'DELETE') return await handleProductDelete(request, env, cors, url);
+      if (p === '/api/checkout' && m === 'POST') return await handleCheckout(request, env, cors);
+      if (p === '/api/ecpay/notify' && m === 'POST') return await handleEcpayNotify(request, env);
+      if (p === '/api/ecpay/return') return await handleEcpayReturn(request, env);
+      if (p === '/api/delete-account' && m === 'POST') return await handleDeleteAccount(request, env, cors);
+      if (p === '/api/admin/stats' && m === 'GET') return await handleAdminStats(request, env, cors);
+      if (p === '/api/event' && m === 'POST') return await handleEvent(request, env, cors);
+      if (p === '/api/error' && m === 'POST') return await handleClientError(request, env, cors);
       return json({ error: '找不到此路徑' }, 404, cors);
     } catch (e) {
       return json({ error: '伺服器錯誤：' + (e.message || e) }, 500, cors);
@@ -206,7 +212,45 @@ async function requireUser(request, env) {
   return u;
 }
 async function optionalUser(request, env) { try { return await requireUser(request, env); } catch { return null; } }
-function isAdmin(env, user) { return (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).includes((user.email || '').toLowerCase()); }
+function isAdminEmail(env, email) { return !!email && (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).includes(String(email).toLowerCase()); }
+// 管理者：Email 在名單內且已驗證（避免有人用未驗證的同名 Email 註冊）
+function isAdmin(env, user) { return !!(user && user.email_confirmed_at) && isAdminEmail(env, user.email); }
+
+/* ---- 預先合成狀態加密（使用者能直接讀自己的 generations 列，付款前不能看到結果網址） ---- */
+let _pfKey = null;
+async function pfKey(env) {
+  const src = need(env, 'SUPABASE_SERVICE_KEY');
+  if (_pfKey && _pfKey.src === src) return _pfKey.key;
+  const raw = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(src + 'pf'));
+  const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', false, ['encrypt', 'decrypt']);
+  _pfKey = { src, key }; return key;
+}
+function bytesToB64(u) { let s = ''; const CH = 0x8000; for (let i = 0; i < u.length; i += CH) s += String.fromCharCode.apply(null, u.subarray(i, i + CH)); return btoa(s); }
+function b64ToBytes(s) { const bin = atob(s); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+async function encStr(env, str) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, await pfKey(env), new TextEncoder().encode(str)));
+  const out = new Uint8Array(12 + ct.length); out.set(iv); out.set(ct, 12); return bytesToB64(out);
+}
+async function decStr(env, s) {
+  const u = b64ToBytes(s);
+  return new TextDecoder().decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: u.subarray(0, 12) }, await pfKey(env), u.subarray(12)));
+}
+// 資料庫查詢會用到的欄位留在外面（明文），其餘整包加密成 job.enc
+const JOB_PUBLIC = ['v', 'lock_until', 'touched', 'prefetch', 'pf', 'bkey', 'key'];
+async function sealJob(env, job) {
+  if (!job || !job.prefetch) return job;
+  const pub = {}; for (const k of JOB_PUBLIC) pub[k] = job[k] === undefined ? null : job[k];
+  pub.enc = await encStr(env, JSON.stringify(job));
+  return pub;
+}
+async function openJob(env, j) {
+  if (!j || !j.enc) return j;
+  const inner = JSON.parse(await decStr(env, j.enc));
+  for (const k of JOB_PUBLIC) if (j[k] !== undefined) inner[k] = j[k];
+  return inner;
+}
+const randTok = () => crypto.randomUUID().replace(/-/g, '');
 
 async function getProfile(env, user) {
   let rows = await sb(env, `/rest/v1/profiles?id=eq.${user.id}&select=*`);
@@ -236,7 +280,7 @@ async function handleMe(request, env, cors) {
   const freeDaily = Number(env.FREE_DAILY || 2);
   const used = await freeUsedToday(env, user.id);
   const packs = Object.fromEntries(Object.entries(PACKS).map(([k, v]) => [k, { name: v.name + ' 點', credits: v.credits, price: v.price }]));
-  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), views_available: !!env.GEMINI_KEY, analyze_available: !!env.GEMINI_KEY, body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
+  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
 }
 
 /* ---------------- /api/analyze：身形與臉型分析（免費，不扣點；每天最多 5 次） ---------------- */
@@ -273,13 +317,17 @@ async function handleAnalyze(request, env, cors, ctx) {
   const meas = `Measurements: height ${h} cm, weight ${w} kg (BMI ${bmi.toFixed(1)})` + (b.bust ? `, bust ${b.bust} cm` : '') + (b.waist ? `, waist ${b.waist} cm` : '') + (b.hip ? `, hip ${b.hip} cm` : '') + (b.gender ? `, gender ${b.gender === 'm' ? 'male' : 'female'}` : '') + '.';
   const asyncMode = body.async === true && ctx && typeof ctx.waitUntil === 'function';
   const startedAt = new Date().toISOString();
+  // 先登記使用次數（同時連按、失敗重試都算），再呼叫 AI
+  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'analyze', platform: String(body.platform || 'web').slice(0, 20) }) });
+  const deadline = Date.now() + (asyncMode ? 25000 : 90000);   // 背景工作（waitUntil）約 30 秒會被終止
   const job = async () => {
     const parts = [{ text: ANALYZE_PROMPT + '\n' + meas }, inlinePart(person)];
     let out = null, lastErr = '';
-    try { const pu = await putImage(env, `${user.id}/analyze-${Date.now()}`, person); out = await falLLM(env, ANALYZE_PROMPT + '\n' + meas, pu); } catch (e) { lastErr = e.message; }
+    try { const pu = await putImage(env, `${user.id}/analyze-${randTok()}`, person); out = await falLLM(env, ANALYZE_PROMPT + '\n' + meas, pu, deadline); } catch (e) { lastErr = e.message; }
     const models = out || !env.GEMINI_KEY ? [] : TEXT_MODELS;
     for (const model of models) {
-      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', 45000);
+      const rem = deadline - Date.now(); if (rem < 3000) { lastErr = lastErr || '逾時'; break; }
+      const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }, '身形分析服務', Math.min(45000, rem));
       const t = await r.text();
       if (r.ok) { try { const d = JSON.parse(t); const txt = d.candidates[0].content.parts.map(p => p.text || '').join(''); out = JSON.parse(txt.replace(/^```json|```$/g, '').trim()); break; } catch (e) { lastErr = '回傳格式異常'; continue; } }
       let em; try { em = JSON.parse(t).error.message.slice(0, 160); } catch { em = t.slice(0, 160); }
@@ -291,7 +339,6 @@ async function handleAnalyze(request, env, cors, ctx) {
     out.measured = { height: h, weight: w, bust: b.bust || null, waist: b.waist || null, hip: b.hip || null, gender: b.gender || null,
       est_bust: n(est.bust), est_waist: n(est.waist), est_hip: n(est.hip), est_shoulder: n(est.shoulder) }; out.analyzed_at = new Date().toISOString();
     await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { body: out.measured, analysis: out, analysis_at: out.analyzed_at }).catch(() => {});
-    await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'analyze', platform: String(body.platform || 'web').slice(0, 20) }) }).catch(() => {});
     return out;
   };
   if (asyncMode) {
@@ -309,9 +356,11 @@ async function handleTryon(request, env, cors, ctx) {
   let body; try { body = await request.json(); } catch { return json({ error: '資料格式錯誤' }, 400, cors); }
   const { person, items } = body || {};
   const variants = Number(body.variants) === 2 ? 2 : 1;
-  const wantViews = body.views === true && !!env.GEMINI_KEY;
   const asyncMode = false;
   const stepMode = body.async === true;
+  const prefetch = body.prefetch === true && stepMode && variants === 1;
+  // 360°：分段模式用 fal 影片模型；舊的同步模式用 Gemini 側面/背面。預先合成一律不做 360°（未付款不花錢做影片）
+  const wantViews = body.views === true && !prefetch && (stepMode ? !!env.FAL_KEY : !!env.GEMINI_KEY);
   const started = Date.now();
   const left = () => TRYON_BUDGET_MS - (Date.now() - started);
   if (!isDataImage(person)) return json({ error: '請提供全身照（檔案太大或格式不支援）' }, 400, cors);
@@ -324,17 +373,7 @@ async function handleTryon(request, env, cors, ctx) {
   const types = items.map(i => i.type);
 
   // 清理卡住的「進行中」（Worker 中途被終止時）：標記失敗並退點
-  try {
-    const cut = encodeURIComponent(new Date(Date.now() - RUNNING_STALE_MS).toISOString());
-    const mark = { method: 'PATCH', headers: { 'Prefer': 'return=representation' }, body: JSON.stringify({ status: 'failed', error: '逾時（系統自動標記）' }) };
-    const s1 = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&job=is.null&created_at=lt.${cut}`, mark).catch(() => []);
-    const s2 = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&job->>touched=lt.${cut}`, mark).catch(() => []);
-    const stale = [...(Array.isArray(s1) ? s1 : []), ...(Array.isArray(s2) ? s2 : [])];
-    for (const g of (Array.isArray(stale) ? stale : [])) {
-      if (g.cost > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: g.cost }).catch(() => {});
-      await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}`, { cost: 0, free_used: 0 }).catch(() => {});
-    }
-  } catch { /* ignore */ }
+  try { await sweepStale(env, user.id); } catch { /* ignore */ }
   // 防濫用：60 秒內最多 3 次正式合成（進行中由資料庫唯一索引鎖住）
   const recent = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&or=(status.eq.running,cost.gt.0,free_used.gt.0)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 60000).toISOString())}&select=status`);
   if (recent.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors);
@@ -347,10 +386,9 @@ async function handleTryon(request, env, cors, ctx) {
     if (r) { const used = await freeUsedToday(env, user.id).catch(() => 0); const pr = await getProfile(env, user).catch(() => null); return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
   }
   // ---- 預先合成（使用者還在挑尺寸時就先跑；按下「開始」才扣點）----
-  const prefetch = body.prefetch === true && stepMode && variants === 1;
   const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + '-' + variants : null;
   if (bkey && stepMode) {
-    const pfRows = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views&order=created_at.desc`).catch(() => []);
+    const pfRows = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views,variants,cost,free_used&order=created_at.desc`).catch(() => []);
     for (const g of pfRows) {
       if (g.job && g.job.bkey === bkey) {
         if (prefetch) return json({ id: g.id, prefetch: true, ready: g.status === 'ok' }, 202, cors);
@@ -361,7 +399,7 @@ async function handleTryon(request, env, cors, ctx) {
   }
   if (prefetch) {
     const pfToday = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>pf=eq.1&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`).catch(() => []);
-    if (pfToday.length >= 15) return json({ skip: true, reason: 'daily' }, 200, cors);
+    if (pfToday.length >= PREFETCH_DAILY) return json({ skip: true, reason: 'daily' }, 200, cors);
     const realRunning = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.running&select=id`).catch(() => []);
     if (realRunning.length) return json({ skip: true, reason: 'busy' }, 200, cors);
   }
@@ -382,8 +420,9 @@ async function handleTryon(request, env, cors, ctx) {
   try { gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: prefetch ? 0 : payCredits, free_used: prefetch ? 0 : useFree, status: 'running', variants }); }
   catch (e) { if (/409|duplicate|unique/i.test(String(e.message))) return json({ error: '上一張還在合成中（360° 側面背面可能還在生成），請稍候再試' }, 429, cors); throw e; }
   if (payCredits > 0 && !prefetch) {
-    const ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits });
-    if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '扣點失敗' }); return json({ error: '扣點失敗，請重試' }, 500, cors); }
+    let ok = false;
+    try { ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits }); } catch { ok = false; }
+    if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '扣點失敗', cost: 0, free_used: 0 }).catch(() => {}); return json({ error: '扣點失敗，請重試' }, 500, cors); }
   }
 
   const order = ['dress', 'top', 'bottom', 'hair', 'hat', 'accessory', 'shoes'];
@@ -428,7 +467,7 @@ async function handleTryon(request, env, cors, ctx) {
       let u = null;
       try {
         const bin = await dataUriToBytes(results[i]);
-        const path = `${user.id}/${Date.now()}-${i}.${bin.ext}`;
+        const path = `${user.id}/${Date.now()}-${randTok()}-${i}.${bin.ext}`;
         const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, {
           method: 'POST',
           headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' },
@@ -449,7 +488,7 @@ async function handleTryon(request, env, cors, ctx) {
       for (const k of ['side', 'back']) {
         try {
           const bin = await dataUriToBytes(views[k]);
-          const path = `${user.id}/${Date.now()}-${k}.${bin.ext}`;
+          const path = `${user.id}/${Date.now()}-${randTok()}-${k}.${bin.ext}`;
           const up = await fetch(`${env.SUPABASE_URL}/storage/v1/object/results/${path}`, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_KEY, 'Authorization': 'Bearer ' + env.SUPABASE_SERVICE_KEY, 'Content-Type': bin.mime, 'x-upsert': 'true' }, body: bin.bytes });
           if (up.ok) viewUrls[k] = `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
         } catch { /* ignore */ }
@@ -469,7 +508,8 @@ async function handleTryon(request, env, cors, ctx) {
   if (stepMode) {
     // 分段模式：先把輸入圖存到 Storage，之後每次前端輪詢推進一步（不靠長時間背景工作）
     try {
-      const base = `${user.id}/jobs/${gen.id}`;
+      const tok = randTok();                       // 路徑加隨機段，網址猜不到
+      const base = `${user.id}/jobs/${gen.id}/${tok}`;
       // 照片與單品圖同時上傳（省幾秒）
       const [personUrl, ...steps] = await Promise.all([putImage(env, `${base}/person`, person), ...sorted.map(async (it, k) => {
         const st = { type: it.type };
@@ -479,17 +519,18 @@ async function handleTryon(request, env, cors, ctx) {
       })]);
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: Number(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
-      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
+      const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
         pv: (!prefetch && useOutfit && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null,
         steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
-      await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { job: jobState });
+      await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { job: await sealJob(env, jobState) });
     } catch (e) {
-      if (payCredits > 0 && !prefetch) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
-      await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { status: 'failed', error: '準備失敗：' + String(e.message).slice(0, 200), cost: 0, free_used: 0 }).catch(() => {});
+      // 先標記失敗，真的改到那一列才退點（避免和逾時清理重複退）
+      const got = await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}&status=eq.running`, { status: 'failed', error: '準備失敗：' + String(e.message).slice(0, 200), cost: 0, free_used: 0 }, true).catch(() => []);
+      if (payCredits > 0 && !prefetch && Array.isArray(got) && got.length) await rpc(env, 'add_credits', { p_user: user.id, p_amount: payCredits }).catch(() => {});
       return json({ error: '準備合成失敗（已退回點數）：' + e.message }, 502, cors);
     }
     return json(prefetch ? { id: gen.id, prefetch: true } : { id: gen.id, async: true, cost }, 202, cors);
@@ -497,8 +538,18 @@ async function handleTryon(request, env, cors, ctx) {
   try { return json(await job(), 200, cors); }
   catch (e) { return json({ error: e.message }, e.status || 502, cors); }
 }
-async function claimPrefetch(env, cors, user, g, { items, variants, wantViews, ckey }) {
-  const cost = items.length * variants + (wantViews ? 2 : 0);
+async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
+  let job;
+  try { job = await openJob(env, g.job); } catch { job = null; }
+  if (!job) return json({ error: '系統忙碌，請再按一次' }, 503, cors);
+  // 單品必須和預先合成時一致；扣點依「實際合成的內容」計算，不信任這次請求
+  const meta = Array.isArray(job.meta) ? job.meta : [];
+  const sig = a => a.map(x => x.type).sort().join(',');
+  if (!meta.length || sig(meta) !== sig(items)) {
+    await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}&job->>prefetch=eq.true&status=in.(running,ok)`, { status: 'failed', error: '預先合成與送出的單品不一致' }).catch(() => {});
+    return json({ error: '這次的單品和預先準備的不一致，請再按一次「開始」' }, 409, cors);
+  }
+  const cost = meta.length * (Number(g.variants) || 1) + (wantViews ? 2 : 0);
   const freeDaily = Number(env.FREE_DAILY || 2);
   const profile = await getProfile(env, user);
   const used = await freeUsedToday(env, user.id);
@@ -506,35 +557,90 @@ async function claimPrefetch(env, cors, user, g, { items, variants, wantViews, c
   const useFree = Math.min(freeLeft, cost);
   const payCredits = cost - useFree;
   if (payCredits > profile.credits) return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
-  // 等輪詢放開鎖再改（避免被覆寫）
+  // 等輪詢放開鎖再改（避免被覆寫）；最多約 10 次
   let row = g;
-  for (let i = 0; i < 25; i++) {
-    const job = row.job;
+  for (let i = 0; i < 10; i++) {
+    if (!job.prefetch) return json({ id: row.id, async: true, cost, claimed: true }, 202, cors);   // 另一個同時送出的請求已認領並扣點
     if ((job.lock_until || 0) <= Date.now()) {
       const v = job.v;
       if (!job.front && !job.pv && job.engine === 'outfit' && (job.item_steps || []).some(x => x.category)) job.pv = { i: 0, cur: job.person_url, req: null };
       job.v = v + 1; job.prefetch = false; job.pay = payCredits; job.free = useFree; job.free_left = freeLeft; job.cost = cost; job.key = ckey; job.want_views = wantViews; job.touched = new Date().toISOString();
       const patch = { cost: payCredits, free_used: useFree, job };
       if (row.status === 'ok') {
+        let r = (row.views && row.views.result) || {}, vu = {};
+        if (row.views && row.views.enc) { try { const dec = JSON.parse(await decStr(env, row.views.enc)); r = dec.result || {}; vu = dec.view_urls || {}; } catch { r = {}; } }
         if (wantViews) { patch.status = 'running'; job.views = null; job.views_error = null; job.views_req = null; job.spin_m = 0; }
-        else { const r = (row.views && row.views.result) || {}; patch.views = { ...(row.views || {}), result: { ...r, charged: payCredits, free_used: useFree, credits: profile.credits - payCredits, free_left: Math.max(0, freeLeft - useFree) } }; }
+        else { patch.image_url = (r.image_urls || job.front || [])[0] || null; patch.views = { ...vu, result: { ...r, charged: payCredits, free_used: useFree, credits: profile.credits - payCredits, free_left: Math.max(0, freeLeft - useFree) } }; }
       }
-      const got = await sbPatch(env, `/rest/v1/generations?id=eq.${row.id}&job->>v=eq.${v}`, patch, true).catch(() => []);
+      const got = await sbPatch(env, `/rest/v1/generations?id=eq.${row.id}&job->>v=eq.${v}&job->>prefetch=eq.true`, patch, true).catch(() => []);
       if (Array.isArray(got) && got.length) {
         if (payCredits > 0) {
-          const ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits });
-          if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${row.id}`, { status: 'failed', error: '扣點失敗', cost: 0, free_used: 0 }).catch(() => {}); return json({ error: '扣點失敗，請重試' }, 500, cors); }
+          let ok = false;
+          try { ok = await rpc(env, 'add_credits', { p_user: user.id, p_amount: -payCredits }); } catch { ok = false; }
+          if (ok !== true) { await sbPatch(env, `/rest/v1/generations?id=eq.${row.id}`, { status: 'failed', error: '扣點失敗', cost: 0, free_used: 0, image_url: null, views: null }).catch(() => {}); return json({ error: '扣點失敗，請重試' }, 500, cors); }
         }
         return json({ id: row.id, async: true, cost, claimed: true }, 202, cors);
       }
     }
-    await new Promise(r => setTimeout(r, 400));
-    const rr = await sb(env, `/rest/v1/generations?id=eq.${row.id}&select=id,status,job,views`).catch(() => []);
+    await new Promise(r => setTimeout(r, 1500));
+    const rr = await sb(env, `/rest/v1/generations?id=eq.${row.id}&select=id,status,job,views,variants,cost,free_used`).catch(() => []);
     if (!rr[0] || !['running', 'ok'].includes(rr[0].status)) break;
     row = rr[0];
+    try { job = await openJob(env, row.job); } catch { job = null; }
+    if (!job) break;
   }
   return json({ error: '系統忙碌，請再按一次' }, 503, cors);
 }
+
+/* ---- 合成收尾／停止（退點只在真的改到那一列時才做，避免重複退） ---- */
+async function finishJob(env, userId, g, job, cond = '') {
+  const urls = job.front || [];
+  const viewUrls = job.views || {};
+  const prof = await getProfile(env, { id: userId }).catch(() => null);
+  const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error || null, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
+  job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
+  const row = { status: 'ok', cost: job.pay, free_used: job.free, error: job.views_error || null, job: await sealJob(env, job) };
+  if (job.prefetch) { row.image_url = null; row.views = { enc: await encStr(env, JSON.stringify({ view_urls: viewUrls, result })) }; }   // 未付款：結果網址加密，認領後才寫出
+  else { row.image_url = urls[0] || null; row.views = { ...viewUrls, result }; }
+  const got = await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}&status=eq.running${cond}`, row, true).catch(() => []);
+  const ok = Array.isArray(got) && got.length > 0;
+  if (ok && !job.prefetch) for (let i = 1; i < urls.length; i++) await sbInsert(env, 'generations', { user_id: userId, items: g.items, cost: 0, free_used: 0, status: 'ok', image_url: urls[i], variants: g.variants }).catch(() => {});
+  return { got: ok, result };
+}
+// 逾時或出錯：正面已完成 → 以成功收尾，只退 360° 的點數；否則標記失敗並全額退點
+async function stopJob(env, userId, g, job, msg, cond = '') {
+  const costCond = `&cost=eq.${Number(g.cost) || 0}`;
+  if (job && Array.isArray(job.front) && job.front.length) {
+    let refund = 0;
+    if (job.want_views && !job.views && !job.views_error) {
+      refund = Math.min(2, job.pay || 0);
+      job.views_error = '360° 影片未完成（已退回 2 點）';
+      job.pay = (job.pay || 0) - refund; job.free = (job.free || 0) - (2 - refund);
+    }
+    const { got, result } = await finishJob(env, userId, g, job, cond + costCond);
+    if (!got) return null;
+    if (refund > 0) { await rpc(env, 'add_credits', { p_user: userId, p_amount: refund }).catch(() => {}); if (result.credits != null) result.credits += refund; }
+    return { status: 'ok', result };
+  }
+  const got = await sbPatch(env, `/rest/v1/generations?id=eq.${g.id}&status=eq.running${cond}${costCond}`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }, true).catch(() => []);
+  if (!Array.isArray(got) || !got.length) return null;
+  if (g.cost > 0) await rpc(env, 'add_credits', { p_user: userId, p_amount: g.cost }).catch(() => {});
+  return { status: 'failed', error: msg };
+}
+// 清理這個使用者卡住的「進行中」（Worker 中途被終止、使用者關掉頁面）
+async function sweepStale(env, userId) {
+  const cut = encodeURIComponent(new Date(Date.now() - RUNNING_STALE_MS).toISOString());
+  const sel = 'select=id,cost,free_used,job,created_at,items,variants';
+  const s1 = await sb(env, `/rest/v1/generations?user_id=eq.${userId}&status=eq.running&job=is.null&created_at=lt.${cut}&${sel}`).catch(() => []);
+  const s2 = await sb(env, `/rest/v1/generations?user_id=eq.${userId}&status=eq.running&job->>touched=lt.${cut}&${sel}`).catch(() => []);
+  for (const g of (Array.isArray(s1) ? s1 : [])) await stopJob(env, userId, g, null, '逾時（系統自動標記，已退回點數）', '&job=is.null').catch(() => {});
+  for (const g of (Array.isArray(s2) ? s2 : [])) {
+    if (!g.job || (g.job.lock_until || 0) > Date.now()) continue;      // 有輪詢正在處理
+    let job; try { job = await openJob(env, g.job); } catch { job = null; }
+    await stopJob(env, userId, g, job, '逾時（系統自動標記，已退回點數）', `&job->>v=eq.${g.job.v}`).catch(() => {});
+  }
+}
+
 async function handleTryonStatus(request, env, cors, url) {
   let user;
   try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
@@ -545,58 +651,54 @@ async function handleTryonStatus(request, env, cors, url) {
   const jout = (obj, st = 200, h = cors) => json(pf && obj && obj.status ? { status: obj.status === 'ok' ? 'prefetched' : obj.status, prefetch: true, error: obj.error } : obj, st, h);
   if (g.status === 'failed') return jout({ status: 'failed', error: g.error || '合成失敗' }, 200, cors);
   if (g.status === 'ok') { const r = (g.views && g.views.result) || null; return jout({ status: 'ok', result: r || { images: [null], image_urls: [g.image_url], views: null, view_urls: g.views || {}, views_error: null } }, 200, cors); }
-  const job = g.job;
-  if (!job) {
-    if (Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) return jout({ status: 'failed', error: '合成逾時，點數會自動退回，請再試一次' }, 200, cors);
+  if (!g.job) {
+    // 沒有進度資料又超過時間：真的標記失敗並退點（不只是回訊息）
+    if (Date.now() - new Date(g.created_at).getTime() > RUNNING_STALE_MS) { const r = await stopJob(env, user.id, g, null, '合成逾時（已退回點數），請再試一次', '&job=is.null'); return jout(r || { status: 'running' }, 200, cors); }
     return jout({ status: 'running' }, 200, cors);
   }
+  let job;
+  try { job = await openJob(env, g.job); } catch { job = null; }
+  if (!job) { const r = await stopJob(env, user.id, g, null, '合成資料異常（已退回點數），請再試一次', `&job->>v=eq.${g.job.v}`); return jout(r || { status: 'running' }, 200, cors); }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
-  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !job.pv.done } : undefined }, 200, cors);
-  const fail = async (msg) => {
-    if (job.pay > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: job.pay }).catch(() => {});
-    await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running`, { status: 'failed', error: String(msg).slice(0, 300), cost: 0, free_used: 0 }).catch(() => {});
-    return jout({ status: 'failed', error: msg }, 200, cors);
-  };
-  // 太久沒進度（使用者關掉頁面等）→ 失敗並退點
-  if (Date.now() - new Date(job.touched).getTime() > RUNNING_STALE_MS && (job.lock_until || 0) < Date.now()) return fail('合成逾時（已退回點數），請再試一次');
+  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : undefined }, 200, cors);
   // 取得鎖（避免兩個輪詢同時推進）
   if ((job.lock_until || 0) > Date.now()) return running();
+  const stale = Date.now() - new Date(job.touched).getTime() > RUNNING_STALE_MS;
   const v = job.v;
-  job.v = v + 1; job.lock_until = Date.now() + 90000;
-  const got = await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running&job->>v=eq.${v}`, { job }, true).catch(() => []);
+  job.v = v + 1; job.lock_until = Date.now() + LOCK_MS;
+  const lockedV = job.v, vcond = `&job->>v=eq.${lockedV}`;
+  const got = await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running&job->>v=eq.${v}`, { job: await sealJob(env, job) }, true).catch(() => []);
   if (!Array.isArray(got) || !got.length) return running();
-  const save = async (extra = {}) => { job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString(); await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { job, ...extra }); };
-  const base = `${user.id}/jobs/${id}`;
+  // 太久沒進度（使用者關掉頁面等）→ 正面已完成就以成功收尾，否則失敗並退點
+  if (stale) { const r = await stopJob(env, user.id, g, job, '合成逾時（已退回點數），請再試一次', vcond); return jout(r || { status: 'running' }, 200, cors); }
+  // save 只在鎖還是自己的（版本相符）時寫入
+  const save = async (extra = {}) => { job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString(); await sbPatch(env, `/rest/v1/generations?id=eq.${id}${vcond}`, { job: await sealJob(env, job), ...extra }); };
+  const base = job.tok ? `${user.id}/jobs/${id}/${job.tok}` : `${user.id}/jobs/${id}`;
+  const t0 = Date.now();
+  const canStart = () => Date.now() - t0 < POLL_BUDGET_MS;     // 超過預算就不再開始新步驟，留到下次輪詢
+  const hardLeft = () => t0 + POLL_HARD_MS - Date.now();
   try {
     // 1) 推進每條合成鏈（一次最多一個 Gemini 步驟）
     await Promise.all(job.chains.map(async (ch, ci) => {
-      for (let guard = 0; guard < 3 && ch.i < job.steps.length; guard++) {
+      for (let guard = 0; guard < 3 && ch.i < job.steps.length && canStart(); guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
           if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); return; }
           let r;
-          // 避險：超過 25 秒還沒好，就同時再送一個（另一個引擎），誰先好用誰
-          if (!ch.req2 && Date.now() - ch.req.at > 40000 && OUTFIT_ENGINES.length > 1) {
-            try { const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req2 = await outfitSubmit(env, ((st.engine || 0) + 1) % OUTFIT_ENGINES.length, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); job.hedged = true; } catch { ch.req2 = { failed: true }; }
-          }
-          if (ch.req2 && !ch.req2.failed) {
-            try { const r2 = await falCheck(env, ch.req2, '換裝服務'); if (r2) { job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done; job.won = 'hedge'; ch.cur = r2; ch.req = null; ch.req2 = null; ch.i++; continue; } }
-            catch { ch.req2 = { failed: true }; }
-          }
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
-            if (ch.req2 && !ch.req2.failed) { ch.req = ch.req2; ch.req2 = { failed: true }; return; }   // 主要的失敗但避險的還在跑
             // 備援：換下一個整套引擎；都不行就改用逐件 FASHN
             ch.req = null;
-            if ((st.engine || 0) + 1 < OUTFIT_ENGINES.length) { st.engine = (st.engine || 0) + 1; job.outfit_errors = [...(job.outfit_errors || []), String(e.message).slice(0, 120)]; return; }
             job.outfit_errors = [...(job.outfit_errors || []), String(e.message).slice(0, 120)];
+            if ((st.engine || 0) + 1 < OUTFIT_ENGINES.length) { st.engine = (st.engine || 0) + 1; return; }
             job.engine = 'fashn'; job.steps = job.item_steps; job.chains.forEach(c => { c.i = 0; c.cur = job.person_url; c.req = null; });
             return;
           }
+          job.t = job.t || {};
           if (!r) { if (ch.req.last_status === 'IN_PROGRESS' && !job.t.start) job.t.start = Date.now(); return; }
           job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done;
-          ch.cur = r; ch.req = null; ch.req2 = null; ch.i++;
+          ch.cur = r; ch.req = null; ch.i++;
           continue;
         }
         if (st.category) {
@@ -606,45 +708,50 @@ async function handleTryonStatus(request, env, cors, url) {
           ch.cur = r; ch.req = null; ch.i++;      // 完成，換下一步
           continue;
         }
-        const personData = await urlToDataUri(ch.cur);
-        const idRef = await urlToDataUri(job.person_url);
-        const item = { type: st.type, image: st.image_url ? await urlToDataUri(st.image_url) : undefined, text: st.text };
-        const out = await geminiEdit(env, personData, item, idRef, (job.hints || '') + (st.type === 'hair' ? (job.face_hint || '') : ''));
+        if (hardLeft() < 45000) return;           // Gemini 步驟需要較長時間，留到下次輪詢
+        const [personData, idRef, itemImg] = await Promise.all([urlToDataUri(ch.cur, 15000), urlToDataUri(job.person_url, 15000), st.image_url ? urlToDataUri(st.image_url, 15000) : Promise.resolve(undefined)]);
+        const item = { type: st.type, image: itemImg, text: st.text };
+        const out = await geminiEdit(env, personData, item, idRef, (job.hints || '') + (st.type === 'hair' ? (job.face_hint || '') : ''), t0 + POLL_HARD_MS);
         ch.cur = await putImage(env, `${base}/c${ci}-s${ch.i}`, out); ch.i++;
         return;                                   // 一次只做一個 Gemini（控制單次請求時間）
       }
     }));
-    // 快速預覽：FASHN 快速模式逐件換上，先給使用者看（高畫質版好了就換掉）
-    if (job.pv && !job.pv.done && !job.front && !job.prefetch) {
+    // 快速預覽：付費（非預先合成）才做，而且只做一次 FASHN（主要那件衣服）
+    if (job.pv && !job.pv.done && !job.front && !job.prefetch && canStart()) {
       const pv = job.pv, cl = job.item_steps.filter(x => x.category);
       try {
-        if (pv.i < cl.length) {
-          if (!pv.req) pv.req = await falSubmit(env, pv.cur, cl[pv.i].image_url, cl[pv.i].category, cl[pv.i].photo_type, 'performance');
-          else { const r = await falCheck(env, pv.req, '預覽'); if (r) { pv.cur = r; pv.req = null; pv.i++; pv.shown = r; if (pv.i < cl.length) pv.req = await falSubmit(env, pv.cur, cl[pv.i].image_url, cl[pv.i].category, cl[pv.i].photo_type, 'performance'); } }
-        }
-        if (pv.i >= cl.length) pv.done = true;
+        if (!cl.length) pv.done = true;
+        else if (!pv.req) pv.req = await falSubmit(env, pv.cur || job.person_url, cl[0].image_url, cl[0].category, cl[0].photo_type, 'performance');
+        else { const r = await falCheck(env, pv.req, '預覽'); if (r) { pv.shown = r; pv.req = null; pv.i = 1; pv.done = true; pv.more = cl.length > 1; } }
       } catch { pv.done = true; }
     }
     const chainsDone = job.chains.every(c => c.i >= job.steps.length);
     if (!chainsDone) { await save(); return running(); }
     // 正面先完成就先存檔回傳，360° 在後面慢慢補
     if (!job.front) {
-      job.front = [];
-      for (let i = 0; i < job.chains.length; i++) { const u = job.chains[i].cur; job.front.push(u.startsWith(env.SUPABASE_URL) ? u : await copyToStorage(env, `${user.id}/${Date.now()}-${i}`, u).catch(() => u)); }
+      if (hardLeft() < 25000) { await save(); return running(); }
+      job.front = await Promise.all(job.chains.map((c, i) => { const u = c.cur; return u.startsWith(env.SUPABASE_URL) ? u : copyToStorage(env, `${base}/front-${i}-${randTok()}`, u).catch(() => u); }));
     }
     // 2) 360°：用影片模型生成「原地轉一圈」的短片（首尾都是正面 → 無縫循環），前端拖曳即可旋轉
     if (job.want_views && !job.views && !job.views_error) {
+      if (!canStart()) { await save(); return running(); }
       const refundViews = async (msg) => {
         job.views_error = String(msg).slice(0, 160);
         const refund = Math.min(2, job.pay);
-        if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
-        job.free = job.free - (2 - refund); job.pay = job.pay - refund;
+        const newPay = job.pay - refund, newFree = job.free - (2 - refund);
+        // 資料庫的 cost 欄同步更新；真的改到才退點（逾時清理是依 cost 欄退）
+        const upd = await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=eq.running&cost=eq.${Number(g.cost) || 0}`, { cost: newPay, free_used: newFree }, true).catch(() => []);
+        if (Array.isArray(upd) && upd.length) {
+          if (refund > 0) await rpc(env, 'add_credits', { p_user: user.id, p_amount: refund }).catch(() => {});
+          g.cost = newPay; g.free_used = newFree; job.pay = newPay; job.free = newFree;
+        }
       };
       try {
         const spinSubmit = async () => {
           // 依序嘗試：送出失敗（端點或參數不符）就換下一個
           job.spin_m = job.spin_m || 0;
           while (job.spin_m < SPIN_MODELS.length) {
+            if (hardLeft() < 20000) return;       // 時間不夠，下次輪詢再送
             try { job.views_req = await falQueueSubmit(env, SPIN_MODELS[job.spin_m], { prompt: SPIN_PROMPT, image_url: job.front[0], start_image_url: job.front[0], first_frame_image: job.front[0], end_image_url: job.front[0], duration: '5', generate_audio: false, prompt_optimizer: false, negative_prompt: 'blur, distortion, morphing, changing clothes, changing face, extra limbs, camera shake, cut, zoom, text' }, '360° 服務'); job.views_req.m = job.spin_m; return; }
             catch (e) { job.spin_errors = [...(job.spin_errors || []), SPIN_MODELS[job.spin_m].split('fal.run/')[1] + ': ' + String(e.message).slice(0, 160)]; job.spin_m++; }
           }
@@ -660,23 +767,19 @@ async function handleTryonStatus(request, env, cors, url) {
             job.spin_done_at = Date.now();
             const vurl = d.video && d.video.url;
             if (!vurl) throw new Error('360° 服務沒有回傳影片');
-            job.views = { video: await copyToStorage(env, `${base}/spin-${Date.now()}`, vurl).catch(() => vurl) };
+            job.views = { video: await copyToStorage(env, `${base}/spin-${randTok()}`, vurl).catch(() => vurl) };
           }
         }
       } catch (e) { await refundViews(e.message); }
       await save(); return running();
     }
-    // 3) 收尾：結果複製到我們的 Storage（fal 的網址會過期）
-    const urls = job.front;
-    const viewUrls = job.views || {};
-    const prof = await getProfile(env, user).catch(() => null);
-    const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
-    for (let i = 1; i < urls.length; i++) await sbInsert(env, 'generations', { user_id: user.id, items: g.items, cost: 0, free_used: 0, status: 'ok', image_url: urls[i], variants: g.variants }).catch(() => {});
-    job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
-    await sbPatch(env, `/rest/v1/generations?id=eq.${id}`, { status: 'ok', image_url: urls[0], cost: job.pay, free_used: job.free, error: job.views_error, views: { ...viewUrls, result }, job });
-    return jout({ status: 'ok', result }, 200, cors);
+    // 3) 收尾
+    const fin = await finishJob(env, user.id, g, job, vcond);
+    if (!fin.got) return running();
+    return jout({ status: 'ok', result: fin.result }, 200, cors);
   } catch (e) {
-    return fail('合成失敗（已退回點數）：' + e.message);
+    const r = await stopJob(env, user.id, g, job, '合成失敗（已退回點數）：' + e.message, vcond).catch(() => null);
+    return jout(r || { status: 'running' }, 200, cors);
   }
 }
 /* ---- Storage 工具 ---- */
@@ -688,7 +791,7 @@ async function putImage(env, pathNoExt, dataUri) {
   return `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
 }
 async function copyToStorage(env, pathNoExt, srcUrl) {
-  const r = await fetchT(srcUrl, {}, '下載結果');
+  const r = await fetchT(srcUrl, {}, '下載結果', 20000);
   if (!r.ok) throw new Error('下載結果失敗');
   const mime = (r.headers.get('Content-Type') || 'image/png').split(';')[0];
   const ext = mime === 'image/jpeg' ? 'jpg' : (mime.split('/')[1] || 'png');
@@ -700,7 +803,7 @@ async function copyToStorage(env, pathNoExt, srcUrl) {
 /* ---- FASHN 分段：送出／查一次 ---- */
 async function falSubmit(env, personUrl, garmentUrl, category, photoType, mode = 'quality') {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
-  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode, garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: mode === 'performance' ? 'jpeg' : 'png', seed: Math.floor(Math.random() * 1e9) }) }, '衣服試穿服務', 30000);
+  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode, garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: mode === 'performance' ? 'jpeg' : 'png', seed: Math.floor(Math.random() * 1e9) }) }, '衣服試穿服務', 15000);
   const t = await r.text();
   if (!r.ok) throw new Error('衣服試穿服務：' + extractErr(t));
   const j = JSON.parse(t);
@@ -710,12 +813,12 @@ async function falSubmit(env, personUrl, garmentUrl, category, photoType, mode =
 async function falCheck(env, req, label = '衣服試穿服務', raw = false) {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY') };
   if (Date.now() - (req.at || 0) > (raw ? 6 * 60 * 1000 : UPSTREAM_TIMEOUT_MS)) throw new Error(label + '逾時，請稍後再試');
-  const sr = await fetchT(req.status_url, { headers }, label, 20000);
+  const sr = await fetchT(req.status_url, { headers }, label, 10000);
   const sd = await sr.json().catch(() => ({}));
   req.last_status = sd.status;
   if (sd.status === 'FAILED' || (sr.status >= 400 && sr.status !== 202)) throw new Error(label + '：' + friendlyFal(typeof sd.error === 'string' ? sd.error : (Array.isArray(sd.detail) ? sd.detail.map(x => x && x.msg || '').join('; ') : (sd.detail || '處理失敗'))));
   if (sd.status !== 'COMPLETED') return null;
-  const rr = await fetchT(req.response_url, { headers }, label, 30000);
+  const rr = await fetchT(req.response_url, { headers }, label, 15000);
   const rt = await rr.text();
   if (!rr.ok) throw new Error(label + '：' + extractErr(rt));
   const d = JSON.parse(rt);
@@ -771,7 +874,7 @@ function friendlyFal(msg) {
 function extractErr(t) { let raw; try { const j = JSON.parse(t); const d = j.detail; raw = Array.isArray(d) ? d.map(x => x && x.msg || '').join('; ') : (typeof d === 'string' ? d : (j.error || j.message || t)); } catch { raw = String(t); } return friendlyFal(raw); }
 
 /* ---- Gemini 影像編輯（模型備援鏈） ---- */
-async function geminiEdit(env, person, item, identityRef, bodyHint) {
+async function geminiEdit(env, person, item, identityRef, bodyHint, deadline) {
   const preferred = env.GEMINI_IMAGE_MODEL || GEMINI_FALLBACKS[0];
   const models = [preferred, ...GEMINI_FALLBACKS.filter(m => m !== preferred)];
   let prompt = (item.type === 'hair' && !isDataImage(item.image)) ? EDIT_PROMPTS.hair_text.replace('{{desc}}', item.text.trim().slice(0, 200)) : EDIT_PROMPTS[item.type];
@@ -788,10 +891,12 @@ async function geminiEdit(env, person, item, identityRef, bodyHint) {
     const cfgs = isGen3 ? [{ responseModalities: ['IMAGE'], imageConfig: { imageSize: '2K' } }, { responseModalities: ['IMAGE'] }] : [{ responseModalities: ['IMAGE'] }];
     let ok = false;
     for (const generationConfig of cfgs) {
+      const rem = deadline ? deadline - Date.now() : UPSTREAM_TIMEOUT_MS;
+      if (rem < 5000) { lastErr = lastErr || '處理逾時，請再試一次'; break; }
       const r = await fetchT(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': need(env, 'GEMINI_KEY') },
         body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig })
-      }, '配件/髮型服務');
+      }, '配件/髮型服務', deadline ? Math.min(60000, rem) : undefined);
       const t = await r.text();
       if (r.ok) { d = JSON.parse(t); ok = true; break; }
       let m = t; try { m = JSON.parse(t).error.message; } catch {}
@@ -802,6 +907,7 @@ async function geminiEdit(env, person, item, identityRef, bodyHint) {
       throw new Error('配件/髮型服務：' + lastErr);
     }
     if (ok) break;
+    if (deadline && deadline - Date.now() < 5000) break;
   }
   if (!d) throw new Error('配件/髮型服務：' + (lastErr || '所有影像模型都無法使用'));
   const cand = d.candidates && d.candidates[0];
@@ -855,8 +961,8 @@ async function dataUriToBytes(uri) {
   const bytes = new Uint8Array(await (await fetch(uri)).arrayBuffer());
   return { mime, ext, bytes };
 }
-async function urlToDataUri(u) {
-  const r = await fetchT(u, {}, '下載結果');
+async function urlToDataUri(u, maxMs) {
+  const r = await fetchT(u, {}, '下載結果', maxMs);
   if (!r.ok) throw new Error('下載結果失敗');
   const mime = (r.headers.get('Content-Type') || 'image/png').split(';')[0];
   const buf = new Uint8Array(await r.arrayBuffer());
@@ -893,6 +999,8 @@ ${list}
 
 Build ${have.length ? '2' : '3'} outfits that go with what the user already has (or complete looks if nothing yet). Use ONLY candidate ids. Each outfit: 2–4 products, at most one product per type, never two of the same type. Prefer items flattering the user's body shape and skin tone; keep colors coherent; mix price points sensibly.
 Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"one Traditional Chinese sentence on why this look suits the user's body","items":[{"id":123,"reason":"short Traditional Chinese reason (<=25 chars)"}]}],"note":"one short Traditional Chinese sentence of overall advice"}`;
+  // 先登記使用次數再呼叫 AI（避免同時連發或失敗重試繞過每日上限）
+  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'outfit', props: { have: have.length } }) });
   let out = null, lastErr = '';
   try { out = await falLLM(env, prompt); } catch (e) { lastErr = e.message; }
   const models = out || !env.GEMINI_KEY ? [] : TEXT_MODELS;
@@ -907,7 +1015,6 @@ Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"
   if (!out) return json({ error: '搭配建議失敗：' + lastErr }, 502, cors);
   const byId = new Map(cands.map(c => [String(c.id), c]));
   const outfits = (out.outfits || []).map(o => { const seen = new Set(); const items = (o.items || []).map(i => { const pr = byId.get(String(i.id)); if (!pr || seen.has(pr.type)) return null; seen.add(pr.type); return { product: pr, reason: String(i.reason || '').slice(0, 80) }; }).filter(Boolean); return { title: String(o.title || '').slice(0, 30), tip: String(o.tip || '').slice(0, 120), items }; }).filter(o => o.items.length);
-  await sb(env, '/rest/v1/events', { method: 'POST', body: JSON.stringify({ user_id: user.id, name: 'outfit', props: { have: have.length, out: outfits.length } }) }).catch(() => {});
   return json({ outfits, note: String(out.note || '').slice(0, 120) }, 200, cors);
 }
 
@@ -1043,6 +1150,8 @@ async function handleCheckout(request, env, cors) {
   const pack = PACKS[body.pack];
   if (!pack) return json({ error: '沒有這個點數包' }, 400, cors);
   const cfg = ecpayCfg(env);
+  // 尚未設定正式綠界金鑰（測試環境）：只有管理者能測試，一般使用者不能用測試卡換到真點數
+  if (cfg.test && !isAdmin(env, user)) return json({ error: '付款功能尚未開放' }, 503, cors);
   const tradeNo = ('TO' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 20);
   await sbInsert(env, 'orders', { trade_no: tradeNo, user_id: user.id, user_email: user.email || null, pack: body.pack, credits: pack.credits, amount: pack.price, status: 'pending' });
   const base = new URL(request.url).origin;
@@ -1070,6 +1179,11 @@ async function handleEcpayNotify(request, env) {
     const o = rows[0];
     if (!o) return new Response('0|Order Not Found', { status: 400 });
     if (String(p.TradeAmt) !== String(o.amount)) return new Response('0|Amount Error', { status: 400 });
+    // 測試環境的金鑰是公開的：只替管理者的測試訂單加點
+    if (cfg.test && !isAdminEmail(env, o.user_email)) {
+      await sbPatch(env, `/rest/v1/orders?trade_no=eq.${encodeURIComponent(p.MerchantTradeNo)}&status=eq.pending`, { status: 'test_blocked' }).catch(() => {});
+      return new Response('1|OK');
+    }
     // 只有從 pending 改成 paid 的那一次才加點（防重送/併發）
     const upd = await sbPatch(env, `/rest/v1/orders?trade_no=eq.${encodeURIComponent(p.MerchantTradeNo)}&status=eq.pending`, { status: 'paid', ecpay_trade_no: p.TradeNo || null, paid_at: new Date().toISOString() }, true);
     if (Array.isArray(upd) && upd.length && o.user_id) {
