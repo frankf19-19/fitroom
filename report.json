@@ -1,0 +1,250 @@
+{
+ "started": "2026-10-30 23:54:17",
+ "steps": [
+  {
+   "name": "測試帳號已存在",
+   "ok": true,
+   "info": "29925742-57d9-49a2-b1f9-f94ae59f68fa"
+  },
+  {
+   "name": "產生登入連結",
+   "ok": true,
+   "info": "ok"
+  },
+  {
+   "name": "登入後右上顯示點數",
+   "ok": true,
+   "info": "url=https://frankf19-19.github.io/fitroom/#tryon userArea=20 點 · 免費 2"
+  },
+  {
+   "name": "上傳全身照",
+   "ok": true,
+   "info": "person has"
+  },
+  {
+   "name": "商店載入商品",
+   "ok": true,
+   "info": "24 件"
+  },
+  {
+   "name": "商店商品放進試衣間",
+   "ok": true,
+   "info": "slots=['top'] view=view-tryon"
+  },
+  {
+   "name": "再放入褲子",
+   "ok": true,
+   "info": "slots=['top', 'bottom']"
+  },
+  {
+   "name": "衣架多選＋試衣間一點換穿",
+   "ok": true,
+   "info": "bar=衣架 3 件\n清空\n去試衣間換穿 rack=3"
+  },
+  {
+   "name": "尺寸建議有內容",
+   "ok": true,
+   "info": "上衣 \n選尺碼\nXS\nS\nM\nL\nXL\nXXL\n3XL\nUNIQLO · 賣場有 XS/S/M/L/XL/XXL/3XL\n依 UNIQLO 亞洲尺碼：建議 S（胸圍合身）\n褲子 / 裙子 \n選尺碼\nS\nM\nL\nXL\nUNIQLO · 賣場有 S/M/L/XL\n依 UNIQLO 亞洲尺碼：建議 M（腰圍合身、臀圍合身）"
+  },
+  {
+   "name": "預先合成提示",
+   "ok": false,
+   "info": ""
+  },
+  {
+   "name": "結果下方可點開選過的單品",
+   "ok": true,
+   "info": "items=2"
+  },
+  {
+   "name": "360° 背景補圖",
+   "ok": false,
+   "info": "再等 300s：完成！本次扣 0 點（免費額度抵 0 點），剩餘 20 點。"
+  },
+  {
+   "name": "360° 可拖曳旋轉",
+   "ok": false,
+   "info": "None"
+  },
+  {
+   "name": "試衣間格子可點開大圖",
+   "ok": true,
+   "info": ""
+  },
+  {
+   "name": "AI 試穿出結果",
+   "ok": true,
+   "info": "preview_at=None timing=None cost=2 耗時 306s runStatus=完成！本次扣 0 點（免費額度抵 0 點），剩餘 20 點。 statuses=[]"
+  },
+  {
+   "name": "身形分析",
+   "ok": false,
+   "info": "身形分析失敗：This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later. report_len=291"
+  },
+  {
+   "name": "例外",
+   "ok": false,
+   "info": "es/playwright/_impl/_connection.py\", line 636, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.TimeoutError: Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"#btnOutfit\")\n    - locator resolved to <button class=\"btn\" id=\"btnOutfit\">幫我搭配</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visibl"
+  }
+ ],
+ "pageerrors": [],
+ "console": [
+  [
+   "warning",
+   "W1030 23:55:01.655000 1880752 gl_context.cc:1060] OpenGL error checking is disabled"
+  ],
+  [
+   "error",
+   "INFO: Created TensorFlow Lite XNNPACK delegate for CPU."
+  ],
+  [
+   "warning",
+   "W1030 23:55:01.712000 1880752 inference_feedback_manager.cc:121] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors."
+  ],
+  [
+   "warning",
+   "[.WebGL-0x243c01fa6e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+  ],
+  [
+   "warning",
+   "[.WebGL-0x243c01fa6e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+  ],
+  [
+   "warning",
+   "[.WebGL-0x243c01fa6e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+  ]
+ ],
+ "api": [
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/brands",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m&q=PUFFTECH",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/product-click",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m&q=%E7%B9%AD%E5%9E%8B%E8%A4%B2",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/product-click",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon/status?id=50",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/analyze",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  }
+ ],
+ "finished": "2026-10-31 00:00:59"
+}
