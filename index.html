@@ -13,7 +13,11 @@
 <meta property="og:image" content="https://frankf19-19.github.io/fitroom/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="試穿吧">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -446,11 +450,72 @@
   .setrow a{display:inline-block;padding:10px 4px;min-width:44px;text-align:right}
   .demo .gcard span{font-size:11px}.demo .tag{font-size:11px}
   .bottomnav button{min-height:52px}
+  /* ===== v5 App 化 ===== */
+  .tbback,.tbtitle{display:none}
+  .grab{display:none}
+  .ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 56px);width:36px;height:36px;margin-top:-36px;border-radius:50%;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15);display:grid;place-items:center;opacity:0;z-index:25;transform:translate(-50%,0);pointer-events:none}
+  .ptr svg{width:18px;height:18px;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round}
+  .ptr.spin{opacity:1 !important;transform:translate(-50%,60px) !important}.ptr.spin svg{animation:rot .7s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  /* 我的 */
+  .mecard{padding:22px 0 4px}
+  .mehead{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+  .mehead .av{width:52px;height:52px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--serif);font-size:22px;flex:none}
+  .mehead b{display:block;font-weight:500;font-size:15px;word-break:break-all}.mehead small{color:var(--muted);font-size:12px}
+  .mestats{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line)}
+  .mestats button{background:#fff;border:0;border-right:1px solid var(--line);padding:14px 4px;cursor:pointer;font-family:inherit}.mestats button:last-child{border-right:0}
+  .mestats b{display:block;font-family:var(--serif);font-weight:400;font-size:22px;color:var(--ink)}.mestats small{color:var(--muted);font-size:12px;letter-spacing:1px}
+  .mlist{margin-top:18px;border-top:1px solid var(--line)}
+  .mlist .li{width:100%;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 2px;background:none;border:0;border-bottom:1px solid var(--line);font-family:inherit;font-size:15px;color:var(--ink);text-decoration:none;cursor:pointer;text-align:left}
+  .mlist .li em{font-style:normal;color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+  .mlist .li em::after{content:'';width:7px;height:7px;border-right:1.5px solid #bbb;border-top:1.5px solid #bbb;transform:rotate(45deg)}
+  .mlist .li.danger{color:var(--bad);justify-content:center}
+  .mever{text-align:center;color:var(--muted);font-size:12px;padding:26px 0 10px;letter-spacing:1px}
+  /* 頁面轉場 */
+  .view.fade{animation:fade .18s ease}
+  .view.push{animation:pushIn .28s cubic-bezier(.2,.8,.2,1)}
+  .view.pop{animation:popIn .24s cubic-bezier(.2,.8,.2,1)}
+  @keyframes pushIn{from{transform:translateX(40%);opacity:0}to{transform:none;opacity:1}}
+  @keyframes popIn{from{transform:translateX(-25%);opacity:0}to{transform:none;opacity:1}}
+  @media(max-width:899px){
+    body{touch-action:manipulation;overscroll-behavior-y:none}
+    .topbar .in{padding:calc(10px + env(safe-area-inset-top)) 16px 10px;min-height:calc(52px + env(safe-area-inset-top));position:relative}
+    .userchip .cf{display:none}
+    html.sub .tbtitle{left:52px}
+    .tbtitle{display:block;position:absolute;left:16px;right:120px;bottom:12px;text-align:left;font-family:var(--serif);font-size:19px;font-weight:500;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+    html.titled .topbar .logo{visibility:hidden}
+    html.sub .tbback{display:grid;place-items:center;position:absolute;left:6px;bottom:4px;width:44px;height:44px;background:none;border:0;cursor:pointer;z-index:2}
+    .tbback svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+    html.sub .topbar .logo{display:none}
+    .ptitle{display:none}
+    footer{display:none}
+    html[data-view=home]:not(.app) footer{display:block;padding-bottom:20px}
+    main{padding:0 16px 24px}
+    .bottomnav{background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px)}
+    .bottomnav button{font-size:11px;letter-spacing:1px;transition:color .15s}
+    .bottomnav button svg{width:23px;height:23px;transition:transform .15s}
+    .bottomnav button.on svg{stroke-width:1.8}
+    .bottomnav button:active svg{transform:scale(.86)}
+    .bottomnav button.on::before{display:none}
+    .btn{transition:transform .1s,background .15s,color .15s}
+    .btn:active,.mlist .li:active,.slot:active,.pitem:active{transform:scale(.97)}
+    .mlist .li:active{background:var(--bg2);transform:none}
+    .sheet{border-radius:14px 14px 0 0;padding-top:10px}
+    .grab{display:block;width:40px;height:5px;border-radius:3px;background:#d6d4d0;margin:0 auto 12px}
+    .pickmenu.on{animation:fade .2s ease}
+    .card{padding:18px 0}
+    html[data-view=tryon] #userArea>.btn,html[data-view=me] #userArea>.btn{display:none}
+  }
+  html.app img{-webkit-touch-callout:none;-webkit-user-drag:none}
+  html.app #result img,html.app .lightbox img{-webkit-touch-callout:default}
+  html.app .topbar{background:rgba(255,255,255,.94)}
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="in">
+  <button class="tbback" id="tbBack" aria-label="返回"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="tbtitle" id="tbTitle"></div>
   <div class="logo" data-go="home"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 4a2 2 0 0 1 2 2c0 1-1 1.5-2 2.5v1.5l8 5v2H4v-2l8-5"/></svg></span>試穿<em>吧</em> <small>TRYON</small></div>
   <nav class="topnav" aria-label="主選單">
     <button data-go="tryon">試衣間</button>
@@ -587,7 +652,7 @@
   <!-- ===== 衣櫃 ===== -->
   <section class="view" id="view-wardrobe">
     <div class="row" style="justify-content:space-between;margin-bottom:12px">
-      <div><h1 style="font-size:24px;margin:0">我的衣櫃</h1><div class="muted">常用的單品存起來，下次直接拿來搭。</div></div>
+      <div><h1 class="ptitle" style="font-size:24px;margin:0">我的衣櫃</h1><div class="muted">常用的單品存起來，下次直接拿來搭。</div></div>
       <button class="btn primary" id="btnWardrobeAdd">＋ 新增單品</button>
     </div>
     <div class="filt" id="wardrobeFilt"></div>
@@ -596,14 +661,14 @@
 
   <!-- ===== 紀錄 ===== -->
   <section class="view" id="view-history">
-    <h1 style="font-size:24px;margin:0">合成紀錄</h1>
+    <h1 class="ptitle" style="font-size:24px;margin:0">合成紀錄</h1>
     <div class="muted" style="margin-bottom:12px">每一次 AI 合成的結果都在這裡，點開可下載或當作新的底圖。</div>
     <div id="historyList"></div>
   </section>
 
   <!-- ===== 點數 ===== -->
   <section class="view" id="view-credits">
-    <h1 style="font-size:24px;margin:0 0 12px">點數</h1>
+    <h1 class="ptitle" style="font-size:24px;margin:0 0 12px">點數</h1>
     <div class="card">
       <div class="balance">
         <div class="b"><div class="v" id="balCredits">–</div><div class="l">剩餘點數</div></div>
@@ -622,7 +687,7 @@
   </section>
   <!-- ===== 商店 ===== -->
   <section class="view" id="view-shop">
-    <h1 style="font-size:24px;margin:0 0 6px">商店</h1>
+    <h1 class="ptitle" style="font-size:24px;margin:0 0 6px">商店</h1>
     <div class="muted" style="margin-bottom:14px">挑一件直接放進試衣間試穿，喜歡再點購買到品牌官網下單。</div>
     <div class="shopbar">
       <input type="text" id="shopQ" placeholder="搜尋品牌或商品">
@@ -642,7 +707,7 @@
 
   <!-- ===== 我的身形 ===== -->
   <section class="view" id="view-body">
-    <h1 style="font-size:24px;margin:0 0 6px">我的身形</h1>
+    <h1 class="ptitle" style="font-size:24px;margin:0 0 6px">我的身形</h1>
     <div class="muted" style="margin-bottom:16px">填身高體重，上傳全身照，AI 分析體型、臉型與膚色，之後每次合成都會依你的真實比例呈現。免費、不扣點（每天 5 次）。</div>
     <div class="card">
       <h3>基本資料</h3>
@@ -666,7 +731,7 @@
 
   <!-- ===== 設定 ===== -->
   <section class="view" id="view-settings">
-    <h1 style="font-size:24px;margin:0 0 12px">設定</h1>
+    <h1 class="ptitle" style="font-size:24px;margin:0 0 12px">設定</h1>
     <div class="card">
       <h3>合成偏好</h3>
       <div class="setrow"><span>預設鎖定本人臉部<small>配件、髮型合成後把原本的臉貼回去</small></span><div class="switch on" id="prefFace"></div></div>
@@ -685,23 +750,42 @@
     </div>
   </section>
 
+  <!-- ===== 我的 ===== -->
+  <section class="view" id="view-me">
+    <div class="mecard" id="meCard"></div>
+    <div class="mlist">
+      <button class="li" data-go="credits"><span>點數與購買</span><em id="meCr"></em></button>
+      <button class="li" data-go="body"><span>我的身形</span><em id="meBody"></em></button>
+      <button class="li" data-go="settings"><span>設定</span><em></em></button>
+      <button class="li hidden" id="meAdmin" data-go="admin"><span>管理後台</span><em></em></button>
+    </div>
+    <div class="mlist">
+      <button class="li" data-doc="tips"><span>怎麼拍效果最好</span><em></em></button>
+      <button class="li" data-doc="privacy"><span>隱私權政策</span><em></em></button>
+      <button class="li" data-doc="terms"><span>服務條款</span><em></em></button>
+      <a class="li" href="mailto:frankccc199@gmail.com?subject=試穿吧%20TryOn"><span>聯絡客服</span><em></em></a>
+    </div>
+    <div class="mlist hidden" id="meOut"><button class="li danger" id="meLogout"><span>登出</span></button></div>
+    <div class="mever" id="meVer"></div>
+  </section>
+
   <!-- ===== 管理後台 ===== -->
   <section class="view" id="view-admin">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h1 style="font-size:24px;margin:0">管理後台</h1><button class="btn sm" id="adminRefresh">重新整理</button></div>
+    <div class="row" style="justify-content:space-between;margin-bottom:12px"><h1 class="ptitle" style="font-size:24px;margin:0">管理後台</h1><button class="btn sm" id="adminRefresh">重新整理</button></div>
     <div id="adminBody" class="muted">載入中…</div>
   </section>
 </main>
 
 <nav class="bottomnav">
-  <button data-go="tryon"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 3H19l1 5-3 1v9H7v-9l-3-1 1-5h4.5z"/></svg>試衣間</button>
+  <button data-go="tryon"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 3H19l1 5-3 1v9H7v-9l-3-1 1-5h4.5z"/></svg>試穿</button>
   <button data-go="shop"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>商店</button>
   <button data-go="wardrobe"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M12 3v18M9 11h.01M15 11h.01"/></svg>衣櫃</button>
   <button data-go="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>紀錄</button>
-  <button data-go="credits"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5a2.5 2.5 0 0 0-5 0c0 2.5 5 2.5 5 5a2.5 2.5 0 0 1-5 0M12 6v1.5M12 16.5V18"/></svg>點數</button>
+  <button data-go="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>我的</button>
 </nav>
 
 <!-- 選擇來源的底部選單 -->
-<div class="pickmenu" id="pickmenu" role="dialog" aria-modal="true"><div class="sheet">
+<div class="pickmenu" id="pickmenu" role="dialog" aria-modal="true"><div class="sheet"><div class="grab"></div>
   <h2><span id="pickTitle">選擇單品</span><button class="btn ghost sm" id="pickClose">關閉</button></h2>
   <div id="pickBody"></div>
 </div></div>
@@ -719,7 +803,8 @@
 <div class="installbar" id="installbar"><span>加到主畫面，像 App 一樣使用</span><span class="row" style="margin-left:auto"><button class="btn sm primary" id="installYes">安裝</button><button class="btn sm ghost" id="installNo">✕</button></span></div>
 <div class="dlg" id="dlg"><div class="box"><h3 id="dlgTitle"></h3><p id="dlgText"></p><input type="text" id="dlgInput" class="hidden"><div class="acts"><button class="btn" id="dlgNo">取消</button><button class="btn primary" id="dlgOk">確定</button></div></div></div>
 <div class="toast" id="toast"></div>
-<div class="pickmenu" id="cropmenu"><div class="sheet">
+<div class="ptr" id="ptr"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></div>
+<div class="pickmenu" id="cropmenu"><div class="sheet"><div class="grab"></div>
   <h2><span>裁切單品</span><button class="btn ghost sm" id="cropSkip">不裁切</button></h2>
   <div class="muted" style="margin-bottom:8px">用手指或滑鼠框出「只有這件商品」的範圍。框得越乾淨，合成越準。</div>
   <div style="text-align:center"><div class="crop" id="cropBox"><img id="cropImg" alt=""><div class="sel" id="cropSel"></div></div></div>
@@ -741,8 +826,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '4.6.0';
-const BUILD = '2026-10-31-04';
+const APP_VERSION = '5.0.0';
+const BUILD = '2026-10-31-05';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -751,6 +836,10 @@ const CAP = window.Capacitor;
 const IS_APP = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const PLATFORM = IS_APP ? CAP.getPlatform() : 'web';
 if (IS_APP) document.documentElement.classList.add('app', PLATFORM);
+const IS_PWA = !IS_APP && ((window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone===true);
+if (IS_PWA) document.documentElement.classList.add('app','pwa', /iphone|ipad|ipod/i.test(navigator.userAgent)?'ios':'android');
+const APPISH = IS_APP || IS_PWA;
+if (APPISH) { const vp=document.querySelector('meta[name=viewport]'); if(vp) vp.content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'; }
 const Plug = name => (CAP && CAP.Plugins && CAP.Plugins[name]) || null;
 function haptic(kind){ try{ if(localStorage.getItem('tryon.haptic')==='0') return; const H=Plug('Haptics'); if(!H) return; if(kind==='success') H.notification({type:'SUCCESS'}); else if(kind==='error') H.notification({type:'ERROR'}); else H.impact({style:'LIGHT'}); }catch{} }
 const ICON={
@@ -801,30 +890,46 @@ let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
 
 /* ---------- 導覽 ---------- */
-const VIEWS=['home','tryon','shop','wardrobe','history','credits','admin','settings','body'];
+const VIEWS=['home','tryon','shop','wardrobe','history','credits','admin','settings','body','me'];
+const TABS=['tryon','shop','wardrobe','history','me'];
+const SUBS={credits:'me',body:'me',settings:'me',admin:'me'};
+const TITLES={tryon:'試穿',shop:'商店',wardrobe:'我的衣櫃',history:'合成紀錄',me:'我的',credits:'點數',body:'我的身形',settings:'設定',admin:'管理後台'};
+const scrollMem={}; let curView=null;
 const NEED_LOGIN=['wardrobe','history','credits','admin','settings','body'];
 const AUTH_HASH=/(access_token|refresh_token|error_description|error_code|type=magiclink|type=recovery)=?/;
-function go(v, keepHash){
+function go(v, keepHash, opt={}){
   if (window.__pickResolve) window.__pickResolve();
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
+  if (v==='home' && APPISH) v='tryon';
+  if (curView) scrollMem[curView]=window.scrollY;
+  const prev=curView;
   const navBooted=!!document.querySelector('.view.on');
   if (NEED_LOGIN.includes(v) && !state.user) { state.wantView=v; if(!document.querySelector('.view.on')) go('home', true); if(state.authReady) openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
-  document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.toggle('slide', on); });
-  haptic();
-  document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v));
-  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want){ const url=location.pathname+location.search+want; if(navBooted) history.pushState(null,'',url); else history.replaceState(null,'',url); } }
+  const anim = SUBS[v]&&prev!==v&&!opt.back ? 'push' : (opt.back&&SUBS[prev] ? 'pop' : 'fade');
+  document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.remove('slide','push','pop','fade'); if(on&&prev!==v){ void x.offsetWidth; x.classList.add(anim); } });
+  curView=v;
+  if(prev!==v) haptic();
+  document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v || (b.closest('.bottomnav')&&SUBS[v]===b.dataset.go)));
+  const H=document.documentElement; H.classList.toggle('sub', !!SUBS[v]); H.classList.toggle('titled', v!=='home'&&v!=='tryon'); H.dataset.view=v;
+  $('tbTitle').textContent=TITLES[v]||'';
+  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want){ const url=location.pathname+location.search+want; if(navBooted){ history.pushState(null,'',url); navPushed++; } else history.replaceState(null,'',url); } }
   if(v==='home') setTimeout(applyDemo,0);
-  window.scrollTo({top:0});
+  const sy = (TABS.includes(v)&&prev!==v&&scrollMem[v]!=null) ? scrollMem[v] : (prev===v?window.scrollY:0);
+  window.scrollTo({top:sy, behavior:'instant'});
   if (v==='wardrobe') loadWardrobe();
   if (v==='history') loadHistory();
   if (v==='credits') refreshMe();
   if (v==='admin') loadAdmin();
   if (v==='settings') renderSettings();
   if (v==='body') renderBody();
+  if (v==='me') renderMe();
   if (v==='shop' && (!shopLoaded || !shopItems.length)) loadShop(true); else if (v==='shop') $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin));
 }
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.go; if(v===curView && TABS.includes(v)){ window.scrollTo({top:0,behavior:'smooth'}); return; } go(v); }));
+function navBack(){ const parent=SUBS[curView]||'tryon'; if(history.length>1 && navPushed>0){ history.back(); } else go(parent,false,{back:true}); }
+let navPushed=0;
+$('tbBack').onclick=navBack;
 
 /* ---------- 登入 ---------- */
 async function initAuth(){
@@ -846,11 +951,12 @@ function setSession(s){
 }
 function renderUser(){
   const a=$('userArea');
-  if (!state.user) { a.innerHTML='<button class="btn sm primary">登入</button>'; a.firstChild.onclick=()=>openLogin(); const hl=$('heroLogin'); if(hl) hl.classList.remove('hidden'); return; }
+  if (!state.user) { a.innerHTML='<button class="btn sm primary">登入</button>'; a.firstChild.onclick=()=>openLogin(); const hl=$('heroLogin'); if(hl) hl.classList.remove('hidden'); if(curView==='me') renderMe(); return; }
   const em = state.user.email || '';
   const hl=$('heroLogin'); if(hl) hl.classList.add('hidden');
-  a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點 · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></div>`;
+  a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點<span class="cf"> · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></span></div>`;
   a.querySelectorAll('.free,.userchip').forEach(el=>el.onclick=()=>go('credits'));
+  if(curView==='me') renderMe();
 }
 const Social = Plug('SocialLogin');
 let socialReady=false;
@@ -922,6 +1028,44 @@ function openLogin(){
 }
 $('guestLogin').onclick=openLogin;
 if($('heroLogin')) $('heroLogin').onclick=openLogin;
+function renderMe(){
+  const c=$('meCard'); $('meVer').textContent='試穿吧 TryOn · v'+APP_VERSION;
+  if(!state.user){ c.innerHTML='<div class="mehead"><span class="av">?</span><div><b>還沒登入</b><small>登入後才能合成、存衣櫃與看紀錄</small></div></div><button class="btn primary block" id="meLogin">登入 / 註冊</button>'; $('meLogin').onclick=openLogin; $('meOut').classList.add('hidden'); $('meAdmin').classList.add('hidden'); $('meCr').textContent=''; return; }
+  const em=state.user.email||''; const me=state.me||{};
+  c.innerHTML=`<div class="mehead"><span class="av">${esc((em[0]||'U').toUpperCase())}</span><div><b>${esc(em)}</b><small>會員</small></div></div><div class="mestats"><button data-go2="credits"><b>${me.credits??'–'}</b><small>剩餘點數</small></button><button data-go2="credits"><b>${me.free_left??'–'}</b><small>今日免費</small></button><button data-go2="history"><b>${(state.history||[]).length||'–'}</b><small>合成紀錄</small></button></div>`;
+  c.querySelectorAll('[data-go2]').forEach(b=>b.onclick=()=>go(b.dataset.go2));
+  $('meCr').textContent=me.credits!=null?me.credits+' 點':''; $('meBody').textContent=(me.analysis?'已分析':'');
+  $('meOut').classList.remove('hidden'); $('meAdmin').classList.toggle('hidden', !me.is_admin);
+}
+$('meLogout').onclick=()=>$('btnLogout').click();
+
+/* ---------- 手勢：底部選單往下滑關閉、左邊緣右滑返回、下拉重新整理 ---------- */
+(function(){
+  const isPhone=()=>window.matchMedia('(max-width:899px)').matches;
+  // 底部選單往下拖曳關閉
+  document.querySelectorAll('.pickmenu .sheet').forEach(sh=>{
+    let y0=null, dy=0;
+    sh.addEventListener('touchstart',e=>{ if(sh.scrollTop>0) { y0=null; return; } y0=e.touches[0].clientY; dy=0; sh.style.transition='none'; },{passive:true});
+    sh.addEventListener('touchmove',e=>{ if(y0==null) return; dy=e.touches[0].clientY-y0; if(dy>0) sh.style.transform=`translateY(${dy}px)`; },{passive:true});
+    sh.addEventListener('touchend',()=>{ if(y0==null) return; sh.style.transition='transform .2s ease'; const menu=sh.parentElement;
+      if(dy>110){ sh.style.transform='translateY(100%)'; setTimeout(()=>{ sh.style.transform=''; sh.style.transition=''; if(menu.id==='cropmenu'){ if(window.__cropCancel) window.__cropCancel(); } else closePick(); },180); haptic(); }
+      else sh.style.transform=''; y0=null; });
+  });
+  // 左邊緣右滑返回（子頁）
+  let sx=null, sxy=0, sdx=0, sv=null;
+  document.addEventListener('touchstart',e=>{ const t=e.touches[0]; if(!isPhone()||!SUBS[curView]||t.clientX>24){ sx=null; return; } sx=t.clientX; sxy=t.clientY; sdx=0; sv=document.querySelector('.view.on'); if(sv) sv.style.transition='none'; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(sx==null||!sv) return; const t=e.touches[0]; sdx=t.clientX-sx; if(Math.abs(t.clientY-sxy)>Math.abs(sdx)&&sdx<20){ sx=null; sv.style.transform=''; return; } if(sdx>0) sv.style.transform=`translateX(${sdx}px)`; },{passive:true});
+  document.addEventListener('touchend',()=>{ if(sx==null||!sv) return; const v=sv; v.style.transition='transform .2s ease'; if(sdx>90){ v.style.transform='translateX(100%)'; setTimeout(()=>{ v.style.transform=''; v.style.transition=''; navBack(); },160); } else { v.style.transform=''; setTimeout(()=>v.style.transition='',220); } sx=null; });
+  // 下拉重新整理（商店、衣櫃、紀錄）
+  const ptr=$('ptr'); let py=null, pdy=0;
+  const canPtr=()=>isPhone()&&['shop','wardrobe','history'].includes(curView)&&window.scrollY<=0&&!document.querySelector('.pickmenu.on,.itemview.on,.lightbox.on,.dlg.on');
+  document.addEventListener('touchstart',e=>{ py=canPtr()?e.touches[0].clientY:null; pdy=0; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(py==null) return; pdy=e.touches[0].clientY-py; if(pdy<=0||window.scrollY>0){ ptr.style.opacity=0; return; } const d=Math.min(90,pdy*0.5); ptr.style.opacity=Math.min(1,d/60); ptr.style.transform=`translate(-50%,${d}px) rotate(${d*4}deg)`; },{passive:true});
+  document.addEventListener('touchend',async()=>{ if(py==null) return; const go2=pdy>140; py=null; if(!go2){ ptr.style.opacity=0; ptr.style.transform=''; return; }
+    ptr.classList.add('spin'); haptic();
+    try{ if(curView==='shop') await loadShop(true); else if(curView==='wardrobe') await loadWardrobe(); else if(curView==='history') await loadHistory(); }catch{}
+    ptr.classList.remove('spin'); ptr.style.opacity=0; ptr.style.transform=''; });
+})();
 function advSummary(){ const on=[]; if($('wantViews').classList.contains('on')) on.push('360°'); if($('twoVariants').classList.contains('on')) on.push('2 張'); if(!$('faceLock').classList.contains('on')) on.push('不鎖臉'); $('advSummary').textContent=on.length?'已開：'+on.join('、'):''; }
 ['wantViews','twoVariants','faceLock'].forEach(id=>new MutationObserver(advSummary).observe($(id),{attributes:true,attributeFilter:['class']})); advSummary();
 let fitTouched=false; $('fitCard').querySelector('summary').addEventListener('click',()=>{ fitTouched=true; });
@@ -1859,7 +2003,7 @@ if (IS_APP) {
     if($('lightbox').classList.contains('on')){ $('lightbox').classList.remove('on'); return; }
     const iv=$('itemView'); if(iv&&iv.classList.contains('on')){ iv.classList.remove('on'); return; }
     const cur=document.querySelector('.view.on'); const id=cur?cur.id.replace('view-',''):'';
-    if(id==='tryon'||id==='home') App.exitApp(); else go('tryon');
+    if(SUBS[id]) return navBack(); if(id==='tryon'||id==='home') App.exitApp(); else go('tryon');
   }); } }catch{}
 }
 
@@ -1869,9 +2013,9 @@ restoreSession();
 renderSlots();
 loadPrefs();
 initAuth();
-window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const iv=$('itemView'); if(iv&&iv.classList.contains('on')) iv.classList.remove('on'); closePick(); const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h); });
+window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const iv=$('itemView'); if(iv&&iv.classList.contains('on')) iv.classList.remove('on'); closePick(); const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(navPushed>0) navPushed--; if(!cur||cur.id!=='view-'+h) go(h,false,{back:!!SUBS[curView]}); });
 const bootHash=location.hash.replace('#','');
-(function(){ if(AUTH_HASH.test(location.hash)){ go('home'); return; } go(VIEWS.includes(bootHash)&&bootHash!=='home' ? bootHash : 'home'); })();
+(function(){ if(AUTH_HASH.test(location.hash)){ go(APPISH?'tryon':'home'); return; } go(VIEWS.includes(bootHash)&&bootHash!=='home' ? bootHash : (APPISH?'tryon':'home')); })();
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',__tryonBoot); else __tryonBoot();
 /* ---------- 新版本自動更新（GitHub Pages 會讓瀏覽器暫存舊頁約 10 分鐘） ---------- */

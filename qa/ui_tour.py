@@ -64,7 +64,7 @@ with sync_playwright() as pw:
     pg.screenshot(path=f'{OUT}/{tag}_00_first.png')
     try: pg.click('#onbSkip', timeout=2500); pg.wait_for_timeout(800)
     except Exception: pass
-    tour(pg, tag, ['home', 'tryon', 'shop'])
+    tour(pg, tag, ['home', 'tryon', 'shop', 'me'])
     try: pg.click('#userArea button, #userArea a, #userArea'); pg.wait_for_timeout(1000); pg.screenshot(path=f'{OUT}/{tag}_login.png')
     except Exception as e: print('login', e)
     pg.context.close()
@@ -76,7 +76,7 @@ with sync_playwright() as pw:
     tag = 'user_' + ('phone' if phone else 'pc')
     pg = mkpage(phone); pg.add_init_script("try{localStorage.setItem('tryon.onb','1');localStorage.setItem('tryon.noprefetch','1')}catch(e){}")
     pg.goto(link['action_link'], wait_until='load'); pg.wait_for_timeout(5000)
-    tour(pg, tag, ['home', 'tryon', 'shop', 'wardrobe', 'history', 'credits', 'body', 'settings', 'admin'])
+    tour(pg, tag, ['home', 'tryon', 'shop', 'wardrobe', 'history', 'me', 'credits', 'body', 'settings', 'admin'])
     # 試衣間：放照片 + 從商店放兩件（不按生成）
     try:
       pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(800)
