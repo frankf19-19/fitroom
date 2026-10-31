@@ -471,7 +471,10 @@
   .mlist .li em::after{content:'';width:7px;height:7px;border-right:1.5px solid #bbb;border-top:1.5px solid #bbb;transform:rotate(45deg)}
   .mlist .li.danger{color:var(--bad);justify-content:center}
   .mever{text-align:center;color:var(--muted);font-size:12px;padding:26px 0 10px;letter-spacing:1px}
-  /* 頁面轉場 */
+  /* 頁面轉場（main 裁切，避免動畫中內容超出寬度讓手機自動縮小畫面） */
+  main{overflow-x:clip}
+  @supports not (overflow:clip){ main{overflow-x:hidden} }
+  #userArea{margin-left:auto}
   .view.fade{animation:fade .18s ease}
   .view.push{animation:pushIn .28s cubic-bezier(.2,.8,.2,1)}
   .view.pop{animation:popIn .24s cubic-bezier(.2,.8,.2,1)}
@@ -827,7 +830,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '5.0.0';
-const BUILD = '2026-10-31-05';
+const BUILD = '2026-10-31-06';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
