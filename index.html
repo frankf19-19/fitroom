@@ -437,6 +437,7 @@
   @media(min-width:900px){#resultActions{grid-template-columns:repeat(4,1fr)}}
   @media(max-width:899px){.result{min-height:220px}.result .empty{padding:20px}}
   .slot .lb,.slot.has .lb{font-size:12px}
+  .slot.has .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
   .steps3{font-size:12px}.steps3 i{font-size:11px}
   .pitem .brand{font-size:11px}.pitem .img .feat{font-size:10px}
   .balance .b .l,dl.kv dt,#bodyReport b,#historyList span,.pack .pill{font-size:12px}
@@ -741,7 +742,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '4.6.0';
-const BUILD = '2026-10-31-03';
+const BUILD = '2026-10-31-04';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
