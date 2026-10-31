@@ -471,6 +471,8 @@
   .mlist .li em::after{content:'';width:7px;height:7px;border-right:1.5px solid #bbb;border-top:1.5px solid #bbb;transform:rotate(45deg)}
   .mlist .li.danger{color:var(--bad);justify-content:center}
   .mever{text-align:center;color:var(--muted);font-size:12px;padding:26px 0 10px;letter-spacing:1px}
+  .bodythumb{display:inline-block;width:36px;height:48px;vertical-align:middle;margin-right:10px;background:var(--bg2)}.bodythumb img{width:100%;height:100%;object-fit:contain}
+  #bodyPhotoNote{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
   /* 頁面轉場（main 裁切，避免動畫中內容超出寬度讓手機自動縮小畫面） */
   main{overflow-x:clip}
   @supports not (overflow:clip){ main{overflow-x:hidden} }
@@ -487,6 +489,7 @@
     html.subpage .tbtitle{left:52px}
     .tbtitle{display:block;position:absolute;left:16px;right:120px;bottom:12px;text-align:left;font-family:var(--serif);font-size:19px;font-weight:500;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
     html.titled .topbar .logo{visibility:hidden}
+    html:not(.titled) .tbtitle{display:none}
     html.subpage .tbback{display:grid;place-items:center;position:absolute;left:6px;bottom:4px;width:44px;height:44px;background:none;border:0;cursor:pointer;z-index:2}
     .tbback svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
     html.subpage .topbar .logo{display:none}
@@ -507,6 +510,7 @@
     .grab{display:block;width:40px;height:5px;border-radius:3px;background:#d6d4d0;margin:0 auto 12px}
     .pickmenu.on{animation:fade .2s ease}
     .card{padding:18px 0}
+    .view:not(#view-home):not(#view-tryon){padding-top:12px}
     html[data-view=tryon] #userArea>.btn,html[data-view=me] #userArea>.btn{display:none}
   }
   html.app img{-webkit-touch-callout:none;-webkit-user-drag:none}
@@ -654,7 +658,7 @@
 
   <!-- ===== 衣櫃 ===== -->
   <section class="view" id="view-wardrobe">
-    <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <div class="row" style="justify-content:space-between;margin:0 0 12px">
       <div><h1 class="ptitle" style="font-size:24px;margin:0">我的衣櫃</h1><div class="muted">常用的單品存起來，下次直接拿來搭。</div></div>
       <button class="btn primary" id="btnWardrobeAdd">＋ 新增單品</button>
     </div>
@@ -830,7 +834,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '5.0.0';
-const BUILD = '2026-10-31-07';
+const BUILD = '2026-10-31-08';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1535,7 +1539,10 @@ function renderBody(){
   const b=(state.me&&state.me.body)||{}; const a=state.me&&state.me.analysis;
   if(b.height) $('bHeight').value=b.height; if(b.weight) $('bWeight').value=b.weight; if(b.bust) $('bBust').value=b.bust; if(b.waist) $('bWaist').value=b.waist; if(b.hip) $('bHip').value=b.hip;
   if(b.gender){ bodyGender=b.gender; $('bodyGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g===b.gender)); }
-  $('bodyPhotoNote').textContent = state.person ? '分析會用試衣間目前的全身照。' : '請先到試衣間放一張全身照，再回來分析。';
+  const note=$('bodyPhotoNote');
+  if(state.person){ note.innerHTML=`<span class="bodythumb"><img src="${state.person}" alt=""></span>分析會用這張全身照。<button class="btn ghost sm" id="bodyPhotoChange">換一張</button>`; }
+  else { note.innerHTML='還沒有全身照。<button class="btn sm" id="bodyPhotoChange">放一張全身照</button>'; }
+  $('bodyPhotoChange').onclick=()=>pickImage(im=>{ onPersonImage(im); setTimeout(renderBody,300); });
   $('btnAnalyze').disabled = !state.person;
   if(state.me && state.me.analyze_available===false){ $('analyzeStatus').textContent='身形分析服務尚未啟用（伺服器未設定影像金鑰）。'; $('btnAnalyze').disabled=true; }
   renderReport(a);
@@ -1583,7 +1590,7 @@ $('btnAnalyze').onclick=async()=>{
   }catch(e){ $('analyzeStatus').textContent=e.message; haptic('error'); }
   finally{ $('btnAnalyze').disabled=false; }
 };
-function updateAnalyzeCta(){ const a=state.me&&state.me.analysis; const t=$('analyzeCtaText'); const b=$('btnAnalyzeGo'); if(!t) return; if(a){ t.textContent=`已套用你的身形：${SHAPE_LABEL[a.body_shape]||''}・${FACE_LABEL[a.face_shape]||''}・${TONE_LABEL[a.skin_tone]||''}。合成會依真實比例調整。`; b.textContent='查看報告'; } else { t.textContent='填身高體重並分析身形，合成會依你的真實比例調整版型與髮型。'; b.textContent='我的身形'; } }
+function updateAnalyzeCta(){ const a=state.me&&state.me.analysis; const t=$('analyzeCtaText'); const b=$('btnAnalyzeGo'); if(!t) return; if(a){ const parts=[SHAPE_LABEL[a.body_shape],FACE_LABEL[a.face_shape],TONE_LABEL[a.skin_tone]].filter(Boolean); t.textContent=parts.length?`已套用你的身形：${parts.join('・')}。合成會依真實比例調整。`:'已套用你的身形分析，合成會依真實比例調整。'; b.textContent='查看報告'; } else { t.textContent='填身高體重，合成會更貼合你的身形。'; b.textContent='我的身形'; } }
 
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
@@ -1792,6 +1799,7 @@ function renderWardrobe(){
   const fb=$('wardrobeFilt'); const types=[...new Set(state.wardrobe.map(w=>w.type))];
   fb.innerHTML = state.wardrobe.length ? `<span class="chip ${!wardrobeFilter?'on':''}" data-f="">全部 ${state.wardrobe.length}</span>`+SLOT_DEFS.filter(s=>types.includes(s.type)).map(s=>`<span class="chip ${wardrobeFilter===s.type?'on':''}" data-f="${s.type}">${s.label} ${state.wardrobe.filter(w=>w.type===s.type).length}</span>`).join('') : '';
   fb.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ wardrobeFilter=c.dataset.f; renderWardrobe(); });
+  $('btnWardrobeAdd').classList.toggle('hidden', !state.wardrobe.length);
   if(!state.wardrobe.length){ box.innerHTML=`<div class="empty-ill"><div class="ic">${ICON.top}</div><b>衣櫃還是空的</b><p>把常試的單品存進來，下次直接拿出來搭，不用再找圖。</p><button class="btn primary" id="emptyAdd">新增第一件單品</button></div>`; $('emptyAdd').onclick=()=>$('btnWardrobeAdd').click(); return; }
   const groups={}; state.wardrobe.filter(w=>!wardrobeFilter||w.type===wardrobeFilter).forEach(w=>{ (groups[w.type]=groups[w.type]||[]).push(w); });
   box.innerHTML = SLOT_DEFS.filter(s=>groups[s.type]).map(s=>`<h3>${s.label}（${groups[s.type].length}）</h3><div class="wgrid" style="margin-bottom:16px">${groups[s.type].map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${w.name||''}</span><button class="del" data-del="${w.id}">✕</button></div>`).join('')}</div>`).join('');
