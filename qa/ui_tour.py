@@ -90,7 +90,9 @@ with sync_playwright() as pw:
       pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(1500)
       pg.screenshot(path=f'{OUT}/{tag}_tryon_rack.png', full_page=True)
       it = pg.query_selector('.pitem .img img')
-    except Exception as e: rep['pages'].append({'view': tag + '_flow', 'err': str(e)[:300]})
+    except Exception as e:
+      dbg = pg.evaluate("(()=>{const v=document.querySelector('.view.on');const b=document.querySelector('#view-shop [data-try]');return [v&&v.id, location.hash, b?getComputedStyle(b).display+' '+b.getBoundingClientRect().width+'x'+b.getBoundingClientRect().height:'none', document.querySelectorAll('#view-shop [data-try]').length].join(' | ')})()")
+      rep['pages'].append({'view': tag + '_flow', 'err': str(e)[:300], 'dbg': dbg}); pg.screenshot(path=f'{OUT}/{tag}_flow_err.png')
     pg.context.close()
   b.close()
 json.dump(rep, open(f'{OUT}/report.json', 'w'), ensure_ascii=False, indent=1)
