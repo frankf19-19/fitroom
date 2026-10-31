@@ -85,6 +85,7 @@ with sync_playwright() as pw:
       btns = pg.query_selector_all('#view-shop [data-try]')
       if btns: btns[0].click(); pg.wait_for_timeout(2500)
       pg.screenshot(path=f'{OUT}/{tag}_tryon_filled.png', full_page=True)
+      pg.evaluate("location.hash='#shop'"); pg.wait_for_timeout(1500)
       rr = pg.query_selector_all('#view-shop [data-rack]')
       for x in rr[1:4]: x.click(); pg.wait_for_timeout(300)
       pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(1500)
