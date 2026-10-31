@@ -484,12 +484,12 @@
     body{touch-action:manipulation;overscroll-behavior-y:none}
     .topbar .in{padding:calc(10px + env(safe-area-inset-top)) 16px 10px;min-height:calc(52px + env(safe-area-inset-top));position:relative}
     .userchip .cf{display:none}
-    html.sub .tbtitle{left:52px}
+    html.subpage .tbtitle{left:52px}
     .tbtitle{display:block;position:absolute;left:16px;right:120px;bottom:12px;text-align:left;font-family:var(--serif);font-size:19px;font-weight:500;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
     html.titled .topbar .logo{visibility:hidden}
-    html.sub .tbback{display:grid;place-items:center;position:absolute;left:6px;bottom:4px;width:44px;height:44px;background:none;border:0;cursor:pointer;z-index:2}
+    html.subpage .tbback{display:grid;place-items:center;position:absolute;left:6px;bottom:4px;width:44px;height:44px;background:none;border:0;cursor:pointer;z-index:2}
     .tbback svg{width:24px;height:24px;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-    html.sub .topbar .logo{display:none}
+    html.subpage .topbar .logo{display:none}
     .ptitle{display:none}
     footer{display:none}
     html[data-view=home]:not(.app) footer{display:block;padding-bottom:20px}
@@ -830,7 +830,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '5.0.0';
-const BUILD = '2026-10-31-06';
+const BUILD = '2026-10-31-07';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -914,7 +914,7 @@ function go(v, keepHash, opt={}){
   curView=v;
   if(prev!==v) haptic();
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v || (b.closest('.bottomnav')&&SUBS[v]===b.dataset.go)));
-  const H=document.documentElement; H.classList.toggle('sub', !!SUBS[v]); H.classList.toggle('titled', v!=='home'&&v!=='tryon'); H.dataset.view=v;
+  const H=document.documentElement; H.classList.toggle('subpage', !!SUBS[v]); H.classList.toggle('titled', v!=='home'&&v!=='tryon'); H.dataset.view=v;
   $('tbTitle').textContent=TITLES[v]||'';
   if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want){ const url=location.pathname+location.search+want; if(navBooted){ history.pushState(null,'',url); navPushed++; } else history.replaceState(null,'',url); } }
   if(v==='home') setTimeout(applyDemo,0);
