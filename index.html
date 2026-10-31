@@ -511,6 +511,8 @@
     .pickmenu.on{animation:fade .2s ease}
     .card{padding:18px 0}
     .view:not(#view-home):not(#view-tryon){padding-top:12px}
+    .fitrow select{font-size:16px}
+    .psub,.dupme,#acctCard,#bodyBackTry{display:none !important}
     html[data-view=tryon] #userArea>.btn,html[data-view=me] #userArea>.btn{display:none}
   }
   html.app img{-webkit-touch-callout:none;-webkit-user-drag:none}
@@ -659,7 +661,7 @@
   <!-- ===== 衣櫃 ===== -->
   <section class="view" id="view-wardrobe">
     <div class="row" style="justify-content:space-between;margin:0 0 12px">
-      <div><h1 class="ptitle" style="font-size:24px;margin:0">我的衣櫃</h1><div class="muted">常用的單品存起來，下次直接拿來搭。</div></div>
+      <div><h1 class="ptitle" style="font-size:24px;margin:0">我的衣櫃</h1><div class="muted psub">常用的單品存起來，下次直接拿來搭。</div></div>
       <button class="btn primary" id="btnWardrobeAdd">＋ 新增單品</button>
     </div>
     <div class="filt" id="wardrobeFilt"></div>
@@ -669,7 +671,7 @@
   <!-- ===== 紀錄 ===== -->
   <section class="view" id="view-history">
     <h1 class="ptitle" style="font-size:24px;margin:0">合成紀錄</h1>
-    <div class="muted" style="margin-bottom:12px">每一次 AI 合成的結果都在這裡，點開可下載或當作新的底圖。</div>
+    <div class="muted psub" style="margin-bottom:12px">每一次 AI 合成的結果都在這裡，點開可下載或當作新的底圖。</div>
     <div id="historyList"></div>
   </section>
 
@@ -686,7 +688,7 @@
     <h2>購買點數包</h2>
     <div class="packs" id="packs"></div>
     <div class="muted hidden-app" style="margin-top:12px">付款由綠界 ECPay 處理，支援信用卡、ATM、超商。付款完成後點數自動入帳。</div>
-    <div class="card" style="margin-top:18px">
+    <div class="card" id="acctCard" style="margin-top:18px">
       <h3>帳號</h3>
       <div class="row" style="justify-content:space-between"><span id="accEmail" class="muted"></span><span class="row"><button class="btn sm" data-go="settings">設定</button><button class="btn sm" id="btnLogout">登出</button><button class="btn sm ghost" id="btnDeleteAcc" style="color:var(--bad)">刪除帳號</button></span></div>
       <div class="muted" style="margin-top:8px">刪除帳號會一併刪除你所有的照片、衣櫃與紀錄，剩餘點數不退還。</div>
@@ -730,7 +732,7 @@
           <label>臀圍 cm<input type="number" id="bHip" inputmode="decimal"></label>
         </div></details>
       <div class="muted" style="margin-top:10px" id="bodyPhotoNote">分析會用試衣間目前的全身照。</div>
-      <div class="row" style="margin-top:14px"><button class="btn primary" id="btnAnalyze">分析我的身形</button><button class="btn ghost" data-go="tryon">回試衣間</button></div>
+      <div class="row" style="margin-top:14px"><button class="btn primary" id="btnAnalyze">分析我的身形</button><button class="btn ghost" data-go="tryon" id="bodyBackTry">回試衣間</button></div>
       <div class="muted" id="analyzeStatus" style="margin-top:8px"></div>
     </div>
     <div id="bodyReport"></div>
@@ -748,12 +750,13 @@
     </div>
     <div class="card">
       <h3>關於</h3>
-      <div class="setrow"><span>我的身形<small>身高體重與 AI 分析報告</small></span><a href="#" data-go="body" onclick="return false">查看</a></div>
-      <div class="setrow"><span>聯絡客服<small>問題、建議、合作</small></span><a href="mailto:frankccc199@gmail.com?subject=試穿吧%20TryOn">寫信</a></div>
-      <div class="setrow"><span>隱私權政策</span><a href="#" data-doc="privacy">查看</a></div>
-      <div class="setrow"><span>服務條款</span><a href="#" data-doc="terms">查看</a></div>
+      <div class="setrow dupme"><span>我的身形<small>身高體重與 AI 分析報告</small></span><a href="#" data-go="body" onclick="return false">查看</a></div>
+      <div class="setrow dupme"><span>聯絡客服<small>問題、建議、合作</small></span><a href="mailto:frankccc199@gmail.com?subject=試穿吧%20TryOn">寫信</a></div>
+      <div class="setrow dupme"><span>隱私權政策</span><a href="#" data-doc="privacy">查看</a></div>
+      <div class="setrow dupme"><span>服務條款</span><a href="#" data-doc="terms">查看</a></div>
       <div class="setrow"><span>重看使用導覽</span><a href="#" id="onbAgain">開啟</a></div>
       <div class="setrow"><span>版本</span><span class="muted" id="verSettings"></span></div>
+      <div class="setrow"><span>刪除帳號<small>一併刪除所有照片、衣櫃與紀錄，剩餘點數不退還</small></span><a href="#" id="setDelAcc" style="color:var(--bad)">刪除</a></div>
     </div>
   </section>
 
@@ -833,8 +836,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '5.0.0';
-const BUILD = '2026-10-31-08';
+const APP_VERSION = '5.1.0';
+const BUILD = '2026-10-31-09';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -908,19 +911,18 @@ function go(v, keepHash, opt={}){
   if (window.__pickResolve) window.__pickResolve();
   if (!VIEWS.includes(v)) v = state.user ? 'tryon' : 'home';
   if (v==='home' && APPISH) v='tryon';
-  if (curView) scrollMem[curView]=window.scrollY;
   const prev=curView;
   const navBooted=!!document.querySelector('.view.on');
-  if (NEED_LOGIN.includes(v) && !state.user) { state.wantView=v; if(!document.querySelector('.view.on')) go('home', true); if(state.authReady) openLogin(); return; }
+  if (NEED_LOGIN.includes(v) && !state.user) { state.wantView=v; state.wantAt=Date.now(); if(!document.querySelector('.view.on')) go('home', true); if(state.authReady) openLogin(); return; }
   $('guestbar').classList.toggle('hidden', !!state.user || v!=='tryon');
   const anim = SUBS[v]&&prev!==v&&!opt.back ? 'push' : (opt.back&&SUBS[prev] ? 'pop' : 'fade');
-  document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.classList.toggle('on', on); x.classList.remove('slide','push','pop','fade'); if(on&&prev!==v){ void x.offsetWidth; x.classList.add(anim); } });
+  document.querySelectorAll('.view').forEach(x=>{ const on=x.id==='view-'+v; x.style.transform=''; x.style.transition=''; x.classList.toggle('on', on); x.classList.remove('slide','push','pop','fade'); if(on&&prev!==v){ void x.offsetWidth; x.classList.add(anim); } });
   curView=v;
   if(prev!==v) haptic();
   document.querySelectorAll('[data-go]').forEach(b=>b.classList.toggle('on', b.dataset.go===v || (b.closest('.bottomnav')&&SUBS[v]===b.dataset.go)));
   const H=document.documentElement; H.classList.toggle('subpage', !!SUBS[v]); H.classList.toggle('titled', v!=='home'&&v!=='tryon'); H.dataset.view=v;
   $('tbTitle').textContent=TITLES[v]||'';
-  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want){ const url=location.pathname+location.search+want; if(navBooted){ history.pushState(null,'',url); navPushed++; } else history.replaceState(null,'',url); } }
+  if(!keepHash && !AUTH_HASH.test(location.hash)) { const want=v==='home'?'':'#'+v; if(location.hash!==want){ const url=location.pathname+location.search+want; const st=history.state||{}; const d=st.d||0; const push=navBooted && !opt.replace && !opt.back && (SUBS[v] || ((prev==='tryon'||prev==='home') && TABS.includes(v) && v!=='tryon')); if(push) history.pushState({d:d+1,b:d?st.b:prev},'',url); else history.replaceState({d, b:d?st.b:v},'',url); } }
   if(v==='home') setTimeout(applyDemo,0);
   const sy = (TABS.includes(v)&&prev!==v&&scrollMem[v]!=null) ? scrollMem[v] : (prev===v?window.scrollY:0);
   window.scrollTo({top:sy, behavior:'instant'});
@@ -931,11 +933,15 @@ function go(v, keepHash, opt={}){
   if (v==='settings') renderSettings();
   if (v==='body') renderBody();
   if (v==='me') renderMe();
-  if (v==='shop' && (!shopLoaded || !shopItems.length)) loadShop(true); else if (v==='shop') $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin));
+  if (v==='shop' && (!shopLoaded || !shopItems.length)) loadShop(true);
 }
-document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.go; if(v===curView && TABS.includes(v)){ window.scrollTo({top:0,behavior:'smooth'}); return; } go(v); }));
-function navBack(){ const parent=SUBS[curView]||'tryon'; if(history.length>1 && navPushed>0){ history.back(); } else go(parent,false,{back:true}); }
-let navPushed=0;
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.go; if(v===curView && TABS.includes(v)){ window.scrollTo({top:0,behavior:'smooth'}); return; }
+  if(b.closest('.bottomnav') && SUBS[curView]===v){ navBack(); return; }
+  const st=history.state||{}; if(TABS.includes(v) && st.d>0 && st.b===v){ history.go(-st.d); return; }
+  go(v); }));
+function navBack(){ const st=history.state||{}; if(st.d>0) history.back(); else go(SUBS[curView]||'tryon',false,{back:true,replace:true}); }
+try{ history.scrollRestoration='manual'; }catch{}
+window.addEventListener('scroll',()=>{ if(curView) scrollMem[curView]=window.scrollY; },{passive:true});
 $('tbBack').onclick=navBack;
 
 /* ---------- 登入 ---------- */
@@ -952,9 +958,9 @@ function setSession(s){
   const was = !!state.user;
   state.session = s; state.user = s ? s.user : null;
   renderUser();
-  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=state.wantView||location.hash.replace('#','')||bootHash; state.wantView=null; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
+  if (state.user && !was) { refreshMe(); closePick(); loadPrefs(); const h=(state.wantView&&Date.now()-(state.wantAt||0)<120000?state.wantView:null)||location.hash.replace('#','')||bootHash; state.wantView=null; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
   if (!state.user && was) go('home');
-  if (state.user) { if (new URLSearchParams(location.search).get('paid')==='1') { toast('付款完成，點數已入帳'); history.replaceState(null,'',location.pathname+location.hash); } }
+  if (state.user) { const pq=new URLSearchParams(location.search).get('paid'); if (pq==='1') { toast('付款完成，點數已入帳'); history.replaceState(history.state,'',location.pathname+location.hash); } else if (pq==='0') { toast('付款未完成，沒有扣款'); history.replaceState(history.state,'',location.pathname+location.hash); } }
 }
 function renderUser(){
   const a=$('userArea');
@@ -1039,12 +1045,14 @@ function renderMe(){
   const c=$('meCard'); $('meVer').textContent='試穿吧 TryOn · v'+APP_VERSION;
   if(!state.user){ c.innerHTML='<div class="mehead"><span class="av">?</span><div><b>還沒登入</b><small>登入後才能合成、存衣櫃與看紀錄</small></div></div><button class="btn primary block" id="meLogin">登入 / 註冊</button>'; $('meLogin').onclick=openLogin; $('meOut').classList.add('hidden'); $('meAdmin').classList.add('hidden'); $('meCr').textContent=''; return; }
   const em=state.user.email||''; const me=state.me||{};
-  c.innerHTML=`<div class="mehead"><span class="av">${esc((em[0]||'U').toUpperCase())}</span><div><b>${esc(em)}</b><small>會員</small></div></div><div class="mestats"><button data-go2="credits"><b>${me.credits??'–'}</b><small>剩餘點數</small></button><button data-go2="credits"><b>${me.free_left??'–'}</b><small>今日免費</small></button><button data-go2="history"><b>${(state.history||[]).length||'–'}</b><small>合成紀錄</small></button></div>`;
+  c.innerHTML=`<div class="mehead"><span class="av">${esc((em[0]||'U').toUpperCase())}</span><div><b>${esc(em)}</b><small>會員</small></div></div><div class="mestats"><button data-go2="credits"><b>${me.credits??'–'}</b><small>剩餘點數</small></button><button data-go2="credits"><b>${me.free_left??'–'}</b><small>今日免費</small></button><button data-go2="history"><b>${state.historyLoaded?(state.history||[]).length:'–'}</b><small>合成紀錄</small></button></div>`;
   c.querySelectorAll('[data-go2]').forEach(b=>b.onclick=()=>go(b.dataset.go2));
-  $('meCr').textContent=me.credits!=null?me.credits+' 點':''; $('meBody').textContent=(me.analysis?'已分析':'');
+  $('meCr').textContent=me.credits!=null?me.credits+' 點':''; $('meBody').textContent=(me.analysis&&!me.analysis.error&&me.analysis.body_shape?'已分析':'');
+  if(!state.historyLoaded&&!state.historyLoading){ state.historyLoading=true; Promise.resolve(loadHistory()).catch(()=>{}).finally(()=>{ state.historyLoading=false; state.historyLoaded=true; if(curView==='me') renderMe(); }); }
   $('meOut').classList.remove('hidden'); $('meAdmin').classList.toggle('hidden', !me.is_admin);
 }
 $('meLogout').onclick=()=>$('btnLogout').click();
+$('setDelAcc').onclick=e=>{ e.preventDefault(); $('btnDeleteAcc').click(); };
 
 /* ---------- 手勢：底部選單往下滑關閉、左邊緣右滑返回、下拉重新整理 ---------- */
 (function(){
@@ -1052,19 +1060,23 @@ $('meLogout').onclick=()=>$('btnLogout').click();
   // 底部選單往下拖曳關閉
   document.querySelectorAll('.pickmenu .sheet').forEach(sh=>{
     let y0=null, dy=0;
-    sh.addEventListener('touchstart',e=>{ if(sh.scrollTop>0) { y0=null; return; } y0=e.touches[0].clientY; dy=0; sh.style.transition='none'; },{passive:true});
+    sh.addEventListener('touchstart',e=>{ if(sh.scrollTop>0 || !e.target.closest('.grab,h2')) { y0=null; return; } y0=e.touches[0].clientY; dy=0; sh.style.transition='none'; },{passive:true});
+    sh.addEventListener('touchcancel',()=>{ y0=null; sh.style.transform=''; sh.style.transition=''; });
     sh.addEventListener('touchmove',e=>{ if(y0==null) return; dy=e.touches[0].clientY-y0; if(dy>0) sh.style.transform=`translateY(${dy}px)`; },{passive:true});
     sh.addEventListener('touchend',()=>{ if(y0==null) return; sh.style.transition='transform .2s ease'; const menu=sh.parentElement;
       if(dy>110){ sh.style.transform='translateY(100%)'; setTimeout(()=>{ sh.style.transform=''; sh.style.transition=''; if(menu.id==='cropmenu'){ if(window.__cropCancel) window.__cropCancel(); } else closePick(); },180); haptic(); }
       else sh.style.transform=''; y0=null; });
   });
+  const ptr=$('ptr'); let py=null;
   // 左邊緣右滑返回（子頁）
   let sx=null, sxy=0, sdx=0, sv=null;
-  document.addEventListener('touchstart',e=>{ const t=e.touches[0]; if(!isPhone()||!SUBS[curView]||t.clientX>24){ sx=null; return; } sx=t.clientX; sxy=t.clientY; sdx=0; sv=document.querySelector('.view.on'); if(sv) sv.style.transition='none'; },{passive:true});
+  const overlayOpen=()=>!!document.querySelector('.pickmenu.on,.itemview.on,.lightbox.on,.dlg.on,.onb.on');
+  document.addEventListener('touchstart',e=>{ const t=e.touches[0]; if(!APPISH||PLATFORM==='android'||document.documentElement.classList.contains('android')||!isPhone()||!SUBS[curView]||t.clientX>24||overlayOpen()){ sx=null; return; } sx=t.clientX; sxy=t.clientY; sdx=0; sv=document.querySelector('.view.on'); if(sv) sv.style.transition='none'; },{passive:true});
   document.addEventListener('touchmove',e=>{ if(sx==null||!sv) return; const t=e.touches[0]; sdx=t.clientX-sx; if(Math.abs(t.clientY-sxy)>Math.abs(sdx)&&sdx<20){ sx=null; sv.style.transform=''; return; } if(sdx>0) sv.style.transform=`translateX(${sdx}px)`; },{passive:true});
-  document.addEventListener('touchend',()=>{ if(sx==null||!sv) return; const v=sv; v.style.transition='transform .2s ease'; if(sdx>90){ v.style.transform='translateX(100%)'; setTimeout(()=>{ v.style.transform=''; v.style.transition=''; navBack(); },160); } else { v.style.transform=''; setTimeout(()=>v.style.transition='',220); } sx=null; });
+  document.addEventListener('touchend',()=>{ if(sx==null||!sv) return; const v=sv; v.style.transition='transform .2s ease'; if(sdx>90){ v.style.transform='translateX(100%)'; setTimeout(()=>navBack(),160); } else { v.style.transform=''; setTimeout(()=>v.style.transition='',220); } sx=null; });
+  document.addEventListener('touchcancel',()=>{ if(sv){ sv.style.transform=''; sv.style.transition=''; } sx=null; py=null; ptr.style.opacity=0; ptr.style.transform=''; });
   // 下拉重新整理（商店、衣櫃、紀錄）
-  const ptr=$('ptr'); let py=null, pdy=0;
+  let pdy=0;
   const canPtr=()=>isPhone()&&['shop','wardrobe','history'].includes(curView)&&window.scrollY<=0&&!document.querySelector('.pickmenu.on,.itemview.on,.lightbox.on,.dlg.on');
   document.addEventListener('touchstart',e=>{ py=canPtr()?e.touches[0].clientY:null; pdy=0; },{passive:true});
   document.addEventListener('touchmove',e=>{ if(py==null) return; pdy=e.touches[0].clientY-py; if(pdy<=0||window.scrollY>0){ ptr.style.opacity=0; return; } const d=Math.min(90,pdy*0.5); ptr.style.opacity=Math.min(1,d/60); ptr.style.transform=`translate(-50%,${d}px) rotate(${d*4}deg)`; },{passive:true});
@@ -1402,11 +1414,12 @@ async function loadShop(reset){
     if(seq!==shopSeq) return;
     shopItems=shopItems.concat(d.products||[]); renderShop(); $('shopMore').classList.toggle('hidden',!d.has_more); shopPage++;
   }catch(e){ if(seq===shopSeq) $('shopList').innerHTML=`<div class="empty-note">${esc(e.message)}</div>`; }
-  finally{ if(seq===shopSeq) shopBusy=false; $('shopAdmin').classList.toggle('hidden', !(state.me&&state.me.is_admin)); }
+  finally{ if(seq===shopSeq) shopBusy=false; }
 }
 $('shopMore').onclick=()=>loadShop(false);
 function renderShop(){
   const box=$('shopList');
+  if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
   box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}">${inRack(p.id)?'✓ 衣架':'＋衣架'}</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
@@ -1594,6 +1607,7 @@ function updateAnalyzeCta(){ const a=state.me&&state.me.analysis; const t=$('ana
 
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
+  const sa=$('shopAdmin'); if(sa&&sa.parentElement.id!=='view-admin'){ $('view-admin').appendChild(sa); } if(sa) sa.classList.remove('hidden');
   const box=$('adminBody'); box.textContent='載入中…';
   try{
     const d=await api('/api/admin/stats');
@@ -1717,7 +1731,7 @@ $('btnRun').onclick=async()=>{
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems();
     renderFit();
     if(isPhone) $('result').scrollIntoView({behavior:'smooth',block:'start'});
-    toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants});
+    toast('完成，看看你穿起來的樣子'); haptic('success'); petals(); track('tryon_ok',{n:items.length,variants}); state.historyLoaded=false;
     if (d._pendingId) followViews(d._pendingId, state.result);
     else if (pendingVideo) { const nb=$('runStatus').textContent; attachSpin(pendingVideo).then(()=>{ $('runStatus').textContent=nb+' 360° 好了：在圖上左右拖曳就能旋轉。'; }).catch(()=>{}); }
   }catch(e){
@@ -1831,6 +1845,7 @@ async function loadHistory(){
   if(!supa||!state.user) return;
   if(!state.history.length && $('historyList')) $('historyList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>';
   const { data, error } = await supa.from('generations').select('*').eq('status','ok').eq('deleted',false).order('created_at',{ascending:false}).limit(100);
+  if(!error) state.historyLoaded=true;
   if(error){ toast('讀取紀錄失敗'); return; }
   state.history=(data||[]).filter(g=>g.image_url); renderHistory();
 }
@@ -2024,7 +2039,7 @@ restoreSession();
 renderSlots();
 loadPrefs();
 initAuth();
-window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const iv=$('itemView'); if(iv&&iv.classList.contains('on')) iv.classList.remove('on'); closePick(); const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(navPushed>0) navPushed--; if(!cur||cur.id!=='view-'+h) go(h,false,{back:!!SUBS[curView]}); });
+window.addEventListener('hashchange',()=>{ if(AUTH_HASH.test(location.hash)) return; const iv=$('itemView'); if(iv&&iv.classList.contains('on')) iv.classList.remove('on'); closePick(); if($('lightbox').classList.contains('on')) $('lightbox').classList.remove('on'); if($('cropmenu').classList.contains('on')&&window.__cropCancel) window.__cropCancel(); if($('dlg').classList.contains('on')) $('dlgNo').click(); const h=location.hash.replace('#','')||'home'; const cur=document.querySelector('.view.on'); if(!cur||cur.id!=='view-'+h) go(h,false,{back:!!SUBS[curView],replace:true}); });
 const bootHash=location.hash.replace('#','');
 (function(){ if(AUTH_HASH.test(location.hash)){ go(APPISH?'tryon':'home'); return; } go(VIEWS.includes(bootHash)&&bootHash!=='home' ? bootHash : (APPISH?'tryon':'home')); })();
 }
