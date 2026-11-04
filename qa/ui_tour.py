@@ -62,7 +62,12 @@ with sync_playwright() as pw:
     tag = 'guest_' + ('phone' if phone else 'pc')
     pg = mkpage(phone); pg.goto(SITE + '?v=' + str(int(time.time())), wait_until='load'); pg.wait_for_timeout(3500)
     pg.screenshot(path=f'{OUT}/{tag}_00_first.png')
-    try: pg.click('#onbSkip', timeout=2500); pg.wait_for_timeout(800)
+    try:
+      for k in range(1,5):
+        pg.click('#onbNext', timeout=2500); pg.wait_for_timeout(500); pg.screenshot(path=f'{OUT}/{tag}_00_onb{k}.png')
+        if not pg.is_visible('#onb'): break
+    except Exception: pass
+    try: pg.click('#onbSkip', timeout=1500); pg.wait_for_timeout(500)
     except Exception: pass
     tour(pg, tag, ['home', 'tryon', 'shop', 'me'])
     try: pg.click('#userArea button, #userArea a, #userArea'); pg.wait_for_timeout(1000); pg.screenshot(path=f'{OUT}/{tag}_login.png')
@@ -90,7 +95,21 @@ with sync_playwright() as pw:
       for x in rr[1:4]: x.click(); pg.wait_for_timeout(300)
       pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(1500)
       pg.screenshot(path=f'{OUT}/{tag}_tryon_rack.png', full_page=True)
-      it = pg.query_selector('.pitem .img img')
+      # 彈出視窗：格子大圖、格子選單、裁切、紀錄大圖、設定對話框
+      def shot(n):
+        pg.screenshot(path=f'{OUT}/{tag}_ov_{n}.png')
+      slots = pg.query_selector_all('#slots .slot')
+      if slots:
+        slots[0].click(); pg.wait_for_timeout(700); shot('itemview'); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+        slots[-1].click(); pg.wait_for_timeout(700); shot('slotmenu'); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+      pg.evaluate("location.hash='#history'"); pg.wait_for_timeout(3000)
+      hi = pg.query_selector('#historyList img')
+      if hi: hi.click(); pg.wait_for_timeout(900); shot('lightbox'); pg.keyboard.press('Escape'); pg.wait_for_timeout(300)
+      pg.evaluate("location.hash='#me'"); pg.wait_for_timeout(600)
+      pg.click('#meLogout'); pg.wait_for_timeout(500); shot('dialog'); pg.click('#dlgNo'); pg.wait_for_timeout(300)
+      pg.evaluate("location.hash='#tryon'"); pg.wait_for_timeout(600)
+      pg.evaluate("document.getElementById('advOpts').open=true; document.getElementById('wantViews').click()"); pg.wait_for_timeout(400); shot('advopts')
+      pg.evaluate("showOnb(0)") if False else None
     except Exception as e:
       dbg = pg.evaluate("(()=>{const v=document.querySelector('.view.on');const b=document.querySelector('#view-shop [data-try]');return [v&&v.id, location.hash, b?getComputedStyle(b).display+' '+b.getBoundingClientRect().width+'x'+b.getBoundingClientRect().height:'none', document.querySelectorAll('#view-shop [data-try]').length].join(' | ')})()")
       rep['pages'].append({'view': tag + '_flow', 'err': str(e)[:300], 'dbg': dbg}); pg.screenshot(path=f'{OUT}/{tag}_flow_err.png')
