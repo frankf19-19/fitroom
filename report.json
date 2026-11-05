@@ -1,0 +1,210 @@
+{
+ "started": "2026-11-05 15:35:10",
+ "steps": [
+  {
+   "name": "測試帳號已存在",
+   "ok": true,
+   "info": "29925742-57d9-49a2-b1f9-f94ae59f68fa"
+  },
+  {
+   "name": "產生登入連結",
+   "ok": true,
+   "info": "ok"
+  },
+  {
+   "name": "登入後右上顯示點數",
+   "ok": true,
+   "info": "url=https://frankf19-19.github.io/fitroom/#tryon userArea=20 點"
+  },
+  {
+   "name": "上傳全身照",
+   "ok": true,
+   "info": "person has"
+  },
+  {
+   "name": "商店載入商品",
+   "ok": true,
+   "info": "24 件"
+  },
+  {
+   "name": "商店商品放進試衣間",
+   "ok": true,
+   "info": "slots=['top'] view=view-tryon"
+  },
+  {
+   "name": "再放入褲子",
+   "ok": true,
+   "info": "slots=['top', 'bottom']"
+  },
+  {
+   "name": "衣架多選＋試衣間一點換穿",
+   "ok": true,
+   "info": "bar=衣架 3 件\n清空\n去試衣間換穿 rack=3"
+  },
+  {
+   "name": "尺寸建議有內容",
+   "ok": true,
+   "info": "上衣 \n選尺碼\nXS\nS\nM\nL\nXL\nXXL\n3XL\nUNIQLO · 賣場有 XS/S/M/L/XL/XXL/3XL\n依 UNIQLO 亞洲尺碼：建議 S（胸圍合身）\n褲子 / 裙子 \n選尺碼\nS\nM\nL\nXL\nUNIQLO · 賣場有 S/M/L/XL\n依 UNIQLO 亞洲尺碼：建議 M（腰圍合身、臀圍合身）"
+  },
+  {
+   "name": "預先合成提示",
+   "ok": true,
+   "info": "每個品項 1 點 · 這次全用免費額度（剩 2 張） · ⚡ 已先在背景準備，按下會更快"
+  },
+  {
+   "name": "AI 試穿出結果",
+   "ok": false,
+   "info": "preview_at=None timing=None cost=None 耗時 300s runStatus=AI 服務暫時出了點狀況，這次沒有成功，點數已自動退回。請再試一次 statuses=['已送出，等待 AI 開始…（3 秒）', 'AI 服務暫時出了點狀況，這次沒有成功，點數已自動退回。請再試一次']"
+  },
+  {
+   "name": "身形分析",
+   "ok": false,
+   "info": "AI 服務暫時出了點狀況，這次沒有成功，點數會自動退回。請再試一次；一直失敗的話，換一張更清楚的照片通常就會好 report_len=0"
+  },
+  {
+   "name": "例外",
+   "ok": false,
+   "info": "es/playwright/_impl/_connection.py\", line 636, in wrap_api_call\n    raise rewrite_error(error, f\"{parsed_st['apiName']}: {error}\") from None\nplaywright._impl._errors.TimeoutError: Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"#btnOutfit\")\n    - locator resolved to <button class=\"btn\" id=\"btnOutfit\">幫我搭配</button>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visibl"
+  }
+ ],
+ "pageerrors": [],
+ "console": [
+  [
+   "warning",
+   "W1105 15:36:00.963000 1880752 gl_context.cc:1060] OpenGL error checking is disabled"
+  ]
+ ],
+ "api": [
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/brands",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m&q=PUFFTECH",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/product-click",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m&q=%E7%B9%AD%E5%9E%8B%E8%A4%B2",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/product-click",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon/status?id=53",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/products?page=0&gender=m",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon/status?id=54",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon/status?id=55",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/event",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/tryon/status?id=56",
+   "status": 200,
+   "body": ""
+  },
+  {
+   "url": "/api/analyze",
+   "status": 202,
+   "body": ""
+  },
+  {
+   "url": "/api/me",
+   "status": 200,
+   "body": ""
+  }
+ ],
+ "finished": "2026-11-05 15:41:38"
+}
