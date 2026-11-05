@@ -149,14 +149,6 @@
   /* 試衣間 */
   .tryon{display:grid;grid-template-columns:1fr;gap:0}
   @media(min-width:900px){.tryon{grid-template-columns:420px 1fr;gap:56px;align-items:start}}
-  .steps3{display:flex;align-items:center;gap:8px;margin:18px 0 4px;font-size:10px;letter-spacing:2px;color:var(--muted)}
-  @media(min-width:900px){.steps3{display:none}}
-  .steps3 span{display:flex;align-items:center;gap:6px}
-  .steps3 i{width:20px;height:20px;border:1px solid var(--line);color:var(--muted);display:grid;place-items:center;font-style:normal;font-size:10px}
-  .steps3 span.done i{border-color:var(--ink);color:var(--ink)}
-  .steps3 span.cur i{background:var(--ink);border-color:var(--ink);color:#fff}
-  .steps3 span.cur{color:var(--ink)}
-  .steps3 b{flex:1;height:1px;background:var(--line)}
   .person{position:relative;border:0;background:var(--bg2);min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--ink2);cursor:pointer;overflow:hidden}
   .person.has{background:#fff;cursor:default;min-height:0}
   .person img{display:block;max-width:100%;max-height:560px}
@@ -442,7 +434,6 @@
   @media(max-width:899px){.result{min-height:220px}.result .empty{padding:20px}}
   .slot .lb,.slot.has .lb{font-size:12px}
   .slot.has .lb{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
-  .steps3{font-size:12px}.steps3 i{font-size:11px}
   .pitem .brand{font-size:11px}.pitem .img .feat{font-size:10px}
   .balance .b .l,dl.kv dt,#bodyReport b,#historyList span,.pack .pill{font-size:12px}
   .pitem .img .feat{font-size:11px}
@@ -526,7 +517,6 @@
   .switch::before{content:"";position:absolute;inset:-11px -8px}
   .witem .t,.hitem .meta,.pill,.advice b,.rk .t,.rk .n,.variants .v span,.tag,.cmp .tag,.demo .tag,.stat .l,table.tb th,.fitgrid label,.pack .each,.polaroid .cap small,.sheet .opt small,.setrow small,.pitem .brand,.kv dt,.spinbox .spinhint,.iv-info .muted,.userchip,.topbar .free,.gsw button,.lightbox .lbviews button,.angles .seg button,.angles .spin,.chip,.btn.sm,.pitem .acts .btn,.outfit .it .btn,.hero .kicker,.or,.bottomnav button,.shape small,.mehead small,.mlist .li em{font-size:12px}
   .logo small{font-size:12px;letter-spacing:3px}
-  .steps3 i{width:22px;height:22px;font-size:12px}
   .witem .del::before{content:"";position:absolute;inset:-4px}
   @media(max-width:899px){
     .btn.sm,.chip,.gsw button,.lightbox .lbviews button,.angles .seg button,.angles .spin,.setrow a,.pitem .acts .btn,.outfit .it .btn,.mestats button,.userchip,.updbar button{min-height:44px}
@@ -538,6 +528,60 @@
     .crop img{max-height:48dvh}
     .fitrow select{min-height:40px}
     #resultActions .btn{min-height:48px}
+  }
+  /* ===== v5.4 手機原生 App 感 ===== */
+  .analyze-cta{margin-top:12px}
+  .plabel{display:none;font-size:13px;font-weight:500;letter-spacing:1px;color:var(--ink);line-height:1.5}
+  .plabel small{display:block;font-weight:400;color:var(--muted);font-size:12px;letter-spacing:.5px}
+  .person.has input{inset:auto;left:0;top:0;width:0;height:0;pointer-events:none}
+  .stickyrun{display:none;position:fixed;left:0;right:0;bottom:calc(var(--nav) + env(safe-area-inset-bottom));z-index:19;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:10px 16px}
+  .stickyrun .srprog{font-size:12px;letter-spacing:.5px;color:var(--ink2);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:50px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+  .seepill{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 14px);z-index:19;background:var(--ink);color:#fff;border:0;padding:11px 18px;font-size:12px;letter-spacing:2px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer;font-family:inherit}
+  html.sticky-on .seepill{bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 86px)}
+  html.sticky-on .rackbar{display:none}
+  html.kb .bottomnav,html.kb .stickyrun,html.kb .seepill,html.kb .installbar{display:none !important}
+  .search{position:relative;flex:1;min-width:160px}
+  .search input[type=text]{padding-right:36px;width:100%}
+  .sclear{position:absolute;right:0;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;background:none;color:var(--muted);font-size:14px;cursor:pointer;display:grid;place-items:center}
+  .cgroup{display:flex;flex:none;flex-wrap:nowrap;margin:0}
+  .fdiv{flex:none;width:1px;height:22px;background:var(--line);margin:0 12px;align-self:center}
+  .rackbtn svg{display:none}
+  .iv-sizes{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+  .iv-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .iv-price{font-size:14px;letter-spacing:.5px;margin-bottom:6px}
+  @media(max-width:899px){
+    main{min-height:100dvh}
+    .toast{top:calc(62px + env(safe-area-inset-top));bottom:auto;transform:translateX(-50%) translateY(-8px)}
+    .toast.show{transform:translateX(-50%)}
+    .stickyrun.on{display:block;animation:up .2s ease}
+    .seepill.on{display:block}
+    html.sticky-on #view-tryon{padding-bottom:84px}
+    /* 試穿：全身照 */
+    .person:not(.has){min-height:0;height:min(44dvh,360px)}
+    .person.has{display:grid;grid-template-columns:64px 1fr auto;column-gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);background:#fff;text-align:left;min-height:0;overflow:visible}
+    .person.has img{width:64px;height:84px;object-fit:cover;max-height:none;cursor:pointer;background:var(--bg2)}
+    .person.has .plabel{display:block}
+    .person.has .change{position:static}
+    .person.has + .analyze-cta{margin-top:0;border-top:0;padding:4px 12px 10px 88px;font-size:12px;line-height:1.6}
+    .person.has + .analyze-cta{flex-wrap:nowrap}
+    .person.has + .analyze-cta span{flex:1}
+    .person.has + .analyze-cta .btn.sm{flex:none;border:0;background:none;color:var(--ink);text-decoration:underline;text-underline-offset:4px;padding:6px 0;min-height:40px}
+    .person.has ~ .linkrow{display:none !important}
+    /* 商店卡片 */
+    .pitem{position:relative}
+    .pitem .acts .rackbtn{position:absolute;top:6px;right:6px;width:40px;height:40px;min-height:0;padding:0;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.95);display:grid;place-items:center;flex:none;z-index:1;color:var(--ink)}
+    .pitem .acts .rackbtn:hover{background:rgba(255,255,255,.95);color:var(--ink)}
+    .pitem .acts .rackbtn svg{display:block;width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+    .pitem .acts .rackbtn.on,.pitem .acts .rackbtn.on:hover{background:var(--ink);border-color:var(--ink);color:#fff}
+    .pitem .acts .rackbtn .t{display:none}
+    .pitem .acts [data-buy]{display:none}
+    .pitem .acts .btn[data-try]{min-height:44px}
+    .iv-card{border-radius:14px 14px 0 0}
+    .iv-card.shop .iv-img img{max-height:38dvh}
+    .iv-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .iv-acts .primary{grid-column:1/-1;min-height:48px}
+    .iv-acts .ghost{grid-column:1/-1}
+    .iv-acts .btn{min-height:44px}
   }
 </style>
 </head>
@@ -590,7 +634,6 @@
   <section class="view" id="view-tryon">
     <div id="setupBanner" class="banner hidden"></div>
     <div class="guestbar hidden" id="guestbar"><span>先放照片與單品試試看，按下「開始 AI 試穿」時再登入即可。</span><button class="btn sm primary" id="guestLogin">登入</button></div>
-    <div class="steps3" id="steps3"><span class="cur" data-s="1"><i>1</i>全身照</span><b></b><span data-s="2"><i>2</i>單品</span><b></b><span data-s="3"><i>3</i>結果</span></div>
     <div class="tryon">
       <div>
         <div class="card">
@@ -599,7 +642,7 @@
             <input type="file" accept="image/*" id="filePerson">
             <div class="tip"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><b>放一張你的全身照</b>正面站好、光線均勻、衣服貼身<br>手機拍的就可以</div>
           </div>
-          <div class="analyze-cta" id="analyzeCta" style="margin-top:12px"><span id="analyzeCtaText">填身高體重，合成會更貼合你的身形。</span><button class="btn sm" id="btnAnalyzeGo">我的身形</button></div>
+          <div class="analyze-cta" id="analyzeCta"><span id="analyzeCtaText">填身高體重，合成會更貼合你的身形。</span><button class="btn sm" id="btnAnalyzeGo">我的身形</button></div>
           <div class="row linkrow">
             <button class="btn ghost sm" id="btnTips">怎麼拍效果最好？</button>
             <button class="btn ghost sm" id="btnPersonFromHistory">用以前的合成照</button>
@@ -697,10 +740,9 @@
     <h1 class="ptitle" style="font-size:24px;margin:0 0 6px">商店</h1>
     <div class="muted" style="margin-bottom:14px">挑一件直接放進試衣間試穿，喜歡再點購買到品牌官網下單。</div>
     <div class="shopbar">
-      <input type="text" id="shopQ" placeholder="搜尋品牌或商品">
-      <div class="chips" id="shopGender" style="margin:0"><span class="chip on" data-g="">全部</span><span class="chip" data-g="f">女</span><span class="chip" data-g="m">男</span></div>
+      <div class="search"><input type="text" id="shopQ" placeholder="搜尋品牌或商品" inputmode="search" enterkeyhint="search" autocomplete="off"><button class="sclear hidden" id="shopQClear" aria-label="清除搜尋">✕</button></div>
     </div>
-    <div class="filt" id="shopType"></div>
+    <div class="filt" id="shopFilt"><div class="chips cgroup" id="shopGender"><span class="chip on" data-g="">全部</span><span class="chip" data-g="f">女</span><span class="chip" data-g="m">男</span></div><i class="fdiv"></i><div class="chips cgroup" id="shopType"></div></div>
     <div class="filt brandfilt" id="shopBrand"></div>
     <div id="shopList"><div class="skel"><i></i><i></i><i></i><i></i></div></div>
     <div class="row" style="justify-content:center;margin-top:14px"><button class="btn hidden" id="shopMore">載入更多</button></div>
@@ -795,6 +837,8 @@
   <button data-go="history"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>紀錄</button>
   <button data-go="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>我的</button>
 </nav>
+<div class="stickyrun" id="stickyRun"><button class="btn primary lg block" id="stickyRunBtn">開始 AI 試穿</button><div class="srprog hidden" id="stickyRunProg"></div></div>
+<button class="seepill" id="seeResult">看結果 ↓</button>
 
 <!-- 選擇來源的底部選單 -->
 <div class="pickmenu" id="pickmenu" role="dialog" aria-modal="true"><div class="sheet"><div class="grab"></div>
@@ -839,12 +883,13 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '5.3.0';
-const BUILD = '2026-11-05-01';
+const APP_VERSION = '5.4.0';
+const BUILD = '2026-11-05-02';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
 const $ = id => document.getElementById(id);
+const isPhoneMQ = window.matchMedia('(max-width:899px)');
 const CAP = window.Capacitor;
 const IS_APP = !!(CAP && CAP.isNativePlatform && CAP.isNativePlatform());
 const PLATFORM = IS_APP ? CAP.getPlatform() : 'web';
@@ -897,7 +942,7 @@ let toastT; function toast(m, ms){ const t=$('toast'); t.textContent=m; t.classL
 
 /* ---------- 狀態 ---------- */
 const state = { user:null, session:null, me:null, person:null, personOrig:null, slots:{}, result:null, wardrobe:[], history:[] };
-try{ if(localStorage.getItem('tryon.debug')==='1') window.__tryon={state, get renderSlots(){return renderSlots;}, get renderFit(){return renderFit;}}; }catch{}
+try{ if(localStorage.getItem('tryon.debug')==='1') window.__tryon={state, get renderSlots(){return renderSlots;}, get renderFit(){return renderFit;}, get renderShop(){return renderShop;}, get shopItems(){return shopItems;}, set shopItems(v){shopItems=v;}, get updateSticky(){return updateSticky;}, get openItemView(){return openItemView;}}; }catch{}
 const configured = CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && CONFIG.WORKER_URL;
 let supa = null;
 if (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && window.supabase) supa = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
@@ -937,6 +982,7 @@ function go(v, keepHash, opt={}){
   if (v==='body') renderBody();
   if (v==='me') renderMe();
   if (v==='shop' && (!shopLoaded || !shopItems.length)) loadShop(true);
+  try{ updateSticky(); }catch{}
 }
 document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>{ const v=b.dataset.go; if(v===curView && TABS.includes(v)){ window.scrollTo({top:0,behavior:'smooth'}); return; }
   if(b.closest('.bottomnav') && SUBS[curView]===v){ navBack(); return; }
@@ -1151,14 +1197,33 @@ function dataUriToBlob(uri){ const [h,b]=uri.split(','); const mime=/data:(.*?);
 
 /* ---------- 全身照 ---------- */
 function setStep(n){ document.querySelectorAll('#steps3 span').forEach(sp=>{ const k=+sp.dataset.s; sp.classList.toggle('done',k<n); sp.classList.toggle('cur',k===n); }); }
+// 先同步套用（第一次繪製就不會閃出大空框），太大的圖再在背景縮小一次
 async function setPerson(dataUri){
-  if (dataUri && dataUri.length > 1500000) { try { const im=await loadImg(dataUri); dataUri=downscale(im,1280,'image/jpeg',0.9); } catch{} }
+  const big = !!(dataUri && dataUri.length > 1500000);
+  applyPerson(dataUri, !big);
+  if (big) { try { const im=await loadImg(dataUri); applyPerson(downscale(im,1280,'image/jpeg',0.9), true); } catch{} }
+}
+function applyPerson(dataUri, persist){
   state.person = dataUri; state.personOrig = dataUri;
-  try{ localStorage.setItem('tryon.person', dataUri); }catch{}
+  if(persist){ try{ localStorage.setItem('tryon.person', dataUri); }catch{} }
   if(!Object.keys(state.slots).length) setStep(2);
   const box=$('personBox'); box.classList.add('has');
-  box.innerHTML = `<img src="${dataUri}" alt="全身照"><button class="btn sm change" id="personChange">更換</button>`;
-  $('personChange').onclick=e=>{ e.stopPropagation(); pickImage(onPersonImage); };
+  // #filePerson 要留著（手機精簡列也能上傳）：先拿出來，換完內容再放回去
+  const inp=$('filePerson'); if(inp) inp.remove();
+  box.innerHTML = `<img src="${dataUri}" alt="全身照" id="personImg"><span class="plabel">全身照已放好<small>點縮圖可放大</small></span><button class="btn sm change" id="personChange">更換</button>`;
+  if(inp) box.prepend(inp);
+  $('personChange').onclick=e=>{ e.stopPropagation(); if(isPhoneMQ.matches) openPersonMenu(); else pickImage(onPersonImage); };
+  $('personImg').onclick=e=>{ if(!isPhoneMQ.matches) return; e.stopPropagation(); openItemView({image:dataUri},'person'); };
+  try{ updateSticky(); }catch{}
+}
+// 手機：「更換」底部選單（拍照／選照片、用以前的合成照、怎麼拍效果最好）
+function openPersonMenu(){
+  openPick('更換全身照', `<div class="opt" id="optPersonPick"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span><div>拍照／選照片<small>正面站好、光線均勻、衣服貼身</small></div></div>
+    <div class="opt" id="optPersonHist"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><div>用以前的合成照<small>把上次的結果當底圖繼續搭</small></div></div>
+    <div class="opt" id="optPersonTips"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><path d="M12 17h.01"/></svg></span><div>怎麼拍效果最好<small>拍照指引</small></div></div>`);
+  $('optPersonPick').onclick=()=>{ closePick(); pickImage(onPersonImage); };
+  $('optPersonHist').onclick=()=>{ closePick(); $('btnPersonFromHistory').click(); };
+  $('optPersonTips').onclick=()=>{ closePick(); openDoc('tips'); };
 }
 function onPersonImage(im){
   const short=Math.min(im.width,im.height);
@@ -1203,6 +1268,7 @@ function renderSlots(){
   if (state.me && state.me.views_available===false){ $('wantViews').classList.remove('on'); $('wantViews').closest('.opt-row').classList.add('hidden'); }
   renderFit(); pfHint();
   $('btnRun').disabled = !n || busy;
+  try{ updateSticky(); }catch{}
 }
 let runCost=0;
 function openSlotMenu(type){
@@ -1416,7 +1482,14 @@ async function shopBrandChips(){
 }
 function shopTypeChips(){ const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
 $('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopGender=c.dataset.g; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); loadShop(true); });
-let shopQT; $('shopQ').addEventListener('input',()=>{ clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
+let shopQT; const shopQ=$('shopQ');
+function syncShopClear(){ const c=$('shopQClear'); if(c) c.classList.toggle('hidden',!shopQ.value); }
+shopQ.addEventListener('input',()=>{ syncShopClear(); clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
+shopQ.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); shopQ.blur(); clearTimeout(shopQT); loadShop(true); } });
+$('shopQClear').onclick=()=>{ shopQ.value=''; syncShopClear(); clearTimeout(shopQT); loadShop(true); };
+// 捲到底自動載入更多（按鈕留著當備援）
+let shopIO=null;
+if(window.IntersectionObserver){ shopIO=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting) && curView==='shop' && !shopBusy && !$('shopMore').classList.contains('hidden')) loadShop(false); },{rootMargin:'0px 0px 320px 0px'}); shopIO.observe($('shopMore')); }
 async function loadShop(reset){
   if(shopBusy && !reset) return; shopBusy=true; const seq=++shopSeq; shopLoaded=true;
   if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); shopBrandChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
@@ -1426,18 +1499,25 @@ async function loadShop(reset){
     const d=await api('/api/products?'+qs.toString());
     if(seq!==shopSeq) return;
     shopItems=shopItems.concat(d.products||[]); renderShop(); $('shopMore').classList.toggle('hidden',!d.has_more); shopPage++;
+    // 還在畫面內就再觸發一次（IntersectionObserver 只在進出時通知）
+    if(shopIO && d.has_more){ shopIO.unobserve($('shopMore')); shopIO.observe($('shopMore')); }
   }catch(e){ if(seq===shopSeq) $('shopList').innerHTML=`<div class="empty-note">${esc(e.message)}</div>`; }
   finally{ if(seq===shopSeq) shopBusy=false; }
 }
 $('shopMore').onclick=()=>loadShop(false);
+const HANGER='<svg viewBox="0 0 24 24"><path d="M12 4a2 2 0 0 1 2 2c0 1-1 1.5-2 2.5v1.5l8 5v2H4v-2l8-5"/></svg>';
+function priceTxt(p){ return p&&p.price>0 ? ((p.currency&&p.currency!=='TWD')?p.currency+' ':'NT$ ')+Number(p.price).toLocaleString() : ''; }
+function syncRackBtn(id){ const on=inRack(id); document.querySelectorAll(`#shopList [data-rack="${id}"]`).forEach(b=>{ b.classList.toggle('on',on); const t=b.querySelector('.t'); if(t) t.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); }); }
 function renderShop(){
   const box=$('shopList');
-  if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
+  if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; syncShopClear(); $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}"><div class="img"><img src="${p.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${p.price>0?(p.currency==='TWD'?'NT$ ':p.currency+' ')+p.price.toLocaleString():''}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}">${inRack(p.id)?'✓ 衣架':'＋衣架'}</button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(p.image_url)}" loading="lazy" referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
-  box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); const on=inRack(b.dataset.rack); b.classList.toggle('on',on); b.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); });
+  box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); syncRackBtn(b.dataset.rack); });
+  // 點卡片（圖片／名稱）打開商品頁
+  box.querySelectorAll('.pitem').forEach(el=>{ const open=()=>{ const p=shopItems.find(x=>String(x.id)===el.dataset.id); if(p) openItemView(p,'shop'); }; el.onclick=e=>{ if(e.target.closest('button')) return; open(); }; el.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===el){ e.preventDefault(); open(); } }; });
   renderRackBar();
 }
 async function tryProduct(p, opt={}){
@@ -1529,9 +1609,42 @@ function renderUsedItems(){
   box.innerHTML='<div class="muted" style="font-size:12px;letter-spacing:1px;margin-bottom:8px">這次試穿的單品（點一下看細節）</div><div class="ui-row">'+list.map((it,i)=>`<button class="ui-it" data-ui="${i}">${it.image?`<img src="${it.image}" alt="">`:`<span class="ui-txt">${esc((it.text||'').slice(0,12))}</span>`}<span>${TYPE_LABEL[it.type]||''}</span></button>`).join('')+'</div>';
   box.querySelectorAll('[data-ui]').forEach(b=>b.onclick=()=>openItemView(list[+b.dataset.ui]));
 }
+// 商店商品的尺寸提示（依品牌尺碼表與使用者填的三圍／腳長）
+function productFitHint(p){
+  try{
+    const g=(p.gender==='m'||p.gender==='f')?p.gender:fitGender;
+    if(p.type==='shoes'){ const foot=+$('fFoot').value||0; if(!foot) return '到試衣間「尺寸建議」填腳長，就能換算鞋號'; const row=SHOE_TABLE.find(r=>r[0]>=foot+0.7)||SHOE_TABLE[SHOE_TABLE.length-1]; return `腳長 ${foot} cm → 建議 <b>${row[0]} cm（EU ${row[1]}／US ${g==='f'?row[2]:row[3]}）</b>`; }
+    if(!['top','bottom','dress'].includes(p.type)) return '';
+    const body=bodyVals(); if(!dimsFor(p.type).some(d=>body[d])) return '填三圍或做身形分析後，這裡會建議尺寸';
+    const bk=brandKey(p.brand), bc=BRAND_CHARTS[bk]; const chart=bc[g]||bc.f;
+    const avail=(p.sizes||[]).filter(x=>chart[x]); const sizes=avail.length?avail:Object.keys(chart);
+    const best=recommendSize(chart,sizes,p.type,body); if(!best) return '';
+    const parts=Object.entries(best.sc.dims).filter(([,x])=>x!=null).map(([d,x])=>x===0?`${DIM_LABEL[d]}合身`:x<0?`${DIM_LABEL[d]}緊 ${-x} cm`:`${DIM_LABEL[d]}鬆 ${x} cm`);
+    return `依 ${bc.label}：建議 <b>${best.sz}</b>${parts.length?'（'+parts.join('、')+'）':''}`;
+  }catch{ return ''; }
+}
 function openItemView(it, mode){
   if(!it) return; let ov=$('itemView');
   if(!ov){ ov=document.createElement('div'); ov.id='itemView'; ov.className='itemview'; document.body.appendChild(ov); ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('on'); }); }
+  const close=()=>ov.classList.remove('on');
+  if(mode==='person'){
+    ov.innerHTML=`<div class="iv-card"><div class="iv-img"><img src="${it.image}" alt="全身照"></div><div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">你的全身照</div><div class="iv-acts"><button class="btn primary" id="ivChange">更換</button><button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
+    ov.classList.add('on'); $('ivClose').onclick=close; $('ivChange').onclick=()=>{ close(); openPersonMenu(); }; return;
+  }
+  if(mode==='shop'){
+    const p=it; const on=inRack(p.id); const sizes=(p.sizes||[]); const hint=productFitHint(p); const price=priceTxt(p);
+    ov.innerHTML=`<div class="iv-card shop"><div class="iv-img"><img src="${esc(p.image_url)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'"></div>
+      <div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">${TYPE_LABEL[p.type]||''}${p.brand?' · '+esc(p.brand):''}${p.featured?' · 精選':''}</div><div style="font-size:15px;margin:4px 0 4px;line-height:1.5">${esc(p.name)}</div>${price?`<div class="iv-price">${price}</div>`:''}
+      ${sizes.length?`<div class="muted" style="font-size:12px;letter-spacing:1px">尺寸</div><div class="iv-sizes">${sizes.map(s=>`<span class="pill gray">${esc(s)}</span>`).join('')}</div>`:''}
+      ${hint?`<div class="muted" style="font-size:12px;line-height:1.6;margin-top:6px">${hint}</div>`:''}
+      <div class="iv-acts"><button class="btn primary" id="ivTry">試穿</button><button class="btn rackbtn${on?' on':''}" id="ivRack" aria-pressed="${on}">${on?'✓ 衣架':'＋衣架'}</button>${p.buy_url?'<button class="btn" id="ivBuy">購買</button>':''}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
+    ov.classList.add('on');
+    $('ivClose').onclick=close;
+    $('ivTry').onclick=()=>{ close(); tryProduct(p); };
+    $('ivRack').onclick=()=>{ toggleRack(p); const now=inRack(p.id); $('ivRack').classList.toggle('on',now); $('ivRack').textContent=now?'✓ 衣架':'＋衣架'; $('ivRack').setAttribute('aria-pressed',now); syncRackBtn(p.id); };
+    if($('ivBuy')) $('ivBuy').onclick=()=>buyProduct(p);
+    return;
+  }
   const fitTxt=(()=>{ try{ const row=[...document.querySelectorAll('#fitRows .fitrow')].find(r=>r.querySelector(`[data-fit="${it.type}"]`)); return row?row.querySelector('.rec')?.innerHTML||'':''; }catch{ return ''; } })();
   ov.innerHTML=`<div class="iv-card"><div class="iv-img">${it.image?`<img src="${it.image}" alt="">`:`<div class="muted" style="padding:40px">${esc(it.text||'')}</div>`}</div>
     <div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">${TYPE_LABEL[it.type]||''}${it.brand?' · '+esc(it.brand):''}</div><div style="font-size:15px;margin:4px 0 8px">${esc(it.name||'你上傳的單品')}</div>
@@ -1694,7 +1807,7 @@ function friendlyErr(m){
 const WAIT_STEP={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',qa:'檢查成品是否和商品一致',finish:'整理結果'};
 function waitScreen(){ $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">已送出，等待 AI 開始…</span><span id="waitNote" class="note hidden"></span></div>'; }
 function setWaitRaw(full, sec){
-  $('runStatus').textContent=full; const w=$('waitMsg'); if(w) w.textContent=full;
+  $('runStatus').textContent=full; const w=$('waitMsg'); if(w) w.textContent=full; const sp=$('stickyRunProg'); if(sp) sp.textContent=full;
   const n=$('waitNote'); if(n){ const long=sec!=null&&sec>90; n.classList.toggle('hidden',!long); if(long) n.textContent='等比較久沒關係：可以先切到別的 App 或鎖定螢幕，回來後會接著做，結果會出現在這裡。'; }
 }
 function setWait(msg, sec){ setWaitRaw(msg+(sec!=null?`（${sec} 秒）`:''), sec); }
@@ -1710,7 +1823,7 @@ async function runTryon(opts={}){
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
   const person0=state.personOrig; const isPhone=window.matchMedia('(max-width:899px)').matches;
-  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
+  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); try{ updateSticky(); }catch{}
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='6%';
   waitScreen(); $('result').classList.remove('busy');
   state.views=null; state.preferSpin=false; stopSpin(); spinState=null; $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
@@ -1785,7 +1898,7 @@ async function runTryon(opts={}){
     state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried);
     renderCompare(person0, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems();
-    renderFit();
+    renderFit(); try{ updateSticky(); }catch{}
     if(isPhone) $('result').scrollIntoView({behavior:'smooth',block:'start'});
     toast('完成，看看你穿起來的樣子'); haptic('success'); if(!resumeId) track('tryon_ok',{n:items.length,variants,retry:!!opts.retry}); state.historyLoaded=false;
     if (d._pendingId) followViews(d._pendingId, state.result);
@@ -1806,6 +1919,37 @@ async function runTryon(opts={}){
   }
 }
 $('btnRun').onclick=()=>runTryon();
+
+/* ---------- 手機：固定在底部導覽上方的「開始 AI 試穿」列、「看結果 ↓」、鍵盤時收起 ---------- */
+let runInView=true, resultInView=true, resultBelow=false;
+function updateSticky(){
+  const bar=$('stickyRun'), pill=$('seeResult'); if(!bar||!pill) return;
+  const phone=isPhoneMQ.matches, H=document.documentElement, onTry=curView==='tryon';
+  const n=Object.keys(state.slots).length;
+  const show=phone && onTry && !!state.person && n>0 && !runInView && !H.classList.contains('kb');
+  bar.classList.toggle('on',show); H.classList.toggle('sticky-on',show);
+  const b=$('stickyRunBtn'), p=$('stickyRunProg');
+  b.classList.toggle('hidden',busy); p.classList.toggle('hidden',!busy);
+  b.textContent=$('btnRun').textContent; b.disabled=$('btnRun').disabled;
+  if(busy && !p.textContent) p.textContent=$('runStatus').textContent||'已送出，等待 AI 開始…';
+  pill.classList.toggle('on', phone && onTry && !!state.result && !busy && !resultInView && resultBelow && !H.classList.contains('kb'));
+}
+$('stickyRunBtn').onclick=()=>$('btnRun').click();
+$('seeResult').onclick=()=>{ $('result').scrollIntoView({behavior:'smooth',block:'start'}); };
+if(window.IntersectionObserver){
+  const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.target.id==='btnRun') runInView=e.isIntersecting; else { resultInView=e.isIntersecting; resultBelow=e.boundingClientRect.top>0; } }); updateSticky(); },{rootMargin:'0px 0px -64px 0px',threshold:0});
+  io.observe($('btnRun')); io.observe($('result'));
+}
+isPhoneMQ.addEventListener ? isPhoneMQ.addEventListener('change',()=>updateSticky()) : isPhoneMQ.addListener(()=>updateSticky());
+// 鍵盤打開（輸入框聚焦或視窗明顯變矮）時，收起底部導覽與固定列，不擋輸入框
+(function(){
+  const H=document.documentElement; let vvSmall=false;
+  const isTxt=el=>!!el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && !/^(file|checkbox|radio|button|submit|range)$/.test(el.type||'');
+  const sync=()=>{ const on=isPhoneMQ.matches && (isTxt(document.activeElement) || vvSmall); if(on!==H.classList.contains('kb')){ H.classList.toggle('kb',on); updateSticky(); } };
+  document.addEventListener('focusin',()=>setTimeout(sync,0));
+  document.addEventListener('focusout',()=>setTimeout(sync,60));
+  if(window.visualViewport){ visualViewport.addEventListener('resize',()=>{ vvSmall=visualViewport.height < window.innerHeight*0.75; sync(); }); }
+})();
 // 上次關掉頁面時還在合成 → 登入後自動接著等（後端是前端每次查詢才推進一步，沒人問就停著）
 function resumePending(){
   let id=null; try{ id=localStorage.getItem('tryon.pending'); }catch{}
