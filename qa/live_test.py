@@ -85,6 +85,7 @@ with sync_playwright() as pw:
     step('衣架多選＋試衣間一點換穿', nrk >= 3 and bar is not None, f'bar={bar} rack={nrk}'); shot('03b_rack')
     pg.evaluate("localStorage.removeItem('tryon.rack')")
     # 5. 尺寸建議
+    pg.evaluate("document.getElementById('fitCard').open=true"); pg.wait_for_timeout(300)
     pg.fill('#fBust', '86'); pg.fill('#fWaist', '68'); pg.fill('#fHip', '92'); pg.wait_for_timeout(300)
     fr = txt('#fitRows'); step('尺寸建議有內容', fr and '建議' in fr, fr); shot('04_fit')
     pg.wait_for_timeout(int(os.environ.get('QA_THINK', '1000')))   # 模擬使用者看尺寸的時間
