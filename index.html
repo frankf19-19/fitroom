@@ -76,7 +76,7 @@
   @keyframes fade{from{opacity:0}to{opacity:1}}
   h1{font-family:var(--serif);font-weight:400;font-size:28px;line-height:1.35;margin:0 0 10px;letter-spacing:1px}
   h2{font-family:var(--serif);font-weight:400;font-size:15px;margin:0 0 14px;letter-spacing:2px}
-  h3{font-size:11px;margin:0 0 10px;font-weight:500;color:var(--ink);letter-spacing:2px}
+  h3{font-size:12px;margin:0 0 10px;font-weight:500;color:var(--ink);letter-spacing:2px}
   .sub{color:var(--ink2);margin:0 0 20px;font-size:14px;max-width:46ch}
   .card{background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:24px 0;margin:0;box-shadow:none}
   .btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:0;border:1px solid var(--ink);background:#fff;color:var(--ink);font-size:12px;font-weight:500;letter-spacing:2px;cursor:pointer;transition:background .15s,color .15s}
@@ -180,7 +180,7 @@
   .slot .x{position:absolute;top:6px;right:6px;width:20px;height:20px;background:#fff;color:var(--ink);border:1px solid var(--ink);font-size:11px;cursor:pointer;display:none;place-items:center}
   .slot.has .x{display:grid}
   .slot.hair-text{outline:1px solid var(--ink);outline-offset:-1px;background:var(--bg2)}
-  .slot.hair-text .lb{color:var(--ink)}
+  .slot.hair-text .lb{color:var(--ink);max-width:calc(100% - 12px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
   .pickmenu{position:fixed;inset:0;background:rgba(17,17,17,.4);z-index:40;display:none;align-items:flex-end;justify-content:center}
   @media(min-width:900px){.pickmenu{align-items:center}}
   .pickmenu.on{display:flex}
@@ -240,7 +240,7 @@
   .lightbox .lbviews button{border:0;background:#fff;color:var(--ink);padding:7px 14px;font-size:11px;letter-spacing:1px;cursor:pointer}
   .lightbox .lbviews button.on{background:var(--ink);color:#fff}
   #lbClose{color:var(--ink) !important}
-  footer{text-align:center;color:var(--muted);font-size:11px;letter-spacing:1px;padding:40px 18px;line-height:2.2;border-top:1px solid var(--line);margin-top:30px}
+  footer{text-align:center;color:var(--muted);font-size:12px;letter-spacing:1px;padding:40px 18px;line-height:2.2;border-top:1px solid var(--line);margin-top:30px}
   footer a{color:var(--muted);margin:0 8px}
   /* 前後對比滑桿 */
   .cmp{position:relative;display:inline-block;max-width:100%;user-select:none;touch-action:pan-y}
@@ -498,7 +498,7 @@
     html[data-view=home]:not(.app) footer{display:block;padding-bottom:20px}
     main{padding:0 16px 24px}
     .bottomnav{background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(16px);-webkit-backdrop-filter:saturate(180%) blur(16px)}
-    .bottomnav button{font-size:11px;letter-spacing:1px;transition:color .15s}
+    .bottomnav button{font-size:12px;letter-spacing:1px;transition:color .15s}
     .bottomnav button svg{width:23px;height:23px;transition:transform .15s}
     .bottomnav button.on svg{stroke-width:1.8}
     .bottomnav button:active svg{transform:scale(.86)}
@@ -518,6 +518,27 @@
   html.app img{-webkit-touch-callout:none;-webkit-user-drag:none}
   html.app #result img,html.app .lightbox img{-webkit-touch-callout:default}
   html.app .topbar{background:rgba(255,255,255,.94)}
+  /* ===== v5.3 手機可讀性：最小字 12px、可點元件至少 44px ===== */
+  .waiting span{display:block}
+  .waiting .note{margin-top:12px;font-size:12px;color:var(--ink2);line-height:1.8;max-width:30ch;margin-left:auto;margin-right:auto}
+  .waiting .sec{font-variant-numeric:tabular-nums}
+  .qanote{font-size:12px;color:var(--ink2);text-align:center;margin-top:8px;letter-spacing:.5px}
+  .switch::before{content:"";position:absolute;inset:-11px -8px}
+  .witem .t,.hitem .meta,.pill,.advice b,.rk .t,.rk .n,.variants .v span,.tag,.cmp .tag,.demo .tag,.stat .l,table.tb th,.fitgrid label,.pack .each,.polaroid .cap small,.sheet .opt small,.setrow small,.pitem .brand,.kv dt,.spinbox .spinhint,.iv-info .muted,.userchip,.topbar .free,.gsw button,.lightbox .lbviews button,.angles .seg button,.angles .spin,.chip,.btn.sm,.pitem .acts .btn,.outfit .it .btn,.hero .kicker,.or,.bottomnav button,.shape small,.mehead small,.mlist .li em{font-size:12px}
+  .logo small{font-size:12px;letter-spacing:3px}
+  .steps3 i{width:22px;height:22px;font-size:12px}
+  .witem .del::before{content:"";position:absolute;inset:-4px}
+  @media(max-width:899px){
+    .btn.sm,.chip,.gsw button,.lightbox .lbviews button,.angles .seg button,.angles .spin,.setrow a,.pitem .acts .btn,.outfit .it .btn,.mestats button,.userchip,.updbar button{min-height:44px}
+    .chip{display:inline-flex;align-items:center}
+    .slot .x{width:28px;height:28px;font-size:13px;top:4px;right:4px}
+    .witem .del{width:30px;height:30px;font-size:13px}
+    .hitem .fav{width:36px;height:36px}.hitem .fav svg{width:17px;height:17px}
+    .rk .rx{width:22px;height:22px;font-size:12px}
+    .crop img{max-height:48dvh}
+    .fitrow select{min-height:40px}
+    #resultActions .btn{min-height:48px}
+  }
 </style>
 </head>
 <body>
@@ -591,6 +612,7 @@
           <details class="adv" id="advOpts"><summary>更多選項 <span class="muted" id="advSummary"></span></summary>
           <div class="opt-row"><span>360° 旋轉 <span class="muted">轉一圈看側面背面，+2 點</span></span><div class="switch" id="wantViews" aria-label="360° 旋轉"></div></div>
           <div class="opt-row" style="margin-top:0"><span>一次 2 張挑一張 <span class="muted">點數 ×2</span></span><div class="switch" id="twoVariants" aria-label="一次 2 張挑一張"></div></div>
+          <div class="opt-row" style="margin-top:0"><span>高品質模式 <span class="muted">更像商品，速度稍慢</span></span><div class="switch" id="hqMode" aria-label="高品質模式（更像商品，速度稍慢）"></div></div>
           <div class="switch on hidden" id="faceLock" aria-hidden="true"></div>
           </details>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
@@ -614,7 +636,7 @@
             <button class="btn primary" id="btnDownload">下載</button>
             <button class="btn" id="btnShare">分享</button>
             <button class="btn" id="btnContinue">用這張繼續搭</button>
-            <button class="btn ghost" id="btnRetry" title="換一組隨機結果，會再扣一次點數">再試一次</button>
+            <button class="btn ghost" id="btnRetry" title="用高品質模式再做一組不同的結果，會再扣一次點數">不夠像？再做一次</button>
           </div>
         </div>
         <details class="card fold" id="fitCard"><summary><h2>尺寸建議 <span class="muted" style="font-weight:400">免費</span></h2><span class="muted" id="fitBadge"></span></summary>
@@ -817,8 +839,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '5.2.0';
-const BUILD = '2026-11-04-01';
+const APP_VERSION = '5.3.0';
+const BUILD = '2026-11-05-01';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -871,7 +893,7 @@ function dialog({title='', text='', ok='確定', cancel='取消', danger=false, 
 }
 const ask=(title,text,opts={})=>dialog({title,text,...opts});
 const askText=(title,placeholder,value='')=>dialog({title,input:{placeholder,value},ok:'確定'});
-let toastT; function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600); }
+let toastT; function toast(m, ms){ const t=$('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), ms || (String(m).length>28 ? 6000 : 2600)); }
 
 /* ---------- 狀態 ---------- */
 const state = { user:null, session:null, me:null, person:null, personOrig:null, slots:{}, result:null, wardrobe:[], history:[] };
@@ -939,7 +961,7 @@ function setSession(s){
   const was = !!state.user;
   state.session = s; state.user = s ? s.user : null;
   renderUser();
-  if (state.user && !was) { otpPending=null; refreshMe(); closePick(); loadPrefs(); const h=(state.wantView&&Date.now()-(state.wantAt||0)<120000?state.wantView:null)||location.hash.replace('#','')||bootHash; state.wantView=null; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); }
+  if (state.user && !was) { otpPending=null; refreshMe(); closePick(); loadPrefs(true); const h=(state.wantView&&Date.now()-(state.wantAt||0)<120000?state.wantView:null)||location.hash.replace('#','')||bootHash; state.wantView=null; go(VIEWS.includes(h)&&h!=='home' ? h : 'tryon'); setTimeout(resumePending,400); }
   if (!state.user && was) go('home');
   if (state.user) { const pq=new URLSearchParams(location.search).get('paid'); if (pq==='1') { toast('付款完成，點數已入帳'); history.replaceState(history.state,'',location.pathname+location.hash); } else if (pq==='0') { toast('付款未完成，沒有扣款'); history.replaceState(history.state,'',location.pathname+location.hash); } }
 }
@@ -1054,8 +1076,13 @@ function renderMe(){
     try{ if(curView==='shop') await loadShop(true); else if(curView==='wardrobe') await loadWardrobe(); else if(curView==='history') await loadHistory(); }catch{}
     ptr.classList.remove('spin'); ptr.style.opacity=0; ptr.style.transform=''; });
 })();
-function advSummary(){ const on=[]; if($('wantViews').classList.contains('on')) on.push('360°'); if($('twoVariants').classList.contains('on')) on.push('2 張'); if(!$('faceLock').classList.contains('on')) on.push('不鎖臉'); $('advSummary').textContent=on.length?'已開：'+on.join('、'):''; }
-['wantViews','twoVariants','faceLock'].forEach(id=>new MutationObserver(advSummary).observe($(id),{attributes:true,attributeFilter:['class']})); advSummary();
+function advSummary(){ const on=[]; if($('wantViews').classList.contains('on')) on.push('360°'); if($('twoVariants').classList.contains('on')) on.push('2 張'); if($('hqMode').classList.contains('on')) on.push('高品質'); if(!$('faceLock').classList.contains('on')) on.push('不鎖臉'); $('advSummary').textContent=on.length?'已開：'+on.join('、'):''; }
+['wantViews','twoVariants','faceLock','hqMode'].forEach(id=>new MutationObserver(advSummary).observe($(id),{attributes:true,attributeFilter:['class']})); advSummary();
+// 高品質模式：用較強的整套換裝引擎（更像商品、較慢）。存在 localStorage 'tryon.engine'='pro'，送出時帶 engine:'pro'
+const hqOn=()=>{ try{ return localStorage.getItem('tryon.engine')==='pro'; }catch{ return false; } };
+function engineParam(){ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } }
+$('hqMode').classList.toggle('on', hqOn());
+$('hqMode').onclick=()=>{ const on=!$('hqMode').classList.contains('on'); $('hqMode').classList.toggle('on',on); try{ if(on) localStorage.setItem('tryon.engine','pro'); else localStorage.removeItem('tryon.engine'); }catch{} haptic(); pf.key=null; pf.st=null; renderSlots(); toast(on?'已開啟高品質模式：結果更像商品，但會多等一下':'已關閉高品質模式'); };
 function showSetup(flash){
   const b=$('setupBanner'); b.classList.remove('hidden');
   b.innerHTML='<b>網站還在準備中。</b> 管理者需在 index.html 的 CONFIG 填入 Supabase 與 Worker 設定（見 設定指南.md）。';
@@ -1082,7 +1109,7 @@ async function api(path, opts={}){
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.user&&!busy) refreshMe(); });
 async function refreshMe(){
   if (!state.user) return;
-  try { state.me = await api('/api/me'); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+e.message); }
+  try { state.me = await api('/api/me'); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+friendlyErr(e.message)); }
   renderUser(); renderCredits(); renderSlots(); updateAnalyzeCta();
 }
 
@@ -1095,14 +1122,23 @@ async function pickImageNative(){
 // 網頁版共用一個常駐的 <input type=file>（iOS Safari 會把沒掛進 DOM 的 input 在選檔中回收，導致 onchange 不觸發）
 function pickImage(onImage){
   if (IS_APP && Plug('Camera')) { pickImageNative().then(im=>{ if(im) onImage(im); }); return; }
-  const inp=$('fileShared'); inp.value=''; inp.onchange=async e=>{ const f=e.target.files[0]; inp.onchange=null; if(!f) return; try{ onImage(await fileToImage(f)); }catch{ toast('讀取失敗'); } }; inp.click();
+  const inp=$('fileShared'); inp.value=''; inp.onchange=async e=>{ const f=e.target.files[0]; inp.onchange=null; if(!f) return; try{ onImage(await fileToImage(f)); }catch(err){ toast((err&&err.message)||'讀不到這張照片，請換一張試試'); } }; inp.click();
 }
 // 讀取照片並依 EXIF 方向校正（iPhone 直拍常帶旋轉資訊）
+// HEIC/HEIF（iPhone 原始格式）：iOS Safari 選圖時會自動轉成 JPEG；但在 Android/電腦上瀏覽器讀不了，要給清楚的說明
+const isHeicFile=f=>!!f && (/hei[cf]/i.test(f.type||'') || /\.(heic|heif)$/i.test(f.name||''));
+const HEIC_MSG='這張是 HEIC 格式（iPhone 原始格式），這個瀏覽器讀不了。請在相簿把照片「分享 → 儲存為 JPEG」，或到 iPhone 設定 → 相機 → 格式 改成「最相容」再拍一張。';
 async function fileToImage(file){
+  if (file && file.size > 40*1024*1024) throw new Error('照片檔案太大（超過 40 MB），請改用手機直接拍的一般照片');
   if (window.createImageBitmap) {
-    try { const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height; c.getContext('2d').drawImage(bmp,0,0); bmp.close&&bmp.close(); return await loadImg(c.toDataURL('image/jpeg',0.95)); } catch(e) { /* 退回一般讀取 */ }
+    try { const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); const c=document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height; c.getContext('2d').drawImage(bmp,0,0); bmp.close&&bmp.close(); return await loadImg(c.toDataURL('image/jpeg',0.95)); } catch(e) { /* HEIC 或不支援的格式：退回一般讀取 */ }
   }
-  return new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=e=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=e.target.result; }; rd.onerror=rej; rd.readAsDataURL(file); });
+  try{
+    return await new Promise((res,rej)=>{ const rd=new FileReader(); rd.onload=e=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=e.target.result; }; rd.onerror=rej; rd.readAsDataURL(file); });
+  }catch(e){
+    if (isHeicFile(file)) throw new Error(HEIC_MSG);
+    throw new Error('讀不到這張照片，請換一張 JPG 或 PNG 格式的照片試試');
+  }
 }
 function downscale(img, maxSide, type, q){
   const s=Math.min(1, maxSide/Math.max(img.width,img.height));
@@ -1131,13 +1167,13 @@ function onPersonImage(im){
   else if(im.width>im.height) toast('直式全身照效果最好，橫式也可以試試');
   else toast('全身照已就緒');
 }
-async function onPersonFile(e){ const f=e.target.files[0]; if(!f) return; try{ onPersonImage(await fileToImage(f)); }catch{ toast('讀取照片失敗'); } }
+async function onPersonFile(e){ const f=e.target.files[0]; if(!f) return; try{ onPersonImage(await fileToImage(f)); }catch(err){ toast((err&&err.message)||'讀不到這張照片，請換一張試試'); } finally{ try{ e.target.value=''; }catch{} } }
 if (IS_APP && Plug('Camera')) { const inp=$('filePerson'); inp.remove(); $('personBox').onclick=()=>{ if(!$('personBox').classList.contains('has')) pickImage(onPersonImage); }; } else $('filePerson').onchange=onPersonFile;
 $('btnPersonFromHistory').onclick=async()=>{
   if(!state.user) return openLogin();
   await loadHistory();
   if(!state.history.length) return toast('還沒有合成紀錄');
-  openPick('選一張當底圖', `<div class="wgrid">${state.history.map(h=>`<div class="witem" data-url="${h.image_url}"><img src="${h.image_url}" loading="lazy"></div>`).join('')}</div>`);
+  openPick('選一張當底圖', `<div class="wgrid">${state.history.map(h=>`<div class="witem" data-url="${esc(h.image_url)}"><img src="${esc(h.image_url)}" loading="lazy" alt=""></div>`).join('')}</div>`);
   $('pickBody').querySelectorAll('.witem').forEach(el=>el.onclick=async()=>{ closePick(); try{ setPerson(await urlToDataUri(el.dataset.url)); toast('已設為底圖'); }catch{ toast('載入失敗'); } });
 };
 
@@ -1153,8 +1189,8 @@ function setSlot(type, v){ if(v) state.slots[type]=v; else delete state.slots[ty
 function renderSlots(){
   $('slots').innerHTML = SLOT_DEFS.map(s=>{
     const v=state.slots[s.type];
-    if (v && v.image) return `<div class="slot has" data-type="${s.type}"><img src="${v.image}"><span class="lb">${s.label}${v.name?' · '+v.name:''}</span><button class="x" data-x="${s.type}">✕</button></div>`;
-    if (v && v.text) return `<div class="slot hair-text" data-type="${s.type}"><span class="ic">${s.ic}</span><span class="lb">${s.label}：${v.text.length>8?v.text.slice(0,8)+'…':v.text}</span><button class="x" data-x="${s.type}" style="display:grid">✕</button></div>`;
+    if (v && v.image) return `<div class="slot has" data-type="${s.type}"><img src="${v.image}" alt=""><span class="lb">${s.label}${v.name?' · '+esc(v.name):''}</span><button class="x" data-x="${s.type}" aria-label="移除${s.label}">✕</button></div>`;
+    if (v && v.text) return `<div class="slot hair-text" data-type="${s.type}"><span class="ic">${s.ic}</span><span class="lb">${s.label}：${esc(v.text.length>8?v.text.slice(0,8)+'…':v.text)}</span><button class="x" data-x="${s.type}" style="display:grid" aria-label="移除髮型">✕</button></div>`;
     return `<div class="slot" data-type="${s.type}" style="--tint:${s.tint}"><span class="ic">${s.ic}</span><span class="lb">${s.label}</span></div>`;
   }).join('');
   $('slots').querySelectorAll('.slot').forEach(el=>{ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }; });
@@ -1177,7 +1213,7 @@ function openSlotMenu(type){
   if (type==='hair') html += `<div class="opt" id="optHairText"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M13 7l3 3"/></svg></span><div>用文字描述<small>例：及肩微捲、奶茶棕</small></div></div>`;
   openPick(def.label, html);
   $('optShop').onclick=()=>{ closePick(); shopFilterType=type; go('shop'); };
-  $('optUpload').onclick=()=>{ closePick(); pickImage(async im=>{ try{ const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); setSlot(type,{image:out.image, photo_type:out.photoType}); haptic(); track('item',{type}); offerSave(type); }catch(err){ if(err!=='cancel') toast('讀取失敗'); } }); };
+  $('optUpload').onclick=()=>{ closePick(); pickImage(async im=>{ try{ const out=await cropSheet(im, ['top','bottom','dress'].includes(type)); setSlot(type,{image:out.image, photo_type:out.photoType}); haptic(); track('item',{type}); offerSave(type); }catch(err){ if(err!=='cancel') toast((err&&err.message)||'讀不到這張圖片，請換一張試試'); } }); };
   $('optWardrobe').onclick=async()=>{ if(!state.user) return openLogin(); await loadWardrobe(); const list=state.wardrobe.filter(w=>w.type===type); if(!list.length){ toast('衣櫃裡還沒有'+def.label); return; }
     openPick('從衣櫃選 '+def.label, `<div class="wgrid">${list.map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${esc(w.name||'')}</span></div>`).join('')}</div>`);
     $('pickBody').querySelectorAll('.witem').forEach(el=>el.onclick=async()=>{ const w=list.find(x=>String(x.id)===el.dataset.id); closePick(); try{ setSlot(type,{image:await urlToDataUri(w.image_url), name:w.name}); }catch{ toast('載入失敗'); } }); };
@@ -1243,9 +1279,9 @@ async function faceLock(originalUri, resultUri){
   x.drawImage(f, tx, ty);
   return c.toDataURL('image/jpeg',0.92);
 }
-$('faceLock').onclick=()=>$('faceLock').classList.toggle('on');
-$('twoVariants').onclick=()=>{ $('twoVariants').classList.toggle('on'); renderSlots(); };
-$('wantViews').onclick=()=>{ $('wantViews').classList.toggle('on'); renderSlots(); };
+$('faceLock').onclick=()=>{ state.optsTouched=true; $('faceLock').classList.toggle('on'); };
+$('twoVariants').onclick=()=>{ state.optsTouched=true; $('twoVariants').classList.toggle('on'); renderSlots(); };
+$('wantViews').onclick=()=>{ state.optsTouched=true; $('wantViews').classList.toggle('on'); renderSlots(); };
 
 /* ---------- 尺寸建議（各品牌尺碼表） ---------- */
 // 身體尺寸範圍（cm）：[min,max]。來源：各品牌官方尺碼表（亞洲／歐洲）整理，僅供參考
@@ -1283,7 +1319,7 @@ function shoeRow(item){ const foot=+$('fFoot').value||0; const sz=fitSizes.shoes
   if(foot){ const want=foot+0.7; let row=SHOE_TABLE.find(r=>r[0]>=want)||SHOE_TABLE[SHOE_TABLE.length-1]; const us=g==='f'?row[2]:row[3]; rec=`腳長 ${foot} cm → 建議 <b>${row[0]} cm（EU ${row[1]}／US ${us}／UK ${row[4]}）</b>`; const bk=Object.keys(SHOE_BRAND_NOTE).find(k=>(item.brand||item.name||'').toLowerCase().includes(k)); if(bk) rec+=`。${SHOE_BRAND_NOTE[bk]}`;
     if(sz){ const m=sz.match(/(\d+(?:\.\d)?)\s*cm/); const eu=sz.match(/EU\s*(\d+(?:\.\d)?)/i); let chosenCm=m?+m[1]:(eu?(SHOE_TABLE.find(r=>r[1]==+eu[1])||[])[0]:null); if(chosenCm){ const diff=chosenCm-row[0]; if(Math.abs(diff)>=0.5) rec+=`<br><span class="${diff<0?'bad':'warn'}">你選的 ${sz} 比建議${diff<0?'小':'大'} ${Math.abs(diff)} cm，${diff<0?'腳趾可能會頂到':'走路可能會滑動'}</span>`; else rec+='<br><span class="ok">你選的尺寸剛好</span>'; } } }
   else rec='填上面的「腳長」就能換算鞋號（量法：站著，腳跟到最長腳趾的直線距離）';
-  return `<div class="fitrow"><span>鞋子 <select data-fit="shoes"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${esc(k)}</option>`).join('')}</select></span><span class="muted" style="font-size:11px">${item.brand||''}</span><div class="rec">${rec}</div></div>`; }
+  return `<div class="fitrow"><span>鞋子 <select data-fit="shoes"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${esc(k)}</option>`).join('')}</select></span><span class="muted" style="font-size:12px">${esc(item.brand||'')}</span><div class="rec">${rec}</div></div>`; }
 function renderFit(){
   const body=bodyVals();
   try{ localStorage.setItem('tryon.body', JSON.stringify({height:$('fHeight').value,bust:$('fBust').value,waist:$('fWaist').value,hip:$('fHip').value,foot:$('fFoot').value})); }catch{}
@@ -1302,7 +1338,7 @@ function renderFit(){
         if(sz&&sz!==best.sz){ const sc=scoreSize(chart,sz,t,body); if(sc){ const bad=Object.entries(sc.dims).filter(([,x])=>x!=null&&x<0).map(([d,x])=>`${DIM_LABEL[d]}會緊 ${-x} cm`); const loose=Object.entries(sc.dims).filter(([,x])=>x!=null&&x>0).map(([d,x])=>`${DIM_LABEL[d]}會鬆 ${x} cm`); rec+=`<br><span class="${bad.length?'bad':'warn'}">⚠ 你選 ${sz}：${[...bad,...loose].join('、')||'與建議不同'}，建議改 ${best.sz}</span>`; } }
         else if(sz) rec+='<br><span class="ok">✓ 你選的尺寸合適</span>';
       } else rec='這個品牌的尺碼表沒有對應資料，請以賣場尺寸表為準'; }
-    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${esc(k)}</option>`).join('')}</select></span><span class="muted" style="font-size:11px">${item.brand||''}${avail.length?' · 賣場有 '+avail.join('/'):''}</span><div class="rec">${rec}</div></div>`; }).join('');
+    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${esc(k)}</option>`).join('')}</select></span><span class="muted" style="font-size:12px">${esc(item.brand||'')}${avail.length?' · 賣場有 '+esc(avail.join('/')):''}</span><div class="rec">${rec}</div></div>`; }).join('');
   box.querySelectorAll('[data-fit]').forEach(sel=>sel.onchange=()=>{ fitSizes[sel.dataset.fit]=sel.value; renderFit(); });
 }
 ['fHeight','fBust','fWaist','fHip','fFoot'].forEach(id=>$(id).addEventListener('input',renderFit));
@@ -1319,31 +1355,34 @@ $('btnOutfit').onclick=async()=>{
     const d=await api('/api/outfit',{method:'POST',body:JSON.stringify({have, gender:(state.me&&state.me.body&&state.me.body.gender)||fitGender})});
     const outs=d.outfits||[]; if(!outs.length){ $('outfitStatus').textContent='目前商店裡找不到合適的搭配，再放一件單品試試。'; return; }
     $('outfitStatus').textContent=d.note||'';
-    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${esc(o.title||'搭配')}</h3><div class="tip">${esc(o.tip)}</div><div class="items">${(o.items||[]).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${esc(it.product.brand)}</b> ${esc(it.product.name)}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${esc(it.reason)}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
-    const all=outs.flatMap(o=>(o.items||[]).map(i=>i.product));
+    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${esc(o.title||'搭配')}</h3><div class="tip">${esc(o.tip)}</div><div class="items">${(o.items||[]).filter(it=>it&&it.product).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${esc(it.product.brand)}</b> ${esc(it.product.name)}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${esc(it.reason)}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
+    const all=outs.flatMap(o=>(o.items||[]).filter(i=>i&&i.product).map(i=>i.product));
     $('outfitBox').querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>{ const p=all.find(x=>String(x.id)===b.dataset.oid); if(p) tryProduct(p); });
     track('outfit',{n:all.length});
-  }catch(e){ $('outfitStatus').textContent=e.message; haptic('error'); }
+  }catch(e){ $('outfitStatus').textContent=friendlyErr(e.message); haptic('error'); }
   finally{ $('btnOutfit').disabled=false; }
 };
 
 /* ---------- 設定與偏好 ---------- */
 const PREF_DEFAULT={face:true,two:false,views:false};
-function applyPrefs(p){ $('faceLock').classList.toggle('on',p.face!==false); $('twoVariants').classList.toggle('on',!!p.two); $('wantViews').classList.toggle('on',!!p.views); renderSlots(); }
-async function loadPrefs(){
+let curPrefs={...PREF_DEFAULT};
+// soft=true：登入後載入雲端偏好時，若使用者這次已自己動過「更多選項」的開關，就不要蓋掉（否則按「開始」前登入會悄悄改掉點數）
+function applyPrefs(p, soft){ curPrefs={...PREF_DEFAULT,...p}; if(!(soft&&state.optsTouched)){ $('faceLock').classList.toggle('on',curPrefs.face!==false); $('twoVariants').classList.toggle('on',!!curPrefs.two); $('wantViews').classList.toggle('on',!!curPrefs.views); } renderSlots(); }
+async function loadPrefs(soft){
   let p={...PREF_DEFAULT}; try{ Object.assign(p, JSON.parse(localStorage.getItem('tryon.prefs')||'{}')); }catch{}
   if(supa&&state.user){ try{ const { data } = await supa.from('profiles').select('prefs').eq('id',state.user.id).single(); if(data&&data.prefs) Object.assign(p,data.prefs); }catch{} }
-  applyPrefs(p);
+  applyPrefs(p, soft);
 }
 async function savePrefs(){
   const p={face:$('prefFace').classList.contains('on'), two:$('prefTwo').classList.contains('on'), views:$('prefViews').classList.contains('on')};
   try{ localStorage.setItem('tryon.prefs',JSON.stringify(p)); localStorage.setItem('tryon.haptic',$('prefHaptic').classList.contains('on')?'1':'0'); }catch{}
-  applyPrefs(p);
-  if(supa&&state.user){ await supa.from('profiles').update({prefs:p}).eq('id',state.user.id); }
+  state.optsTouched=false; applyPrefs(p);
+  if(supa&&state.user){ try{ const { error }=await supa.from('profiles').update({prefs:p}).eq('id',state.user.id); if(error) toast('偏好只存在這台裝置（雲端同步失敗）'); }catch{} }
 }
 function renderSettings(){
   $('verSettings').textContent='v'+APP_VERSION+' · '+BUILD+(IS_APP?' · '+PLATFORM:'');
-  $('prefFace').classList.toggle('on',$('faceLock').classList.contains('on')); $('prefTwo').classList.toggle('on',$('twoVariants').classList.contains('on')); $('prefViews').classList.toggle('on',$('wantViews').classList.contains('on'));
+  // 顯示「已儲存的預設」，而不是試衣間這次臨時開的開關（否則改個震動設定就會把臨時開的 2 張存成預設）
+  $('prefFace').classList.toggle('on',curPrefs.face!==false); $('prefTwo').classList.toggle('on',!!curPrefs.two); $('prefViews').classList.toggle('on',!!curPrefs.views);
   try{ $('prefHaptic').classList.toggle('on',localStorage.getItem('tryon.haptic')!=='0'); }catch{}
   $('setEmail').textContent=(state.user&&state.user.email)||'';
 }
@@ -1428,17 +1467,17 @@ function renderRack(){
   const order=['top','bottom','dress','shoes','hat','accessory','hair'];
   const list=[...rack].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type));
   const wearing=new Set(Object.values(state.slots).map(v=>String(v.product_id||'')));
-  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${p.image_url}" referrerpolicy="no-referrer" loading="lazy" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${(p.name||'').slice(0,10)}</span><i class="rx" data-rkx="${p.id}">✕</i></button>`).join('')}</div>`;
+  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${p.image_url}" referrerpolicy="no-referrer" loading="lazy" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${esc((p.name||'').slice(0,10))}</span><i class="rx" data-rkx="${p.id}" aria-label="從衣架移除">✕</i></button>`).join('')}</div>`;
   box.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async e=>{ if(e.target.dataset.rkx){ e.stopPropagation(); rack=rack.filter(r=>String(r.id)!==e.target.dataset.rkx); saveRack(); return; } const p=rack.find(r=>String(r.id)===b.dataset.rk); if(!p) return; const cur=state.slots[p.type]; if(cur&&String(cur.product_id)===String(p.id)){ setSlot(p.type,null); renderRack(); return; } b.classList.add('loading'); await tryProduct(p, {stay:true}); renderRack(); });
 }
 
 renderRack();
 
 /* ---------- 預先合成：挑好就先在背景跑，按下「開始」才扣點 ---------- */
-async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, 'engine:'+(engineParam()||''), ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
 function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
 const pf={key:null,id:null,st:null,timer:null};
-function pfHint(){ const h=$('pfHint'); if(!h) return; const parts=[]; if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); h.textContent=parts.join(' · '); }
+function pfHint(){ const h=$('pfHint'); if(!h) return; const parts=[]; if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
 function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 4000); }
 async function doPrefetch(){
   try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
@@ -1450,7 +1489,7 @@ async function doPrefetch(){
   if(pf.key===key) return;
   pf.key=key; pf.id=null; pf.st=null; pfHint();
   try{
-    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect() })});
+    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect(), engine:engineParam() })});
     if(pf.key!==key||!d||!d.id) return;
     pf.id=d.id; pf.st=d.ready?'ready':'running'; pfHint();
     while(pf.key===key && pf.st==='running' && !busy){
@@ -1471,11 +1510,11 @@ async function followViews(id, forResult){
     await new Promise(r=>setTimeout(r,3000));
     if(state.result!==forResult) return;               // 使用者已開始下一張
     let st; try{ st=await jobStatus(id); }catch{ continue; }
-    if(st.status==='failed'){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
+    if(st.status==='failed'){ note.textContent=base+' 360° 這次沒做成功，已退回 2 點；正面結果不受影響。'; refreshMe(); return; }
     if(st.status==='ok'){
       const r=st.result||{}; const vu=r.view_urls||{};
-      if(vu.video){ try{ note.textContent=base+' 360° 載入中…'; await attachSpin(vu.video); if(state.result!==forResult) return; note.textContent=base+' 360° 好了：在圖上左右拖曳就能旋轉。'; toast('360° 好了，左右拖曳旋轉'); }catch(e){ note.textContent=base+' 360° 載入失敗：'+e.message; } refreshMe(); return; }
-      if(r.views_error||!(vu.side||vu.back)){ note.textContent=base+' 多角度生成失敗，已退回 2 點。'; refreshMe(); return; }
+      if(vu.video){ try{ note.textContent=base+' 360° 載入中…'; await attachSpin(vu.video); if(state.result!==forResult) return; note.textContent=base+' 360° 好了：在圖上左右拖曳就能旋轉。'; toast('360° 好了，左右拖曳旋轉'); }catch(e){ note.textContent=base+' 360° 影片載入不了，請到「合成紀錄」再看一次。'; } refreshMe(); return; }
+      if(r.views_error||!(vu.side||vu.back)){ note.textContent=base+' 360° 這次沒做成功，已退回 2 點；正面結果不受影響。'; refreshMe(); return; }
       try{ const side=vu.side?await urlToDataUri(vu.side):null, back=vu.back?await urlToDataUri(vu.back):null; if(state.result!==forResult) return; state.views={side,back}; renderCompare(state.resultPerson||state.personOrig, state.result); note.textContent=base+' 360° 完成，點上方「側面／背面」切換。'; toast('360° 側面與背面好了'); }catch{}
       refreshMe(); return;
     }
@@ -1487,15 +1526,15 @@ function renderUsedItems(){
   const list=state.runItems||[]; let box=$('usedItems');
   if(!list.length){ if(box) box.remove(); return; }
   if(!box){ box=document.createElement('div'); box.id='usedItems'; box.className='useditems'; const anchor=$('buyBar')||$('resultActions'); anchor.after(box); }
-  box.innerHTML='<div class="muted" style="font-size:12px;letter-spacing:1px;margin-bottom:8px">這次試穿的單品（點一下看細節）</div><div class="ui-row">'+list.map((it,i)=>`<button class="ui-it" data-ui="${i}">${it.image?`<img src="${it.image}" alt="">`:`<span class="ui-txt">${(it.text||'').slice(0,12)}</span>`}<span>${TYPE_LABEL[it.type]||''}</span></button>`).join('')+'</div>';
+  box.innerHTML='<div class="muted" style="font-size:12px;letter-spacing:1px;margin-bottom:8px">這次試穿的單品（點一下看細節）</div><div class="ui-row">'+list.map((it,i)=>`<button class="ui-it" data-ui="${i}">${it.image?`<img src="${it.image}" alt="">`:`<span class="ui-txt">${esc((it.text||'').slice(0,12))}</span>`}<span>${TYPE_LABEL[it.type]||''}</span></button>`).join('')+'</div>';
   box.querySelectorAll('[data-ui]').forEach(b=>b.onclick=()=>openItemView(list[+b.dataset.ui]));
 }
 function openItemView(it, mode){
   if(!it) return; let ov=$('itemView');
   if(!ov){ ov=document.createElement('div'); ov.id='itemView'; ov.className='itemview'; document.body.appendChild(ov); ov.addEventListener('click',e=>{ if(e.target===ov) ov.classList.remove('on'); }); }
   const fitTxt=(()=>{ try{ const row=[...document.querySelectorAll('#fitRows .fitrow')].find(r=>r.querySelector(`[data-fit="${it.type}"]`)); return row?row.querySelector('.rec')?.innerHTML||'':''; }catch{ return ''; } })();
-  ov.innerHTML=`<div class="iv-card"><div class="iv-img">${it.image?`<img src="${it.image}" alt="">`:`<div class="muted" style="padding:40px">${it.text||''}</div>`}</div>
-    <div class="iv-info"><div class="muted" style="font-size:11px;letter-spacing:2px">${TYPE_LABEL[it.type]||''}${it.brand?' · '+it.brand:''}</div><div style="font-size:15px;margin:4px 0 8px">${it.name||'你上傳的單品'}</div>
+  ov.innerHTML=`<div class="iv-card"><div class="iv-img">${it.image?`<img src="${it.image}" alt="">`:`<div class="muted" style="padding:40px">${esc(it.text||'')}</div>`}</div>
+    <div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">${TYPE_LABEL[it.type]||''}${it.brand?' · '+esc(it.brand):''}</div><div style="font-size:15px;margin:4px 0 8px">${esc(it.name||'你上傳的單品')}</div>
     ${fitTxt?`<div class="muted" style="font-size:12px;line-height:1.6;margin-bottom:10px">${fitTxt}</div>`:''}
     <div class="row">${it.buy_url?'<button class="btn primary" id="ivBuy">購買</button>':''}${mode==='slot'?'<button class="btn" id="ivSwap">換一件</button><button class="btn" id="ivDel">移除</button>':'<button class="btn" id="ivBack">放回試衣間</button>'}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
   ov.classList.add('on');
@@ -1538,13 +1577,13 @@ function renderReport(a){
   const box=$('bodyReport'); if(!a||a.error||!a.body_shape){ box.innerHTML=''; return; }
   const fa=a.fit_advice||{};
   box.innerHTML=`<div class="card"><h3>身形報告 <span class="muted" style="letter-spacing:0;font-weight:400">${a.analyzed_at?new Date(a.analyzed_at).toLocaleDateString('zh-TW'):''}</span></h3>
-    <div class="shape"><div class="ic">${SHAPE_ICON[a.body_shape]||SHAPE_ICON.rectangle}</div><div><b>${SHAPE_LABEL[a.body_shape]||a.body_shape||'—'}</b><small>${a.proportion_note||''}</small></div></div>
+    <div class="shape"><div class="ic">${SHAPE_ICON[a.body_shape]||SHAPE_ICON.rectangle}</div><div><b>${esc(SHAPE_LABEL[a.body_shape]||a.body_shape||'—')}</b><small>${esc(a.proportion_note||'')}</small></div></div>
     <div class="bodycard">
-      <dl class="kv"><dt>肩寬</dt><dd>${L3[a.shoulder]||'—'}</dd><dt>上身</dt><dd>${L3[a.torso]||'—'}</dd><dt>腿長</dt><dd>${L3[a.legs]||'—'}</dd><dt>BMI</dt><dd>${a.bmi||'—'}</dd></dl>
-      <dl class="kv"><dt>臉型</dt><dd>${FACE_LABEL[a.face_shape]||'—'}</dd><dt>膚色</dt><dd>${TONE_LABEL[a.skin_tone]||'—'}</dd><dt>目前髮長</dt><dd>${L3[a.current_hair]||a.current_hair||'—'}</dd><dt>髮質</dt><dd>${L3[a.hair_texture]||'—'}</dd></dl>
+      <dl class="kv"><dt>肩寬</dt><dd>${L3[a.shoulder]||'—'}</dd><dt>上身</dt><dd>${L3[a.torso]||'—'}</dd><dt>腿長</dt><dd>${L3[a.legs]||'—'}</dd><dt>BMI</dt><dd>${esc(a.bmi||'—')}</dd></dl>
+      <dl class="kv"><dt>臉型</dt><dd>${FACE_LABEL[a.face_shape]||'—'}</dd><dt>膚色</dt><dd>${TONE_LABEL[a.skin_tone]||'—'}</dd><dt>目前髮長</dt><dd>${esc(L3[a.current_hair]||a.current_hair||'—')}</dd><dt>髮質</dt><dd>${L3[a.hair_texture]||'—'}</dd></dl>
     </div>
     <div style="margin-top:14px">
-      ${fa.tops?`<div class="advice"><b>上衣</b>${fa.tops}</div>`:''}${fa.bottoms?`<div class="advice"><b>褲子 / 裙子</b>${fa.bottoms}</div>`:''}${fa.dresses?`<div class="advice"><b>洋裝</b>${fa.dresses}</div>`:''}${fa.colors?`<div class="advice"><b>顏色</b>${fa.colors}</div>`:''}${fa.hair?`<div class="advice"><b>髮型</b>${fa.hair}</div>`:''}${a.avoid?`<div class="advice"><b>建議避開</b>${a.avoid}</div>`:''}
+      ${fa.tops?`<div class="advice"><b>上衣</b>${esc(fa.tops)}</div>`:''}${fa.bottoms?`<div class="advice"><b>褲子 / 裙子</b>${esc(fa.bottoms)}</div>`:''}${fa.dresses?`<div class="advice"><b>洋裝</b>${esc(fa.dresses)}</div>`:''}${fa.colors?`<div class="advice"><b>顏色</b>${esc(fa.colors)}</div>`:''}${fa.hair?`<div class="advice"><b>髮型</b>${esc(fa.hair)}</div>`:''}${a.avoid?`<div class="advice"><b>建議避開</b>${esc(a.avoid)}</div>`:''}
     </div>
     <div class="muted" style="margin-top:12px">之後每次合成都會依這份分析調整衣服版型與髮型。</div>
     <div class="row" style="margin-top:12px"><button class="btn primary" data-go="tryon">去試穿</button></div></div>`;
@@ -1569,12 +1608,13 @@ $('btnAnalyze').onclick=async()=>{
         if(Date.now()-t0>150000) throw new Error('分析逾時，請再按一次「分析我的身形」');
       }
     }
-    if(state.me){ state.me.analysis=d.analysis; state.me.body=d.analysis.measured; }
+    if(!d||!d.analysis) throw new Error('分析沒有回傳結果，請再試一次'); if(d.analysis.error) throw new Error(d.analysis.error);
+    if(state.me){ state.me.analysis=d.analysis; state.me.body={...(state.me.body||{}), height:h, weight:w, gender:bodyGender, bust:+$('bBust').value||null, waist:+$('bWaist').value||null, hip:+$('bHip').value||null}; }
     $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success');
     // 同步到尺寸預估
     $('fHeight').value=h; const mm=d.analysis.measured||{}; $('fBust').value=$('bBust').value||mm.est_bust||''; $('fWaist').value=$('bWaist').value||mm.est_waist||''; $('fHip').value=$('bHip').value||mm.est_hip||''; if(!$('bBust').value&&mm.est_bust) $('fitHint').textContent=`已帶入 AI 估計的三圍（胸 ${mm.est_bust}／腰 ${mm.est_waist}／臀 ${mm.est_hip} cm），實際量過更準。`; renderFit();
     updateAnalyzeCta();
-  }catch(e){ $('analyzeStatus').textContent=e.message; haptic('error'); }
+  }catch(e){ $('analyzeStatus').textContent=friendlyErr(e.message); haptic('error'); }
   finally{ $('btnAnalyze').disabled=false; }
 };
 function updateAnalyzeCta(){ const a=state.me&&state.me.analysis; const t=$('analyzeCtaText'); const b=$('btnAnalyzeGo'); if(!t) return; if(a){ const parts=[SHAPE_LABEL[a.body_shape],FACE_LABEL[a.face_shape],TONE_LABEL[a.skin_tone]].filter(Boolean); t.textContent=parts.length?`已套用你的身形：${parts.join('・')}。合成會依真實比例調整。`:'已套用你的身形分析，合成會依真實比例調整。'; b.textContent='查看報告'; } else { t.textContent='填身高體重，合成會更貼合你的身形。'; b.textContent='我的身形'; } }
@@ -1600,9 +1640,9 @@ async function loadAdmin(){
       <div class="stat"><div class="v" style="font-size:14px;line-height:1.5">${types}</div><div class="l">近 7 天品項分布</div></div>
     </div>
     ${funnelHtml}
-    <div class="card"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${d.failures.length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${d.failures.map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${esc(f.error)}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
+    <div class="card"><h3>最近失敗（給 Claude 看這裡就知道要修什麼）</h3>${(d.failures||[]).length?`<table class="tb"><tr><th>時間</th><th>品項</th><th>錯誤</th></tr>${(d.failures||[]).map(f=>`<tr><td>${new Date(f.created_at).toLocaleString('zh-TW')}</td><td>${(f.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</td><td>${esc(f.error)}</td></tr>`).join('')}</table>`:'<div class="muted">沒有失敗紀錄 🎉</div>'}</div>
     ${errHtml}
-    <div class="card"><h3>最近加入的會員</h3><table class="tb"><tr><th>Email</th><th>點數</th><th>加入</th></tr>${d.recent_users.map(u=>`<tr><td>${esc(u.email)}</td><td>${u.credits}</td><td>${new Date(u.created_at).toLocaleDateString('zh-TW')}</td></tr>`).join('')}</table></div>`;
+    <div class="card"><h3>最近加入的會員</h3><table class="tb"><tr><th>Email</th><th>點數</th><th>加入</th></tr>${(d.recent_users||[]).map(u=>`<tr><td>${esc(u.email)}</td><td>${u.credits}</td><td>${new Date(u.created_at).toLocaleDateString('zh-TW')}</td></tr>`).join('')}</table></div>`;
   }catch(e){ box.innerHTML='<span style="color:var(--bad)">'+esc(e.message)+'</span>'; }
 }
 $('adminRefresh').onclick=loadAdmin;
@@ -1635,52 +1675,83 @@ document.querySelectorAll('.switch').forEach(sw=>{ sw.setAttribute('role','switc
 
 /* ---------- 執行試穿 ---------- */
 let busy=false;
-$('btnRun').onclick=async()=>{
+// 把技術性的錯誤翻成一般人看得懂的話（後端/第三方服務的字眼一律不露出）
+function friendlyErr(m){
+  m=String(m&&m.message||m||'').trim(); if(!m) return '發生了一點問題，請再試一次';
+  const tech=/[A-Za-z]{3,}|HTTP|\d{3}|換裝服務|衣服試穿服務|準備失敗|伺服器錯誤|服務回應異常|AI 文字服務|AI 影像服務/;
+  if(!tech.test(m)) return m;                                   // 後端已經寫好的中文說明（點數不足、太頻繁…）原樣顯示
+  if(/點數不足/.test(m)) return m.replace(/[（(][^）)]*[）)]$/,'');
+  if(/登入已過期|unauthori|jwt|401/i.test(m)) return '登入已過期，請重新登入後再試一次';
+  if(/沒有網路|連線中斷|Failed to fetch|NetworkError|Load failed|network/i.test(m)) return '網路連線中斷了，請確認網路後再試；如果已經扣了點數，會自動退回';
+  if(/nsfw|safety|policy|moderat|不適當|違反|flagged|blocked/i.test(m)) return 'AI 無法處理這張照片（可能被判定為不合適的內容）。請換一張一般的全身照或商品圖再試';
+  if(/no (person|human|face)|找不到人|偵測不到|not detect|no body/i.test(m)) return '照片裡找不到清楚的人像，請換一張正面、全身入鏡的照片';
+  if(/resolution|too (large|small|big)|dimension|image size|解析度/i.test(m)) return '照片的尺寸不適合，請直接用手機拍的一般照片再試一次';
+  if(/逾時|timeout|timed out|deadline|too long/i.test(m)) return '這次等太久了，AI 服務比較忙。點數會自動退回，請稍後再試一次';
+  if(/太頻繁|rate|429|busy|忙碌|overload|capacity|quota/i.test(m)) return 'AI 服務現在比較忙，請等一分鐘再試一次';
+  if(/退回|退點/.test(m)) return 'AI 服務暫時出了點狀況，這次沒有成功，點數已自動退回。請再試一次';
+  return 'AI 服務暫時出了點狀況，這次沒有成功，點數會自動退回。請再試一次；一直失敗的話，換一張更清楚的照片通常就會好';
+}
+const WAIT_STEP={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',qa:'檢查成品是否和商品一致',finish:'整理結果'};
+function waitScreen(){ $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">已送出，等待 AI 開始…</span><span id="waitNote" class="note hidden"></span></div>'; }
+function setWaitRaw(full, sec){
+  $('runStatus').textContent=full; const w=$('waitMsg'); if(w) w.textContent=full;
+  const n=$('waitNote'); if(n){ const long=sec!=null&&sec>90; n.classList.toggle('hidden',!long); if(long) n.textContent='等比較久沒關係：可以先切到別的 App 或鎖定螢幕，回來後會接著做，結果會出現在這裡。'; }
+}
+function setWait(msg, sec){ setWaitRaw(msg+(sec!=null?`（${sec} 秒）`:''), sec); }
+// opts.retry：使用者按「再做一次」→ 強制用高品質引擎、不吃快取、不認領預先合成，結果才會真的不一樣
+// opts.resumeId：上次關掉頁面前還在跑的合成，重新打開後接著等
+async function runTryon(opts={}){
   if (busy) return;
-  if (!state.person) return toast('請先上傳全身照');
+  const resumeId=opts.resumeId||null;
+  if (!state.person) return toast('請先放一張全身照');
   const items = Object.entries(state.slots).map(([type,v])=>({type, image:v.image, text:v.text, photo_type:v.photo_type, name:v.name||null, product_id:v.product_id||null, buy_url:v.buy_url||null}));
   state.runItems = Object.entries(state.slots).map(([type,v])=>({type, ...v}));
-  if (!items.length) return toast('請至少放一個單品');
+  if (!items.length && !resumeId) return toast('請至少放一個單品');
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
   const person0=state.personOrig; const isPhone=window.matchMedia('(max-width:899px)').matches;
-  track('tryon_start',{n:items.length}); busy=true; state.result=null; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
-  const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='8%';
-  $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">準備中…</span></div>'; $('result').classList.remove('busy');
-  const names=items.map(i=>TYPE_LABEL[i.type]).join('、');
-  const verbs={top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型'};
+  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden');
+  const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='6%';
+  waitScreen(); $('result').classList.remove('busy');
   state.views=null; state.preferSpin=false; stopSpin(); spinState=null; $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
-  const order=['dress','top','bottom','hair','hat','accessory','shoes'];
-  const seq=[...items].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type)).map(i=>'正在幫你'+verbs[i.type]+'…');
-  if($('wantViews').classList.contains('on')) seq.push('轉個身，生成側面與背面…');
-  seq.push('快好了，調整光線與細節…');
-  let si=0; $('runStatus').textContent=seq[0];
-  let pct=8; const tick=setInterval(()=>{ pct=Math.min(92, pct+ (90-pct)*0.08); bar.style.width=pct+'%'; const ni=Math.min(seq.length-1, Math.floor(pct/90*seq.length)); if(ni!==si){ si=ni; $('runStatus').textContent=seq[si]; const w=$('waitMsg'); if(w) w.textContent=seq[si]; } }, 800);
+  const t0=Date.now();
+  // 送出前／排隊中：只顯示真實狀態（已送出、等待開始）＋秒數，進度條慢慢前進表示還活著
+  let pct=6; const tick=setInterval(()=>{ pct=Math.min(20, pct+1); bar.style.width=pct+'%'; setWait(resumeId?'接續上次的合成，正在確認進度…':'已送出，等待 AI 開始…', Math.round((Date.now()-t0)/1000)); }, 1000);
+  setWait(resumeId?'接續上次的合成，正在確認進度…':'已送出，等待 AI 開始…', 0);
   setStep(3); if(isPhone) setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),100);
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
     const views = $('wantViews').classList.contains('on');
-    const aspect=await personAspect();
-    let key; try{ key=await comboKey(items); }catch{}
-    const nocache=(()=>{ try{ return !!localStorage.getItem('tryon.nocache'); }catch{ return false; } })();
-    const wasReady=pf.key===key&&pf.st==='ready'; pf.key=null; pf.st=null; pfHint();
-    let d = await api('/api/tryon', { method:'POST', body: JSON.stringify({ person: state.person, items, variants, views, async:true, aspect, key, nocache, engine:(()=>{ try{ return localStorage.getItem('tryon.engine')||undefined; }catch{ return undefined; } })() , res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() }) });
-    if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
+    let d, wasReady=false;
+    if(resumeId){ d={async:true,id:resumeId}; }
+    else {
+      const aspect=await personAspect();
+      let key; try{ key=await comboKey(items); }catch{}
+      const nocache=(()=>{ try{ return !!localStorage.getItem('tryon.nocache'); }catch{ return false; } })() || !!opts.retry;
+      wasReady=!opts.retry&&pf.key===key&&pf.st==='ready'; pf.key=null; pf.st=null; pfHint();
+      const body={ person: state.person, items, variants, views, async:true, aspect, key: opts.retry?undefined:key, nocache, engine: opts.retry?'pro':engineParam(), res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() };
+      d = await api('/api/tryon', { method:'POST', body: JSON.stringify(body) });
+      if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
+    }
     if (d && d.async && d.id) {
-      // 非同步：後端在背景合成，前端每 3 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
-      const t0=Date.now(); let st; clearInterval(tick); const jobId=d.id; let shownPv=null;
-      const STEP_TXT={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',finish:'整理結果'};
+      // 非同步：後端在背景合成，前端每 1.5–2.5 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
+      let st; clearInterval(tick); const jobId=d.id; let shownPv=null;
       try{ localStorage.setItem('tryon.pending', String(d.id)); }catch{}
       if ($('faceLock').classList.contains('on')) getFaceDetector().catch(()=>{});   // 等待時先載入臉部偵測，結果出來就能馬上鎖臉
       while (true) {
         await new Promise(r=>setTimeout(r, (d.claimed||wasReady) && Date.now()-t0 < 3000 ? 250 : (Date.now()-t0 < 15000 ? 2500 : 1500)));
-        try { st = await jobStatus(d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; continue; }
+        try { st = await jobStatus(d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; setWait('網路不太穩，正在重新連線…', Math.round((Date.now()-t0)/1000)); continue; }
         if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
-        if (st.preview && st.preview.url && st.preview.url!==shownPv && !st.front) { shownPv=st.preview.url; $('result').innerHTML=`<div class="pvwrap"><img src="${shownPv}" alt="快速預覽"><span class="pvtag">快速預覽${st.preview.partial?'（還在換其他單品）':''} · 高畫質版完成中…</span></div>`; window.__sawPreview=Date.now()-t0; }
+        if (st.preview && st.preview.url && st.preview.url!==shownPv && !st.front) { shownPv=st.preview.url; $('result').innerHTML=`<div class="pvwrap"><img src="${esc(shownPv)}" alt="快速預覽"><span class="pvtag">快速預覽${st.preview.partial?'（還在換其他單品）':''} · 高畫質版完成中…</span></div>`; window.__sawPreview=Date.now()-t0; }
         if (st.front) { window.__lastTiming=st.front.timing; d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
         if (st.status==='failed') throw new Error(st.error||'合成失敗');
         const sec=Math.round((Date.now()-t0)/1000);
-        if (st.progress) { const pg=st.progress; const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/pg.total*100))); bar.style.width=pc+'%'; const msg=`正在${STEP_TXT[pg.current]||'處理'}…（第 ${Math.min(pg.done+1,pg.total)}/${pg.total} 步，${sec} 秒）`; $('runStatus').textContent=msg; const w=$('waitMsg'); if(w) w.textContent=msg; }
+        if (st.progress) {
+          const pg=st.progress; const total=Math.max(1,pg.total||1); const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/total*100))); bar.style.width=pc+'%';
+          const stepTxt = pg.fixing ? '發現不夠像，正在自動重做' : ('正在'+(WAIT_STEP[pg.current]||'處理'));
+          const stepNo = pg.fixing ? '' : `第 ${Math.min(pg.done+1,total)}/${total} 步，`;
+          setWaitRaw(`${stepTxt}…（${stepNo}${sec} 秒）`, sec);
+        } else { setWait(sec<8?'已送出，等待 AI 開始…':'排隊中，AI 馬上就會開始…', sec); }
         if (Date.now()-t0 > 7*60*1000) throw new Error('合成逾時，點數會自動退回，請再試一次');
       }
       try{ localStorage.removeItem('tryon.pending'); }catch{}
@@ -1700,33 +1771,48 @@ $('btnRun').onclick=async()=>{
     clearInterval(tick); bar.style.width='96%';
     let imgs = imgsResolved.filter(Boolean);
     if (!imgs.length) throw new Error('沒有收到合成結果');
-    const needLock = $('faceLock').classList.contains('on') && (d.engine==='outfit' || items.some(i=>!['top','bottom','dress'].includes(i.type)));
-    if (needLock) { $('runStatus').textContent='鎖定臉部中…'; imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(person0, im); }catch(e){ return im; } })); }
+    const runTypes = items.length ? items : (state.runItems||[]);
+    const needLock = $('faceLock').classList.contains('on') && (d.engine==='outfit' || runTypes.some(i=>!['top','bottom','dress'].includes(i.type)));
+    if (needLock) { setWait('最後一步：把你的臉貼回去…', null); imgs = await Promise.all(imgs.map(async im=>{ try{ return await faceLock(person0, im); }catch(e){ return im; } })); }
     bar.style.width='100%';
-    $('runStatus').textContent = `完成！本次扣 ${d.charged} 點（免費額度抵 ${d.free_used} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '');
+    const charged=d.charged!=null?d.charged:null;
+    $('runStatus').textContent = (charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.quality&&d.quality.retried ? ' 已自動校正一次，讓衣服更貼近商品。' : '');
     if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
     let finalImg = imgs[0];
     if (imgs.length > 1) {
-      finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
+      finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}" alt="結果 ${i+1}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
-    state.result = finalImg; state.resultPerson = person0;
+    state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried);
     renderCompare(person0, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems();
     renderFit();
     if(isPhone) $('result').scrollIntoView({behavior:'smooth',block:'start'});
-    toast('完成，看看你穿起來的樣子'); haptic('success'); track('tryon_ok',{n:items.length,variants}); state.historyLoaded=false;
+    toast('完成，看看你穿起來的樣子'); haptic('success'); if(!resumeId) track('tryon_ok',{n:items.length,variants,retry:!!opts.retry}); state.historyLoaded=false;
     if (d._pendingId) followViews(d._pendingId, state.result);
     else if (pendingVideo) { const nb=$('runStatus').textContent; attachSpin(pendingVideo).then(()=>{ $('runStatus').textContent=nb+' 360° 好了：在圖上左右拖曳就能旋轉。'; }).catch(()=>{}); }
   }catch(e){
     clearInterval(tick);
+    try{ localStorage.removeItem('tryon.pending'); }catch{}
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
-    $('runStatus').innerHTML = '<span style="color:var(--bad)">'+e.message+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
-    const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
+    const msg=friendlyErr(e);
+    if(resumeId && /找不到這筆合成/.test(String(e.message))){ $('runStatus').textContent=''; }
+    else {
+      $('runStatus').innerHTML = '<span style="color:var(--bad)">'+esc(msg)+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
+      const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
+    }
   }finally{
     busy=false; $('btnRun').disabled=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
-    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>再試一次，或換一張更清楚的照片</div>'; }
+    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>這次沒有成功。再按一次「開始 AI 試穿」，<br>或換一張更清楚的全身照</div>'; }
   }
-};
+}
+$('btnRun').onclick=()=>runTryon();
+// 上次關掉頁面時還在合成 → 登入後自動接著等（後端是前端每次查詢才推進一步，沒人問就停著）
+function resumePending(){
+  let id=null; try{ id=localStorage.getItem('tryon.pending'); }catch{}
+  if(!id||busy||!state.person) { if(id&&!state.person){ try{ localStorage.removeItem('tryon.pending'); }catch{} } return; }
+  if(curView!=='tryon') go('tryon');
+  runTryon({resumeId:id});
+}
 function renderCompare(before, after){
   const box=$('result');
   const items=(state.runItems&&state.runItems.length?state.runItems.map(i=>i.type):Object.keys(state.slots)).map(t=>TYPE_LABEL[t]).join('＋')||'穿搭';
@@ -1734,6 +1820,7 @@ function renderCompare(before, after){
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   const v=state.views||{};
   box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>${v.side?`<img class="view-img" data-v="side" src="${v.side}" alt="側面">`:''}${v.back?`<img class="view-img" data-v="back" src="${v.back}" alt="背面">`:''}<div class="cap"><span>${items}</span><small id="capAngle">${date}</small></div></div>`;
+  if(state.qaRetried){ const q=document.createElement('div'); q.id='qaNote'; q.className='qanote'; q.textContent='已自動校正一次，讓衣服更貼近商品'; box.appendChild(q); }
   if(v.spin){ const pol=box.querySelector('.polaroid'); const sb=document.createElement('div'); sb.className='view-img spinbox'; sb.dataset.v='spin';
     sb.innerHTML=`<img class="spinposter" src="${after}" alt=""><video hidden muted playsinline loop preload="auto" crossorigin="anonymous" src="${v.video}"></video><canvas hidden></canvas><button class="spinplay" hidden>▶ 點一下播放 360°</button><span class="spinhint">轉一圈給你看，之後可以左右拖曳</span><div class="spinbar"><i></i></div>`;
     pol.querySelector('.cmp').after(sb); initSpin(sb); }
@@ -1778,9 +1865,9 @@ async function storyImage(before, after){
   return c.toDataURL('image/jpeg',0.92);
 }
 async function makeStory(){ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.resultPerson||state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } }
-$('btnRetry').onclick=async()=>{ if(busy) return; if(!await ask('再合成一次？','用同一組單品再抽一組不同結果，會再扣一次點數。',{ok:'再試一次'})) return; $('btnRun').click(); };
+$('btnRetry').onclick=async()=>{ if(busy) return; if(!Object.keys(state.slots).length) return toast('單品已清空，請重新放入再試'); if(!await ask('再做一次？','會改用高品質模式重新合成同一組單品，結果會和這張不一樣；會再扣一次點數。',{ok:'再做一次'})) return; runTryon({retry:true}); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
-function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); const ui=$('usedItems'); if(ui) ui.remove(); state.result=null; state.views=null; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
+function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); const ui=$('usedItems'); if(ui) ui.remove(); state.result=null; state.views=null; state.qaRetried=false; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
 $('btnContinue').onclick=()=>{ if(!state.result) return; const img=state.result; resetResult(); setPerson(img); state.slots={}; renderSlots(); persistSlots(); setStep(2); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */
@@ -1800,7 +1887,7 @@ function renderWardrobe(){
   $('btnWardrobeAdd').classList.toggle('hidden', !state.wardrobe.length);
   if(!state.wardrobe.length){ box.innerHTML=`<div class="empty-ill"><div class="ic">${ICON.top}</div><b>衣櫃還是空的</b><p>把常試的單品存進來，下次直接拿出來搭，不用再找圖。</p><button class="btn primary" id="emptyAdd">新增第一件單品</button></div>`; $('emptyAdd').onclick=()=>$('btnWardrobeAdd').click(); return; }
   const groups={}; state.wardrobe.filter(w=>!wardrobeFilter||w.type===wardrobeFilter).forEach(w=>{ (groups[w.type]=groups[w.type]||[]).push(w); });
-  box.innerHTML = SLOT_DEFS.filter(s=>groups[s.type]).map(s=>`<h3>${s.label}（${groups[s.type].length}）</h3><div class="wgrid" style="margin-bottom:16px">${groups[s.type].map(w=>`<div class="witem" data-id="${w.id}"><img src="${w.image_url}" loading="lazy"><span class="t">${w.name||''}</span><button class="del" data-del="${w.id}">✕</button></div>`).join('')}</div>`).join('');
+  box.innerHTML = SLOT_DEFS.filter(s=>groups[s.type]).map(s=>`<h3>${s.label}（${groups[s.type].length}）</h3><div class="wgrid" style="margin-bottom:16px">${groups[s.type].map(w=>`<div class="witem" data-id="${w.id}"><img src="${esc(w.image_url)}" loading="lazy" alt=""><span class="t">${esc(w.name||'')}</span><button class="del" data-del="${w.id}" aria-label="刪除">✕</button></div>`).join('')}</div>`).join('');
   box.querySelectorAll('.witem').forEach(el=>el.onclick=async e=>{
     const w=state.wardrobe.find(x=>String(x.id)===el.dataset.id);
     if(e.target.dataset.del){ if(!await ask('刪除這件單品？','之後可以再上傳。',{ok:'刪除',danger:true})) return; await supa.from('garments').delete().eq('id',w.id); const p=w.image_url.split('/wardrobe/')[1]; if(p) await supa.storage.from('wardrobe').remove([decodeURIComponent(p)]); loadWardrobe(); return; }
@@ -1821,7 +1908,7 @@ async function saveToWardrobe(type, dataUri, name){
 }
 $('btnWardrobeAdd').onclick=()=>{
   openPick('新增單品', `<div class="muted" style="margin-bottom:8px">這是什麼？</div>${SLOT_DEFS.filter(s=>s.type!=='hair').map(s=>`<div class="opt" data-t="${s.type}"><span class="ic" style="background:${s.tint}">${s.ic}</span><div>${s.label}</div></div>`).join('')}`);
-  $('pickBody').querySelectorAll('.opt').forEach(o=>o.onclick=()=>{ const type=o.dataset.t; closePick(); pickImage(async im=>{ try{ const name=await askText('幫它取個名字','可留空'); if(name===null) return; await saveToWardrobe(type, downscale(im,1024,'image/jpeg',0.9), name); loadWardrobe(); }catch{ toast('讀取失敗'); } }); });
+  $('pickBody').querySelectorAll('.opt').forEach(o=>o.onclick=()=>{ const type=o.dataset.t; closePick(); pickImage(async im=>{ try{ const name=await askText('幫它取個名字','可留空'); if(name===null) return; await saveToWardrobe(type, downscale(im,1024,'image/jpeg',0.9), name); loadWardrobe(); }catch(err){ toast((err&&err.message)||'讀不到這張圖片，請換一張試試'); } }); });
 };
 
 /* ---------- 紀錄 ---------- */
@@ -1839,7 +1926,7 @@ function renderHistory(){
   const list=[...state.history].sort((a,b)=>(b.favorite?1:0)-(a.favorite?1:0));
   const heart='<svg viewBox="0 0 24 24"><path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/></svg>';
   box.innerHTML=`<div class="hgrid">${list.map(h=>`<div class="hitem" data-id="${h.id}"><img src="${h.image_url}" loading="lazy"><button class="fav ${h.favorite?'on':''}" data-fav="${h.id}" title="收藏">${heart}</button><div class="meta"><span>${(h.items||[]).map(t=>TYPE_LABEL[t]||t).join('＋')}</span><span>${new Date(h.created_at).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric'})}</span></div></div>`).join('')}</div>`;
-  box.querySelectorAll('.hitem').forEach(el=>el.onclick=async e=>{ const fb=e.target.closest('[data-fav]'); const h=state.history.find(x=>String(x.id)===el.dataset.id); if(fb){ e.stopPropagation(); h.favorite=!h.favorite; fb.classList.toggle('on',h.favorite); haptic(); await supa.from('generations').update({favorite:h.favorite}).eq('id',h.id); return; } openLightbox(h); });
+  box.querySelectorAll('.hitem').forEach(el=>el.onclick=async e=>{ const fb=e.target.closest('[data-fav]'); const h=state.history.find(x=>String(x.id)===el.dataset.id); if(fb){ e.stopPropagation(); h.favorite=!h.favorite; fb.classList.toggle('on',h.favorite); haptic(); const { error }=await supa.from('generations').update({favorite:h.favorite}).eq('id',h.id); if(error){ h.favorite=!h.favorite; fb.classList.toggle('on',h.favorite); toast('收藏沒有存成功，請再點一次'); } return; } openLightbox(h); });
 }
 let lbItem=null;
 function openLightbox(h){ lbItem=h; const lb=$('lightbox'); lb.querySelector('img').src=h.image_url; const v=h.views||{}; const lv=$('lbViews'); const has=v.side||v.back||v.video; lv.classList.toggle('hidden',!has);
@@ -1849,7 +1936,7 @@ $('lightbox').addEventListener('click',e=>{ if(e.target.id==='lightbox') $('ligh
 $('lbClose').onclick=()=>$('lightbox').classList.remove('on');
 $('lbDownload').onclick=async()=>{ if(!lbItem) return; try{ const im=await urlToDataUri($('lightbox').querySelector('img').src); saveImage(im,'試穿吧_'+lbItem.id+imgExt(im)); }catch{ toast('下載失敗，請稍後再試'); } };
 $('lbUse').onclick=async()=>{ if(!lbItem) return; try{ setPerson(await urlToDataUri(lbItem.image_url)); $('lightbox').classList.remove('on'); go('tryon'); toast('已設為底圖'); }catch{ toast('載入失敗'); } };
-$('lbDelete').onclick=async()=>{ if(!lbItem) return; $('lightbox').classList.remove('on'); if(!await ask('刪除這張紀錄？','刪除後無法復原。',{ok:'刪除',danger:true})) return; await supa.from('generations').update({deleted:true}).eq('id',lbItem.id); state.history=state.history.filter(h=>h.id!==lbItem.id); renderHistory(); };
+$('lbDelete').onclick=async()=>{ if(!lbItem) return; $('lightbox').classList.remove('on'); if(!await ask('刪除這張紀錄？','刪除後無法復原。',{ok:'刪除',danger:true})) return; const { error }=await supa.from('generations').update({deleted:true}).eq('id',lbItem.id); if(error){ toast('刪除失敗，請稍後再試'); return; } state.history=state.history.filter(h=>h.id!==lbItem.id); renderHistory(); if(curView==='me') renderMe(); };
 
 /* ---------- 點數 ---------- */
 function renderCredits(){
@@ -2042,7 +2129,9 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
       const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
       const b=((await r.text()).match(/const BUILD = '([^']+)'/)||[])[1];
       if(!b||!cur||b===cur) return;
-      const working=!!document.querySelector('#prog:not(.hidden)') || !!document.querySelector('.polaroid') || !!document.querySelector('.pickmenu.on,.dlg.on,.itemview.on,.lightbox.on') || !!document.querySelector('#sheetSent:not(.hidden)');
+      const typing=(()=>{ const a=document.activeElement; return !!(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value); })();
+      const pending=(()=>{ try{ return !!localStorage.getItem('tryon.pending'); }catch{ return false; } })();
+      const working=typing || pending || !!document.querySelector('#prog:not(.hidden)') || !!document.querySelector('.polaroid') || !!document.querySelector('.pickmenu.on,.dlg.on,.itemview.on,.lightbox.on,.onb.on') || !!document.querySelector('#sheetSent:not(.hidden)');
       if(!working && (eager===1 || document.visibilityState==='hidden')) return go(b);
       if(!shown){ shown=true; const bar=document.createElement('div'); bar.className='updbar'; bar.innerHTML='有新版本 <button>立即更新</button>'; bar.querySelector('button').onclick=()=>go(b); document.body.appendChild(bar); }
     }catch{}
