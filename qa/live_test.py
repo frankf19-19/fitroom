@@ -169,7 +169,7 @@ with sync_playwright() as pw:
       if s and ('失敗' in s or '錯誤' in s or '尚未' in s): break
     step('身形分析', ok, f'{txt("#analyzeStatus")} report_len={len(txt("#bodyReport") or "")}'); shot('06_body')
     # 8. 搭配建議
-    pg.goto(SITE + '#tryon'); pg.wait_for_timeout(1200); pg.click('#btnOutfit')
+    pg.goto(SITE + '#tryon'); pg.wait_for_timeout(1200); pg.evaluate("document.getElementById('outfitCard').open=true"); pg.wait_for_timeout(300); pg.click('#btnOutfit')
     t0 = time.time(); ok = False
     while time.time() - t0 < 60:
       pg.wait_for_timeout(2000)
