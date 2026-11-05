@@ -8,10 +8,12 @@ def get(url, headers=None, timeout=20):
     with urllib.request.urlopen(req, timeout=timeout) as r: return r.status, r.headers.get('content-type', ''), len(r.read())
   except urllib.error.HTTPError as e: return e.code, '', 0
   except Exception as e: return -1, str(e)[:80], 0
-brands = json.loads(get(API + '/api/brands')[1] if False else urllib.request.urlopen(API + '/api/brands', timeout=30).read().decode()).get('brands', [])
+UA={'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1','Origin':'https://frankf19-19.github.io','Accept':'application/json'}
+def gj(u): return json.loads(urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read().decode())
+brands = gj(API + '/api/brands').get('brands', [])
 out = {}
 for b in brands:
-  d = json.loads(urllib.request.urlopen(API + '/api/products?brand=' + urllib.parse.quote(b['name']) + '&page=0', timeout=30).read().decode())
+  d = gj(API + '/api/products?brand=' + urllib.parse.quote(b['name']) + '&page=0')
   ps = d.get('products', [])[:3]
   rows = []
   for p in ps:
