@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.11.0';
+const VERSION = '2.12.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -29,14 +29,26 @@ const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 // 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
 const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-2/edit', 'https://queue.fal.run/fal-ai/nano-banana-pro/edit'];
 const ITEM_LABEL = { top: 'TOP or OUTERWEAR (upper body garment)', bottom: 'BOTTOM (trousers / skirt / shorts)', dress: 'ONE-PIECE (dress / jumpsuit)', shoes: 'SHOES', hat: 'HAT', accessory: 'ACCESSORY (bag / jewelry / glasses / watch)', hair: 'HAIRSTYLE reference' };
-function outfitPrompt(steps, hints, faceHint) {
-  const lines = []; let k = 2;
-  const refs = steps.map(st => { if (st.image_url) { const n = k++; lines.push(`Image ${n} is a product photo of the ${ITEM_LABEL[st.type]} to put on the customer.`); return n; } return null; });
+// opts.captions：與 steps 對齊的文字規格（看圖模型產生，可為 null）；opts.fixNotes：上一次品質檢查不通過的原因
+function outfitPrompt(steps, hints, faceHint, opts = {}) {
+  const captions = Array.isArray(opts.captions) ? opts.captions : [];
+  const lines = [], specs = []; let k = 2;
+  const refs = steps.map((st, i) => {
+    if (!st.image_url) return null;
+    const n = k++;
+    lines.push(`Image ${n} is a product photo of the ${ITEM_LABEL[st.type]} to put on the customer.`);
+    const cap = captions[i] && captions[i].description ? String(captions[i].description).slice(0, 600) : '';
+    if (cap) specs.push(`Product ${n - 1} specification (Image ${n}): ${cap}`);
+    return n;
+  });
   const hairText = steps.find(st => st.type === 'hair' && !st.image_url && st.text);
   const types = new Set(steps.map(s => s.type));
+  const hasHeight = /\b1\d{2}\s?cm\b|\bheight\b|\btall\b|\d\s?(ft|feet)\b/i.test(String(hints || ''));
+  const fix = opts.fixNotes ? String(opts.fixNotes).slice(0, 900) : '';
   return [
     'Virtual try-on photo edit for a fashion e-commerce app.',
     'Image 1 is the customer photo. ' + lines.join(' '),
+    specs.length ? specs.join('\n') + '\nThe written specification and the product photo agree; follow both exactly.' : '',
     hairText ? `Also change the customer's hairstyle to: ${hairText.text}.` : '',
     'Produce a photo of the SAME customer from Image 1 now wearing exactly these products.',
     'GARMENT FIDELITY IS THE TOP PRIORITY. Copy each product exactly as it appears in its product photo:',
@@ -47,9 +59,87 @@ function outfitPrompt(steps, hints, faceHint) {
     types.has('top') ? 'If the top is outerwear shown open over another garment, the customer keeps their own top underneath.' : '',
     "Fully replace the customer's current clothing in the provided categories (for example shorts become full-length trousers when the product is trousers). Keep the customer's clothing in categories that were not provided unchanged.",
     'IDENTITY AND SCENE MUST NOT CHANGE: same face, facial expression, ' + (types.has('hair') ? '' : 'hairstyle, ') + 'skin tone, body shape and proportions, pose, hands and anything held in the hands (for example a phone), background, mirror, lighting, camera angle and framing.',
+    'Render each product at the correct physical scale for this person (sleeve, hem and trouser length end where they would on this body).' + (hasHeight ? " Use the customer's height given in the body notes to judge where hems and sleeves end." : ''),
     'Realistic fit and drape on this body with natural folds and shadows. Photorealistic. No text, no watermark. Keep the same aspect ratio and framing as Image 1.',
-    hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : ''
+    hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : '',
+    fix ? 'PREVIOUS ATTEMPT WAS REJECTED FOR: ' + fix + '. Fix these specifically.' : ''
   ].filter(Boolean).join('\n');
+}
+/* ---- 品質：單品文字規格（送出前）與結果品質檢查（送出後） ---- */
+const QA_MODELS = ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini'];
+const QA_TIMEOUT_MS = 12000;
+const QA_MIN_ITEM = 7, QA_MIN_IDENTITY = 7, QA_MIN_FRAMING = 6;
+// 有圖的單品（純文字髮型略過）：回傳 [{ i: item_steps 索引, n: 單品編號(1 起), type, url }]
+function captionTargets(steps) {
+  const out = []; let n = 1;
+  (steps || []).forEach((st, i) => { if (st.image_url) out.push({ i, n: n++, type: st.type, url: st.image_url }); });
+  return out;
+}
+function captionPrompt(targets) {
+  return [
+    'You are a fashion product cataloguer. You are given ' + targets.length + ' product photo(s), in order: ' + targets.map(t => `image ${t.n} = product ${t.n} (${ITEM_LABEL[t.type] || t.type})`).join('; ') + '.',
+    'For EACH product write one precise, concrete description of the product itself (ignore the model, background and any text overlays). Include: exact color names, silhouette and fit (slim, straight, wide, balloon, oversized, cropped...), length relative to the body (e.g. hits mid-thigh, ankle length), rise for bottoms, sleeve type and length, neckline or collar, closure and its state (buttoned, zipped, open), fabric and texture, pattern / logos / prints and their placement, notable details (pockets, hood, drawstrings, hardware, pleats, slits), and how it is worn in the photo (tucked, open, hood down...). 2-4 sentences, English.',
+    'Return ONLY JSON: {"items":[{"n":1,"type":"...","description":"..."}, ...]} with one entry per product in the same order.'
+  ].join('\n');
+}
+// 把模型回傳整理成與 item_steps 對齊的陣列（沒圖的位置為 null）
+function parseCaptions(json, steps) {
+  const targets = captionTargets(steps);
+  const items = json && Array.isArray(json.items) ? json.items : [];
+  const out = (steps || []).map(() => null);
+  targets.forEach((t, k) => {
+    const hit = items.find(x => x && Number(x.n) === t.n) || items[k];
+    const d = hit && typeof hit.description === 'string' ? hit.description.trim() : '';
+    if (d) out[t.i] = { n: t.n, type: t.type, description: d.slice(0, 600) };
+  });
+  return out.some(Boolean) ? out : null;
+}
+function qaPrompt(targets, captions) {
+  const specs = targets.map(t => { const c = captions && captions[t.i]; return `product ${t.n} (${ITEM_LABEL[t.type] || t.type}) = image ${t.n + 2}` + (c && c.description ? ': ' + c.description : ''); });
+  return [
+    'You are a strict QA inspector for a virtual try-on service. Image 1 is the GENERATED result. Image 2 is the ORIGINAL customer photo. The remaining images are the product photos: ' + specs.join('; ') + '.',
+    'Score the result. identity (0-10): is the person in image 1 the same person as image 2 (face, expression, skin tone, hair unless a hairstyle product was given, body shape, pose, hands and held objects, background, lighting)? 10 = identical.',
+    'For each product, match (0-10): does the garment worn in image 1 reproduce that product photo exactly (silhouette/cut, length on the body, color, fabric, pattern/logo/print, details, how it is worn)? 10 = exact copy. In "issue" state concretely what differs (e.g. "trousers are slim instead of wide-leg", "logo missing on chest"), or "" if nothing.',
+    'framing (0-10): same crop, aspect ratio and camera angle as image 2. artifacts: list visible defects (extra limbs, warped hands, text, duplicated garments, floating items) or [].',
+    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}, identity < ${QA_MIN_IDENTITY} or framing < ${QA_MIN_FRAMING}; otherwise "pass".`,
+    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,"issue":"..."}],"framing":0-10,"artifacts":["..."],"verdict":"pass"|"retry"}'
+  ].join('\n');
+}
+const clamp10 = v => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : null; };
+// 正規化品質檢查結果；依規則重新判定 verdict（不完全信任模型自己的 verdict）
+function normalizeQa(json, targets) {
+  const q = json && typeof json === 'object' ? json : {};
+  const rawItems = Array.isArray(q.items) ? q.items : [];
+  const items = targets.map((t, k) => {
+    const hit = rawItems.find(x => x && Number(x.n) === t.n) || rawItems[k] || {};
+    return { n: t.n, type: t.type, match: clamp10(hit.match), issue: typeof hit.issue === 'string' ? hit.issue.trim().slice(0, 200) : '' };
+  });
+  const identity = clamp10(q.identity), framing = clamp10(q.framing);
+  const artifacts = Array.isArray(q.artifacts) ? q.artifacts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 120)).slice(0, 6) : [];
+  const bad = items.some(it => it.match != null && it.match < QA_MIN_ITEM) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING);
+  const verdict = bad || String(q.verdict).toLowerCase() === 'retry' ? 'retry' : 'pass';
+  return { identity, items, framing, artifacts, verdict, at: Date.now() };
+}
+// 由檢查結果組成「上次被退回的原因」（放進重做的提示詞）
+function qaCorrections(qa) {
+  const out = [];
+  for (const it of (qa.items || [])) {
+    if (it.match != null && it.match < QA_MIN_ITEM) out.push(`product ${it.n} (${ITEM_LABEL[it.type] || it.type}) does not match its product photo` + (it.issue ? ': ' + it.issue : ''));
+    else if (it.issue) out.push(`product ${it.n}: ${it.issue}`);
+  }
+  if (qa.identity != null && qa.identity < QA_MIN_IDENTITY) out.push("the customer's identity changed (face, body, pose, background or lighting differ from Image 1) — keep the person in Image 1 identical");
+  if (qa.framing != null && qa.framing < QA_MIN_FRAMING) out.push('the framing / crop / aspect ratio differs from Image 1 — keep the exact same framing');
+  if (qa.artifacts && qa.artifacts.length) out.push('visible defects: ' + qa.artifacts.join(', '));
+  return out.join('; ').slice(0, 900);
+}
+async function visionJson(env, prompt, imageUrls, maxMs = QA_TIMEOUT_MS) {
+  const t0 = Date.now(); let last;
+  for (const model of QA_MODELS) {
+    const rem = maxMs - (Date.now() - t0);
+    if (rem < 3000) break;
+    try { return await falLLMOnce(env, prompt, imageUrls, model, rem); } catch (e) { last = e; if (/額度不足|locked|balance/i.test(e.message)) break; }
+  }
+  throw last || new Error('AI 看圖服務逾時');
 }
 const SPIN_MODELS = ['https://queue.fal.run/minimax/h3-max-turbo/image-to-video', 'https://queue.fal.run/minimax/h3-max/image-to-video', 'https://queue.fal.run/fal-ai/kling-video/v2.6/pro/image-to-video'];
 const SPIN_PROMPT = 'Fashion turntable shot. The camera is fixed and locked off. The person stands in place and slowly turns their whole body around a full 360 degrees at a constant speed, like on a rotating platform: from facing the camera, to the side profile, to the back, to the other side, and back to facing the camera. Arms relaxed at the sides. Keep the exact same person, face, hairstyle, body shape and every garment detail (color, silhouette, length, fit) perfectly consistent throughout. Same background and lighting. Smooth, realistic, no cuts.';
@@ -107,11 +197,13 @@ async function falLLM(env, prompt, imageUrl, deadline) {
   }
   throw last || new Error('AI 文字服務逾時');
 }
+// imageUrl 可為單一網址、網址陣列（多張圖一次看）或空
 async function falLLMOnce(env, prompt, imageUrl, model, maxMs = 60000) {
   if (!env.FAL_KEY) throw new Error('未設定 FAL_KEY');
   const body = { model, prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000 };
-  if (imageUrl) body.image_urls = [imageUrl];
-  const r = await fetchT('https://fal.run/openrouter/router' + (imageUrl ? '/vision' : ''), { method: 'POST', headers: { 'Authorization': 'Key ' + env.FAL_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'AI 文字服務', maxMs);
+  const imgs = (Array.isArray(imageUrl) ? imageUrl : [imageUrl]).filter(u => typeof u === 'string' && u);
+  if (imgs.length) body.image_urls = imgs;
+  const r = await fetchT('https://fal.run/openrouter/router' + (imgs.length ? '/vision' : ''), { method: 'POST', headers: { 'Authorization': 'Key ' + env.FAL_KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, 'AI 文字服務', maxMs);
   const t = await r.text();
   if (!r.ok) throw new Error('AI 文字服務：' + extractErr(t));
   try { const e0 = JSON.parse(t); if (e0 && e0.error && !e0.output) throw new Error('AI 文字服務：' + String(e0.error.message || e0.error).slice(0, 120)); } catch (e1) { if (String(e1.message).startsWith('AI 文字服務')) throw e1; }
@@ -161,6 +253,8 @@ export default {
     }
   }
 };
+// 離線測試用（worker/test_quality.mjs）：只有在測試旗標開啟時才掛出內部函式
+if (globalThis.__TRYON_TEST__) globalThis.__tryonTest = { outfitPrompt, captionTargets, captionPrompt, parseCaptions, qaPrompt, normalizeQa, qaCorrections, visionJson, handleTryonStatus, OUTFIT_ENGINES, VERSION };
 
 /* ---------------- 共用 ---------------- */
 function corsHeaders(request, env) {
@@ -527,7 +621,8 @@ async function handleTryon(request, env, cors, ctx) {
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
         pv: (!prefetch && useOutfit && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null,
-        steps: useOutfit ? [{ type: 'outfit', engine: body.engine === 'pro' ? 1 : 0 }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
+        // 整套引擎：付費（非預先合成）的工作多一個 qa 步驟（結果品質檢查，不過關自動重做一次）
+        steps: useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, ...(prefetch ? [] : [{ type: 'qa' }])] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
@@ -570,6 +665,8 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
     if ((job.lock_until || 0) <= Date.now()) {
       const v = job.v;
       if (!job.front && !job.pv && job.engine === 'outfit' && (job.item_steps || []).some(x => x.category)) job.pv = { i: 0, cur: job.person_url, req: null };
+      // 認領後成為付費工作：正面還沒完成就補上品質檢查步驟
+      if (!job.front && job.engine === 'outfit' && Array.isArray(job.steps) && !job.steps.some(s => s.type === 'qa')) job.steps = [...job.steps, { type: 'qa' }];
       job.v = v + 1; job.prefetch = false; job.pay = payCredits; job.free = useFree; job.free_left = freeLeft; job.cost = cost; job.key = ckey; job.want_views = wantViews; job.touched = new Date().toISOString();
       const patch = { cost: payCredits, free_used: useFree, job };
       if (row.status === 'ok') {
@@ -604,6 +701,7 @@ async function finishJob(env, userId, g, job, cond = '') {
   const viewUrls = job.views || {};
   const prof = await getProfile(env, { id: userId }).catch(() => null);
   const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error || null, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
+  if (job.qa) result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) };
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
   const row = { status: 'ok', cost: job.pay, free_used: job.free, error: job.views_error || null, job: await sealJob(env, job) };
   if (job.prefetch) { row.image_url = null; row.views = { enc: await encStr(env, JSON.stringify({ view_urls: viewUrls, result })) }; }   // 未付款：結果網址加密，認領後才寫出
@@ -679,7 +777,7 @@ async function handleTryonStatus(request, env, cors, url) {
   let job;
   try { job = await openJob(env, g.job); } catch { job = null; }
   if (!job) { const r = await stopJob(env, user.id, g, null, '合成資料異常（已退回點數），請再試一次', g.job.v == null ? '&job->>v=is.null' : `&job->>v=eq.${g.job.v}`); return jout(r || { status: 'running' }, 200, cors); }
-  const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); return { done, total: tot + 1, current: cur }; };
+  const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); const p = { done, total: tot + 1, current: cur }; if (cur === 'outfit' && job.fix_notes) p.fixing = true; if (job.retries) p.retries = job.retries; return p; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
   const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : undefined }, 200, cors);
   // 取得鎖（避免兩個輪詢同時推進）
@@ -700,12 +798,22 @@ async function handleTryonStatus(request, env, cors, url) {
   const canStart = () => Date.now() - t0 < POLL_BUDGET_MS;     // 超過預算就不再開始新步驟，留到下次輪詢
   const hardLeft = () => t0 + POLL_HARD_MS - Date.now();
   try {
+    // 0) 單品文字規格：付費工作、整套引擎、第一次送出前，只做一次（一個看圖呼叫；失敗就不帶規格繼續）
+    if (job.engine === 'outfit' && !job.prefetch && !job.cap_done && job.chains.some(c => c.i === 0 && !c.req) && canStart()) {
+      job.cap_done = true;
+      const targets = captionTargets(job.item_steps);
+      if (targets.length) {
+        try { job.captions = parseCaptions(await visionJson(env, captionPrompt(targets), targets.map(t => t.url), QA_TIMEOUT_MS), job.item_steps); }
+        catch (e) { job.captions = null; job.cap_error = String(e.message).slice(0, 120); }
+      }
+      if (!canStart()) { await save(); return running(); }   // 規格花太久：這次輪詢不再送出合成
+    }
     // 1) 推進每條合成鏈（一次最多一個 Gemini 步驟）
     await Promise.all(job.chains.map(async (ch, ci) => {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length && canStart(); guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
-          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint), job.hires !== false, job.aspect); return; }
+          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint, { captions: job.captions, fixNotes: job.fix_notes }), job.hires !== false, job.aspect); return; }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
@@ -721,6 +829,29 @@ async function handleTryonStatus(request, env, cors, url) {
           job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done;
           ch.cur = r; ch.req = null; ch.i++;
           if (!canStart()) return;                // 查詢可能花了十幾秒：超過預算就不再送下一步
+          continue;
+        }
+        if (st.type === 'qa') {
+          // 品質檢查：一個看圖呼叫；呼叫失敗視為通過。不過關且還沒重做過 → 換 pro 引擎、帶著原因重做一次
+          if (job.prefetch) { ch.i++; continue; }
+          const targets = captionTargets(job.item_steps);
+          let qa = null;
+          try { qa = normalizeQa(await visionJson(env, qaPrompt(targets, job.captions), [ch.cur, job.person_url, ...targets.map(t => t.url)], QA_TIMEOUT_MS), targets); }
+          catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
+          qa.chain = ci; qa.attempt = (job.retries || 0) + 1;
+          job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
+          if (qa.verdict === 'retry' && (job.retries || 0) < 1) {
+            job.retries = (job.retries || 0) + 1;
+            job.fix_notes = qaCorrections(qa) || 'the result did not match the product photos closely enough';
+            const oi = job.steps.findIndex(s => s.type === 'outfit');
+            const ost = job.steps[oi];
+            if (ost && (ost.engine || 0) === 0 && OUTFIT_ENGINES.length > 1) ost.engine = 1;
+            job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
+            ch.req = null; ch.cur = job.person_url; ch.i = oi >= 0 ? oi : 0;
+            if (!canStart()) return;              // 重送交給下次輪詢（避免同一輪再多一個呼叫）
+            continue;
+          }
+          ch.i++;
           continue;
         }
         if (st.category) {
