@@ -1,0 +1,25 @@
+name: 效能檢查（Lighthouse 手機）
+on: { workflow_dispatch: {} }
+jobs:
+  lh:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i -g lighthouse@12 >/dev/null 2>&1 && mkdir out
+      - run: |
+          for u in "https://frankf19-19.github.io/fitroom/?lh=1" "https://frankf19-19.github.io/fitroom/?lh=1#shop"; do
+            n=$(echo "$u" | md5sum | cut -c1-6)
+            lighthouse "$u" --quiet --chrome-flags="--headless=new --no-sandbox" --preset=perf --form-factor=mobile --screenEmulation.mobile --output=json --output=html --output-path=out/lh_$n --only-categories=performance,accessibility,best-practices,seo || true
+          done
+          node -e '
+            const fs=require("fs");for(const f of fs.readdirSync("out").filter(x=>x.endsWith(".json"))){const r=JSON.parse(fs.readFileSync("out/"+f));
+            const s=Object.fromEntries(Object.entries(r.categories).map(([k,v])=>[k,Math.round(v.score*100)]));
+            const a=r.audits;const m=k=>a[k]&&a[k].displayValue;
+            const fails=Object.values(a).filter(x=>x.score!==null&&x.score<0.9&&x.details&&x.details.type!=="debugdata").map(x=>({id:x.id,score:x.score,title:x.title,dv:x.displayValue,items:(x.details.items||[]).slice(0,6).map(i=>i.url||i.node&&i.node.selector||i.source||JSON.stringify(i).slice(0,120))}));
+            fs.writeFileSync("out/summary_"+f,JSON.stringify({url:r.finalDisplayedUrl,scores:s,fcp:m("first-contentful-paint"),lcp:m("largest-contentful-paint"),tbt:m("total-blocking-time"),cls:m("cumulative-layout-shift"),si:m("speed-index"),bytes:a["total-byte-weight"]&&a["total-byte-weight"].displayValue,fails},null,1));}'
+      - run: |
+          cd out && git init -q && git checkout -q -b qa-lh && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m lh
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-lh
