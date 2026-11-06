@@ -1192,7 +1192,13 @@ async function handleProducts(request, env, cors, url) {
   return json({ products: rows, page, has_more: rows.length === size }, 200, { ...cors, 'Cache-Control': 'public, max-age=60' });
 }
 async function handleBrands(env, cors) {
-  const rows = await sb(env, '/rest/v1/products?active=eq.true&select=brand&limit=5000').catch(() => []);
+  // Supabase 一次最多回 1000 筆，商品超過後要分頁，否則品牌清單會少
+  const rows = [];
+  for (let off = 0; off < 10000; off += 1000) {
+    const page = await sb(env, `/rest/v1/products?active=eq.true&select=brand&order=id&limit=1000&offset=${off}`).catch(() => []);
+    rows.push(...page);
+    if (page.length < 1000) break;
+  }
   const c = {}; for (const r of rows) if (r.brand) c[r.brand] = (c[r.brand] || 0) + 1;
   const brands = Object.entries(c).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).map(([name, n]) => ({ name, n }));
   return json({ brands }, 200, { ...cors, 'Cache-Control': 'public, max-age=600' });
