@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
-"""把 UNIQLO 台灣官網各分類的商品同步進試穿吧的 products 表（測試用，無聯盟分潤）。
-環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY。用法：python3 tools/sync_uniqlo.py [每分類幾件，預設 12]
+"""把 UNIQLO／GU 台灣官網各分類的商品同步進試穿吧的 products 表（測試用，無聯盟分潤）。兩家共用 Fast Retailing 同一套商品 API。
+環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY、BRAND（uniqlo 預設，或 gu）。用法：python3 tools/sync_uniqlo.py [每分類幾件，預設 12]
 """
 import json, os, sys, urllib.request, time
 
 SUPABASE_URL = os.environ['SUPABASE_URL'].rstrip('/')
 KEY = os.environ['SUPABASE_SERVICE_KEY']
 PER_CAT = int(sys.argv[1]) if len(sys.argv) > 1 else 12
-API = 'https://d.uniqlo.com/tw/p/search/products/by-category'
-IMG = 'https://www.uniqlo.com/tw'
-BUY = 'https://www.uniqlo.com/tw/zh_TW/product-detail.html?productCode='
+BRAND = os.environ.get('BRAND', 'uniqlo').lower()
 
 # 分類代碼 → (type, gender, 額外 tags)
-CATS = {
+UNIQLO_CATS = {
   'all_women-tops-t-shirts':     ('top', 'f', ['T恤']),
   'all_women-shirts':            ('top', 'f', ['襯衫']),
   'all_women-knit-lineup':       ('top', 'f', ['針織']),
@@ -28,6 +26,31 @@ CATS = {
   'all_women-accessories':       (None, 'f', []),   # 用名稱判斷帽子/包包
   'all_men-accessories':         (None, 'm', []),
 }
+GU_CATS = {
+  'women_tshirtsweat':        ('top', 'f', ['T恤/衛衣']),
+  'women_shirtsandblouses':   ('top', 'f', ['襯衫']),
+  'women_knitandcardigan':    ('top', 'f', ['針織']),
+  'women_outer':              ('top', 'f', ['外套']),
+  'women_bottoms':            ('bottom', 'f', ['褲子']),
+  'women_skirts':             ('bottom', 'f', ['裙子']),
+  'women_onepieces':          ('dress', 'f', ['洋裝']),
+  'women_shoe':               ('shoes', 'f', []),
+  'men_tshirtsweat':          ('top', 'm', ['T恤/衛衣']),
+  'men_shirtsandpoloshirts':  ('top', 'm', ['襯衫/POLO']),
+  'men_knitandcardigan':      ('top', 'm', ['針織']),
+  'men_outer':                ('top', 'm', ['外套']),
+  'men_bottoms':              ('bottom', 'm', ['褲子']),
+  'men_shoe':                 ('shoes', 'm', []),
+  'women_goods':              (None, 'f', []),
+  'men_goods':                (None, 'm', []),
+}
+CFG = {
+  'uniqlo': dict(api='https://d.uniqlo.com/tw/p/search/products/by-category', img='https://www.uniqlo.com/tw', buy='https://www.uniqlo.com/tw/zh_TW/product-detail.html?productCode=',
+                 origin='https://www.uniqlo.com', brand='UNIQLO', source='uniqlo', cats=UNIQLO_CATS),
+  'gu':     dict(api='https://d.gu-global.com/tw/p/search/products/by-category', img='https://www.gu-global.com/tw', buy='https://www.gu-global.com/tw/zh_TW/product-detail.html?productCode=',
+                 origin='https://www.gu-global.com', brand='GU', source='gu', cats=GU_CATS),
+}[BRAND]
+API, IMG, BUY, CATS = CFG['api'], CFG['img'], CFG['buy'], CFG['cats']
 
 def fetch_cat(code, n):
   body = {"url": f"/tw/zh_TW/c/{code}.html", "categoryCode": code,
@@ -35,7 +58,7 @@ def fetch_cat(code, n):
           "priceRange": {"low": 0, "high": 0}, "color": [], "size": [], "season": [], "material": [], "sex": [],
           "identity": [], "insideFilterCondition": [], "exclusiveCondition": [], "isCategoryExclusive": "N"}
   req = urllib.request.Request(API, data=json.dumps(body).encode(), headers={
-    'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0', 'Origin': 'https://www.uniqlo.com', 'Referer': 'https://www.uniqlo.com/'})
+    'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0', 'Origin': CFG['origin'], 'Referer': CFG['origin'] + '/'})
   with urllib.request.urlopen(req, timeout=30) as r:
     j = json.load(r)
   return (j.get('resp') or [{}])[0].get('productList') or []
@@ -66,7 +89,7 @@ def sb(method, path, data=None, prefer=None):
 rows, seen = [], set()
 for code, (ctype, gender, tags) in CATS.items():
   try:
-    lst = fetch_cat(code, PER_CAT)
+    lst = fetch_cat(code, PER_CAT); time.sleep(0.5)
   except Exception as e:
     print('skip', code, e); continue
   k = 0
@@ -75,9 +98,9 @@ for code, (ctype, gender, tags) in CATS.items():
     t = classify(ctype, name)
     if not pid or not t or pid in seen or not p.get('mainPic'): continue
     if p.get('stock') == 'N': continue
-    sex = p.get('sex') or ''
+    sex = (p.get('sex') or '') + ' ' + (p.get('productName') or '')
     g = 'u' if '男女' in sex else gender
-    rows.append({'source': 'uniqlo', 'external_id': pid, 'brand': 'UNIQLO', 'name': name, 'type': t, 'gender': g,
+    rows.append({'source': CFG['source'], 'external_id': pid, 'brand': CFG['brand'], 'name': name, 'type': t, 'gender': g,
                  'price': int(p.get('minPrice') or 0), 'currency': 'TWD', 'image_url': IMG + p['mainPic'],
                  'buy_url': BUY + pid, 'tags': tags + ([s for s in [p.get('season')] if s]), 'sizes': sizes_of(p), 'active': True,
                  'featured': k == 0 and ctype in ('top', 'dress')})
@@ -86,7 +109,7 @@ for code, (ctype, gender, tags) in CATS.items():
   print(code, k)
 
 print('total', len(rows))
-existing = sb('GET', 'products?source=eq.uniqlo&select=id,external_id')
+existing = sb('GET', f"products?source=eq.{CFG['source']}&select=id,external_id")
 ex = {r['external_id']: r['id'] for r in existing}
 ins = [r for r in rows if r['external_id'] not in ex]
 upd = [r for r in rows if r['external_id'] in ex]

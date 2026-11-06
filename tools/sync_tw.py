@@ -82,7 +82,8 @@ def pick(rows):
 
 # ---------- 91APP ----------
 SHOPS91 = [('www.obdesign.com.tw', 'OB嚴選', 'f'), ('www.giordano.com.tw', 'GIORDANO', 'u'), ('www.vans.com.tw', 'VANS', 'u'), ('www.adidas.com.tw', 'adidas', 'u'),
-           ('www.roots.com.tw', 'Roots', 'u'), ('www.edwin.com.tw', 'EDWIN', 'u'), ('www.timberland.com.tw', 'Timberland', 'u'), ("www.levis.com.tw", "Levi's", 'u')]
+           ('www.roots.com.tw', 'Roots', 'u'), ('www.edwin.com.tw', 'EDWIN', 'u'), ('www.timberland.com.tw', 'Timberland', 'u'), ("www.levis.com.tw", "Levi's", 'u'),
+           ('tw.puma.com', 'PUMA', 'u'), ('www.thenorthface.com.tw', 'The North Face', 'u'), ('www.underarmour.tw', 'Under Armour', 'u'), ('www.columbiasportswear.com.tw', 'Columbia', 'u')]
 stats = {'blocked': 0}
 def sync91(host, brand, gdef):
   rp, rt = robots(host)
@@ -125,9 +126,16 @@ def sync91(host, brand, gdef):
   save('91app:' + host, rows); print(host, shop, len(ids), '->', counts, stats)
 
 # ---------- 商品頁 JSON-LD（網站地圖） ----------
+def meta(html, prop):
+  m = re.search(r'<meta[^>]+(?:property|name|itemprop)=["\']%s["\'][^>]+content=["\']([^"\']+)' % re.escape(prop), html, re.I) or re.search(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+(?:property|name|itemprop)=["\']%s["\']' % re.escape(prop), html, re.I)
+  return m and m.group(1).strip()
 def ld_product(html):
+  fallback_price = (re.search(r'itemprop=["\']price["\'][^>]*content=["\']([\d.,]+)', html) or re.search(r'property=["\'](?:product:price:amount|og:price)["\'][^>]*content=["\']([\d.,]+)', html)
+                    or re.search(r"var _price = '([\d.]+)'", html) or [None, None])[1]
   for m in re.finditer(r'<script[^>]+application/ld\+json[^>]*>(.*?)</script>', html, re.S | re.I):
-    try: j = json.loads(m.group(1).strip())
+    raw = re.sub(r'"@context":\s*(https?://[^",\s]+)', r'"@context": "\1"', m.group(1).strip())   # CACO 的 @context 沒加引號
+    raw = re.sub(r'(\d)，', r'\1,', raw)   # CACO 的價格後面是全形逗號
+    try: j = json.loads(raw)
     except Exception: continue
     for it in (j if isinstance(j, list) else (j.get('@graph') or [j])):
       if isinstance(it, dict) and 'Product' in str(it.get('@type')):
@@ -135,20 +143,47 @@ def ld_product(html):
         if isinstance(off, list): off = off[0] if off else {}
         img = it.get('image'); img = img[0] if isinstance(img, list) else (img.get('url') if isinstance(img, dict) else img)
         avail = str(off.get('availability') or '')
-        return {'name': it.get('name'), 'image': img, 'price': off.get('price') or off.get('lowPrice'), 'oos': 'OutOfStock' in avail, 'category': it.get('category') or ''}
+        return {'name': it.get('name'), 'image': img, 'price': off.get('price') or off.get('lowPrice') or fallback_price, 'oos': 'OutOfStock' in avail, 'category': it.get('category') or ''}
+  # JSON-LD 壞掉或沒有時（plain-me、D+AF）退回 Open Graph
+  t, im = meta(html, 'og:title'), meta(html, 'og:image')
+  if t and im and fallback_price:
+    t = re.split(r'\s*[│|｜]\s*', t)[0].strip()
+    return {'name': t, 'image': im, 'price': fallback_price, 'oos': False, 'category': ''}
   return None
-LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('www.crocs.com.tw', 'Crocs', 'u', 'shoes', r'/products/', 160), ('www.vacanza.com.tw', 'VACANZA', 'f', 'accessory', r'/products/', 120)]
+# (網域, 品牌, 預設性別, 預設類別, 商品網址樣式, 最多看幾個商品網址)
+LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('www.crocs.com.tw', 'Crocs', 'u', 'shoes', r'/products/', 160), ('www.vacanza.com.tw', 'VACANZA', 'f', 'accessory', r'/products/', 120),
+            # PAZZO／MEIER.Q／Mercci22 同一套系統：/market/n/<id>（網站地圖另有 /zh-tw/、/en-us/ 重複網址，會去重）
+            ('www.pazzo.com.tw', 'PAZZO', 'f', None, r'\.tw/market/n/\d+$', 240), ('www.meierq.com', 'MEIER.Q', 'f', None, r'\.com/market/n/\d+$', 240), ('www.mercci22.com', 'Mercci22', 'f', None, r'\.com/market/n/\d+$', 240),
+            # Shopline：/zh-hant/products/<handle>
+            ('www.50-shop.com', '50% FIFTY PERCENT', 'u', None, r'/(zh-hant/)?products/', 240), ('www.lulus.com.tw', 'Lulus', 'f', None, r'/(zh-hant/)?products/', 240),
+            # Cyberbiz：/products/<handle>
+            ('www.fila.com.tw', 'FILA', 'u', None, r'/products/', 240),
+            # GAP 台灣：/pdp/<id>/<sku>，JSON-LD 沒價格、用 itemprop=price 補
+            ('www.gap.tw', 'GAP', 'u', None, r'/pdp/', 240),
+            # Grace Gift：robots 的 Sitemap 指到 /sitemap/index → /sitemap/shoe/0、/sitemap/bag/0
+            ('www.gracegift.com.tw', 'Grace Gift', 'f', None, r'/products/\d+/\d+', 240)]
 def sync_ld(host, brand, gdef, deftype, pat, maxn):
   rp, rt = robots(host)
   maps = re.findall(r'(?im)^sitemap:\s*(\S+)', rt) or [f'https://{host}/sitemap.xml']
   urls = []
   for sm in maps[:4]:
     s, x = get(sm); locs = re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x)
-    subs = [l for l in locs if '.xml' in l.lower()]
-    for sub in ([l for l in subs if re.search(r'product', l, re.I)] or subs)[:4]:
-      s2, x2 = get(sub); locs += re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x2)
-    urls += [l for l in locs if re.search(pat, l) and '.xml' not in l.lower()]
-  urls = [u for u in dict.fromkeys(urls) if '/en/' not in u or host == 'www.vacanza.com.tw'][-maxn:][::-1]
+    subs = [l for l in locs if '.xml' in l.lower() or '/sitemap/' in l.lower()]
+    for sub in ([l for l in subs if re.search(r'product|shoe|bag', l, re.I)] or subs)[:4]:
+      time.sleep(0.3); s2, x2 = get(sub); locs += re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x2)
+    urls += [l for l in locs if re.search(pat, l) and '.xml' not in l.lower() and '/sitemap/' not in l.lower()]
+  seen_key = set(); uniq = []
+  for u in urls:
+    if ('/en/' in u or '/en-us/' in u) and host != 'www.vacanza.com.tw': continue
+    k = re.sub(r'^https?://[^/]+', '', u); k = re.sub(r'^/(zh-hant|zh-tw|zh-TW)(?=/)', '', k).rstrip('/')
+    if k in seen_key: continue
+    seen_key.add(k); uniq.append(u)
+  urls = uniq[-maxn:][::-1]
+  rows, counts = pick(fetch_rows(host, brand, gdef, deftype, urls, rp))
+  if not rows: print(host, 'no rows', len(urls)); return
+  save('web:' + host, rows); print(host, len(urls), '->', counts)
+
+def fetch_rows(host, brand, gdef, deftype, urls, rp):
   def one(u):
     if not rp.can_fetch(UA, u): return None
     time.sleep(0.3)
@@ -161,6 +196,7 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn):
     if not typ: return None
     try: price = int(float(str(p['price']).replace(',', '')))
     except Exception: return None
+    if price <= 0: return None
     img = p['image']; img = ('https:' + img) if img.startswith('//') else img
     return {'source': 'web:' + host, 'external_id': re.sub(r'^https?://[^/]+', '', u)[:200], 'brand': brand, 'name': name[:120], 'type': typ, 'gender': gender_of(name, gdef),
             'price': price, 'currency': 'TWD', 'image_url': img, 'buy_url': u, 'tags': [], 'sizes': [], 'active': True, 'featured': False}
@@ -168,7 +204,38 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn):
   with cf.ThreadPoolExecutor(4) as ex:
     for r in ex.map(one, urls):
       if r: rows.append(r)
-  rows, counts = pick(rows)
+  return rows
+
+# ---------- 沒有網站地圖的官網：從首頁／分類頁找商品頁 ----------
+def links_in(html, base):
+  out = []
+  for m in re.findall(r'(?:href|data-href|data-url)=["\']([^"\'#]+)', html):
+    m = m.replace('&amp;', '&')
+    if m.startswith('//'): m = 'https:' + m
+    elif m.startswith('/'): m = base + m
+    elif not m.startswith('http'): continue
+    out.append(m)
+  return list(dict.fromkeys(out))
+# (網域, 品牌, 預設性別, 預設類別, 起始頁, 分類頁網址樣式（None=起始頁就是分類頁）, 商品頁網址樣式, 最多看幾個分類頁, 最多看幾個商品頁)
+LIST_SITES = [
+  ('www.birkenstock.com.tw', 'BIRKENSTOCK', 'u', 'shoes', ['https://www.birkenstock.com.tw/'], r'/product_(?:category|store)\?', r'/product_detail\?product_sn=\d+&color_sn=\d+$', 14, 200),
+  ('www.plain-me.com', 'plain-me', 'u', None, ['https://www.plain-me.com/men/', 'https://www.plain-me.com/women/', 'https://www.plain-me.com/men/product-tags/新品', 'https://www.plain-me.com/women/product-tags/新品'], None, r'/(?:men|women)/product-detail/[\w\-]+$', 0, 240),
+  ('www.daf-shoes.com', 'D+AF', 'f', 'shoes', ['https://www.daf-shoes.com/'], r'/product/list/\d+$', r'/product/show/\d+/\d+/?$', 10, 200),
+  ('www.caco.com.tw', 'CACO', 'u', None, [f'https://www.caco.com.tw/productlist/{c}?page={pg}' for c in ('51401', '14304', '14338', '143021', '142021', '14332') for pg in (1, 2)], None, r'/product/[A-Z0-9]+/\d+$', 0, 160),
+]
+def sync_list(host, brand, gdef, deftype, seeds, list_pat, detail_pat, max_lists, maxn):
+  rp, _ = robots(host); base = 'https://' + host
+  def crawl(u):
+    if not rp.can_fetch(UA, u): return []
+    time.sleep(0.4); s, h = get(u, 2000000)
+    return links_in(h, base) if s == 200 else []
+  found = []
+  for u in seeds: found += crawl(u)
+  if list_pat:
+    lists = [l for l in dict.fromkeys(found) if re.search(list_pat, l) and host in l][:max_lists]
+    for l in lists: found += crawl(l)
+  urls = [l for l in dict.fromkeys(found) if re.search(detail_pat, l) and host in l][:maxn]
+  rows, counts = pick(fetch_rows(host, brand, gdef, deftype, urls, rp))
   if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
 
@@ -180,4 +247,8 @@ for host, brand, g in SHOPS91:
 for args in LD_SITES:
   if only and only not in args[0]: continue
   try: sync_ld(*args)
+  except Exception as e: print(args[0], 'FAIL', e)
+for args in LIST_SITES:
+  if only and only not in args[0]: continue
+  try: sync_list(*args)
   except Exception as e: print(args[0], 'FAIL', e)
