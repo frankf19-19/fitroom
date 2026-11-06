@@ -20,6 +20,7 @@
 <meta name="apple-mobile-web-app-title" content="試穿吧">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://wsrv.nl">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" type="image/webp" href="demo/f-after.webp?v=20261106" fetchpriority="high">
 <link rel="preload" as="image" type="image/webp" href="demo/f-before.webp?v=20261106">
@@ -885,7 +886,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '5.5.0';
-const BUILD = '2026-11-06-01';
+const BUILD = '2026-11-06-02';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1422,7 +1423,7 @@ $('btnOutfit').onclick=async()=>{
     const d=await api('/api/outfit',{method:'POST',body:JSON.stringify({have, gender:(state.me&&state.me.body&&state.me.body.gender)||fitGender})});
     const outs=d.outfits||[]; if(!outs.length){ $('outfitStatus').textContent='目前商店裡找不到合適的搭配，再放一件單品試試。'; return; }
     $('outfitStatus').textContent=d.note||'';
-    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${esc(o.title||'搭配')}</h3><div class="tip">${esc(o.tip)}</div><div class="items">${(o.items||[]).filter(it=>it&&it.product).map(it=>`<div class="it"><img src="${it.product.image_url}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${esc(it.product.brand)}</b> ${esc(it.product.name)}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${esc(it.reason)}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
+    $('outfitBox').innerHTML=outs.map(o=>`<div class="outfit"><h3>${esc(o.title||'搭配')}</h3><div class="tip">${esc(o.tip)}</div><div class="items">${(o.items||[]).filter(it=>it&&it.product).map(it=>`<div class="it"><img src="${esc(thumbUrl(it.product.image_url,300))}" loading="lazy" referrerpolicy="no-referrer" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${it.product.id}'"><b>${esc(it.product.brand)}</b> ${esc(it.product.name)}${it.product.price!=null?' · NT$ '+it.product.price.toLocaleString():''}<div class="why">${esc(it.reason)}</div><button class="btn primary" data-oid="${it.product.id}">放入試衣間</button></div>`).join('')}</div></div>`).join('');
     const all=outs.flatMap(o=>(o.items||[]).filter(i=>i&&i.product).map(i=>i.product));
     $('outfitBox').querySelectorAll('[data-oid]').forEach(b=>b.onclick=()=>{ const p=all.find(x=>String(x.id)===b.dataset.oid); if(p) tryProduct(p); });
     track('outfit',{n:all.length});
@@ -1507,13 +1508,15 @@ async function loadShop(reset){
 }
 $('shopMore').onclick=()=>loadShop(false);
 const HANGER='<svg viewBox="0 0 24 24"><path d="M12 4a2 2 0 0 1 2 2c0 1-1 1.5-2 2.5v1.5l8 5v2H4v-2l8-5"/></svg>';
+// 商品縮圖：經 wsrv.nl 轉成 ~400px WebP（原圖常常幾百 KB）；失敗退回原圖，再退回 Worker 代理
+function thumbUrl(u,w){ try{ if(!/^https?:/.test(u)) return u; return 'https://wsrv.nl/?url='+encodeURIComponent(u)+'&w='+(w||420)+'&h='+Math.round((w||420)*1.33)+'&fit=inside&output=webp&q=78&il'; }catch{ return u; } }
 function priceTxt(p){ return p&&p.price>0 ? ((p.currency&&p.currency!=='TWD')?p.currency+' ':'NT$ ')+Number(p.price).toLocaleString() : ''; }
 function syncRackBtn(id){ const on=inRack(id); document.querySelectorAll(`#shopList [data-rack="${id}"]`).forEach(b=>{ b.classList.toggle('on',on); const t=b.querySelector('.t'); if(t) t.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); }); }
 function renderShop(){
   const box=$('shopList');
   if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; syncShopClear(); $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map((p,pi)=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(p.image_url)}" ${pi<4?'fetchpriority="high" decoding="async"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map((p,pi)=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(thumbUrl(p.image_url))}" ${pi<4?'fetchpriority="high" decoding="async"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" alt="${esc(p.name)}" data-orig="${esc(p.image_url)}" data-pid="${p.id}" onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.orig}else if(this.dataset.s==='1'){this.dataset.s=2;this.src='${CONFIG.WORKER_URL}/api/img?id='+this.dataset.pid}else{this.onerror=null}">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
   box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); syncRackBtn(b.dataset.rack); });
@@ -1548,7 +1551,7 @@ function renderRack(){
   const order=['top','bottom','dress','shoes','hat','accessory','hair'];
   const list=[...rack].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type));
   const wearing=new Set(Object.values(state.slots).map(v=>String(v.product_id||'')));
-  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${p.image_url}" referrerpolicy="no-referrer" loading="lazy" alt="" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${esc((p.name||'').slice(0,10))}</span><i class="rx" data-rkx="${p.id}" aria-label="從衣架移除">✕</i></button>`).join('')}</div>`;
+  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${esc(thumbUrl(p.image_url,240))}" referrerpolicy="no-referrer" loading="lazy" alt="" data-orig="${esc(p.image_url)}" onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.orig}else{this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'}"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${esc((p.name||'').slice(0,10))}</span><i class="rx" data-rkx="${p.id}" aria-label="從衣架移除">✕</i></button>`).join('')}</div>`;
   box.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async e=>{ if(e.target.dataset.rkx){ e.stopPropagation(); rack=rack.filter(r=>String(r.id)!==e.target.dataset.rkx); saveRack(); return; } const p=rack.find(r=>String(r.id)===b.dataset.rk); if(!p) return; const cur=state.slots[p.type]; if(cur&&String(cur.product_id)===String(p.id)){ setSlot(p.type,null); renderRack(); return; } b.classList.add('loading'); await tryProduct(p, {stay:true}); renderRack(); });
 }
 
