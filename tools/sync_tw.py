@@ -2,7 +2,7 @@
 """台灣品牌官網商品同步（測試用，無聯盟分潤）：91APP 平台品牌 + 商品頁結構化資料（JSON-LD）。
 遵守 robots.txt、放慢請求。環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY。用法：python3 tools/sync_tw.py [每家每類幾件，預設 12]
 """
-import json, os, re, sys, time, gzip, urllib.request, urllib.parse, urllib.robotparser, concurrent.futures as cf
+import json, os, re, sys, time, gzip, urllib.request, urllib.parse, urllib.robotparser, concurrent.futures as cf, html as html_mod
 
 SUPABASE_URL = os.environ['SUPABASE_URL'].rstrip('/'); KEY = os.environ['SUPABASE_SERVICE_KEY']
 PER = int(sys.argv[1]) if len(sys.argv) > 1 else 12
@@ -153,7 +153,7 @@ def ld_product(html):
 # (網域, 品牌, 預設性別, 預設類別, 商品網址樣式, 最多看幾個商品網址)
 LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('www.crocs.com.tw', 'Crocs', 'u', 'shoes', r'/products/', 160), ('www.vacanza.com.tw', 'VACANZA', 'f', 'accessory', r'/products/', 120),
             # PAZZO／MEIER.Q／Mercci22 同一套系統：/market/n/<id>（網站地圖另有 /zh-tw/、/en-us/ 重複網址，會去重）
-            ('www.pazzo.com.tw', 'PAZZO', 'f', None, r'\.tw/market/n/\d+$', 240), ('www.meierq.com', 'MEIER.Q', 'f', None, r'\.com/market/n/\d+$', 240), ('www.mercci22.com', 'Mercci22', 'f', None, r'\.com/market/n/\d+$', 240),
+            ('www.pazzo.com.tw', 'PAZZO', 'f', None, r'\.tw/market/n/\d+$', 240, 'id_desc'), ('www.meierq.com', 'MEIER.Q', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'), ('www.mercci22.com', 'Mercci22', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'),
             # Shopline：/zh-hant/products/<handle>
             ('www.50-shop.com', '50% FIFTY PERCENT', 'u', None, r'/(zh-hant/)?products/', 240), ('www.lulus.com.tw', 'Lulus', 'f', None, r'/(zh-hant/)?products/', 240),
             # Cyberbiz：/products/<handle>
@@ -162,7 +162,7 @@ LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('ww
             ('www.gap.tw', 'GAP', 'u', None, r'/pdp/', 240),
             # Grace Gift：robots 的 Sitemap 指到 /sitemap/index → /sitemap/shoe/0、/sitemap/bag/0
             ('www.gracegift.com.tw', 'Grace Gift', 'f', None, r'/products/\d+/\d+', 240)]
-def sync_ld(host, brand, gdef, deftype, pat, maxn):
+def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail'):
   rp, rt = robots(host)
   maps = re.findall(r'(?im)^sitemap:\s*(\S+)', rt) or [f'https://{host}/sitemap.xml']
   urls = []
@@ -178,7 +178,9 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn):
     k = re.sub(r'^https?://[^/]+', '', u); k = re.sub(r'^/(zh-hant|zh-tw|zh-TW)(?=/)', '', k).rstrip('/')
     if k in seen_key: continue
     seen_key.add(k); uniq.append(u)
-  urls = uniq[-maxn:][::-1]
+  if order == 'id_desc':   # 網站地圖沒排序時，用網址裡的商品編號由大到小（新品優先）
+    urls = sorted(uniq, key=lambda u: int((re.findall(r'\d+', u) or ['0'])[-1]), reverse=True)[:maxn]
+  else: urls = uniq[-maxn:][::-1]
   rows, counts = pick(fetch_rows(host, brand, gdef, deftype, urls, rp))
   if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
@@ -191,7 +193,7 @@ def fetch_rows(host, brand, gdef, deftype, urls, rp):
     if s != 200: return None
     p = ld_product(h)
     if not p or not p.get('image') or not p.get('price') or p.get('oos'): return None
-    name = (p.get('name') or '').strip()
+    name = html_mod.unescape((p.get('name') or '').strip())
     typ = classify(name, str(p.get('category')), default=deftype)
     if not typ: return None
     try: price = int(float(str(p['price']).replace(',', '')))
