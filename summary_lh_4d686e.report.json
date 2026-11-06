@@ -1,0 +1,113 @@
+{
+ "url": "https://frankf19-19.github.io/fitroom/?lh=1",
+ "scores": {
+  "performance": 91,
+  "accessibility": 100,
+  "best-practices": 100,
+  "seo": 100
+ },
+ "fcp": "0.9 s",
+ "lcp": "2.5 s",
+ "tbt": "240 ms",
+ "cls": "0.035",
+ "si": "4.2 s",
+ "bytes": "Total size was 1,934 KiB",
+ "fails": [
+  {
+   "id": "largest-contentful-paint-element",
+   "score": 0,
+   "title": "Largest Contentful Paint element",
+   "dv": "2,540 ms",
+   "items": [
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"node\",\"valueType\":\"node\",\"label\":\"Element\"}],\"items\":[{\"node\":{\"type\":\"node\",\"lhId\":",
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"phase\",\"valueType\":\"text\",\"label\":\"Phase\"},{\"key\":\"percent\",\"valueType\":\"text\",\"labe"
+   ]
+  },
+  {
+   "id": "uses-long-cache-ttl",
+   "score": 0.5,
+   "title": "Serve static assets with an efficient cache policy",
+   "dv": "5 resources found",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "unminified-css",
+   "score": 0.5,
+   "title": "Minify CSS",
+   "dv": "Est savings of 18 KiB",
+   "items": [
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap"
+   ]
+  },
+  {
+   "id": "modern-image-formats",
+   "score": 0.5,
+   "title": "Serve images in next-gen formats",
+   "dv": "Est savings of 64 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02"
+   ]
+  },
+  {
+   "id": "uses-responsive-images",
+   "score": 0.5,
+   "title": "Properly size images",
+   "dv": "Est savings of 24 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02"
+   ]
+  },
+  {
+   "id": "cache-insight",
+   "score": 0,
+   "title": "Use efficient cache lifetimes",
+   "dv": "Est savings of 140 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "forced-reflow-insight",
+   "score": 0,
+   "title": "Forced reflow",
+   "items": [
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"source\",\"valueType\":\"source-location\",\"label\":\"Top function call\"},{\"key\":\"reflowTim",
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"source\",\"valueType\":\"source-location\",\"label\":\"Source\"},{\"key\":\"reflowTime\",\"valueTy"
+   ]
+  },
+  {
+   "id": "image-delivery-insight",
+   "score": 0.5,
+   "title": "Improve image delivery",
+   "dv": "Est savings of 108 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106"
+   ]
+  },
+  {
+   "id": "network-dependency-tree-insight",
+   "score": 0,
+   "title": "Network dependency tree",
+   "items": [
+    "{\"type\":\"list-section\",\"value\":{\"type\":\"network-tree\",\"chains\":{\"FF47A3D4734996890ED6D35843C3888E\":{\"url\":\"https://frank",
+    "{\"type\":\"list-section\",\"title\":\"Preconnected origins\",\"description\":\"[preconnect](https://developer.chrome.com/docs/ligh",
+    "{\"type\":\"list-section\",\"title\":\"Preconnect candidates\",\"description\":\"Add [preconnect](https://developer.chrome.com/docs"
+   ]
+  }
+ ]
+}

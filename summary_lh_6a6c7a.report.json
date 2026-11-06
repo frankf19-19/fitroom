@@ -1,0 +1,127 @@
+{
+ "url": "https://frankf19-19.github.io/fitroom/?lh=1#shop",
+ "scores": {
+  "performance": 77,
+  "accessibility": 100,
+  "best-practices": 100,
+  "seo": 100
+ },
+ "fcp": "0.7 s",
+ "lcp": "5.0 s",
+ "tbt": "190 ms",
+ "cls": "0.04",
+ "si": "4.0 s",
+ "bytes": "Total size was 1,760 KiB",
+ "fails": [
+  {
+   "id": "largest-contentful-paint-element",
+   "score": 0,
+   "title": "Largest Contentful Paint element",
+   "dv": "4,960 ms",
+   "items": [
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"node\",\"valueType\":\"node\",\"label\":\"Element\"}],\"items\":[{\"node\":{\"type\":\"node\",\"lhId\":",
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"phase\",\"valueType\":\"text\",\"label\":\"Phase\"},{\"key\":\"percent\",\"valueType\":\"text\",\"labe"
+   ]
+  },
+  {
+   "id": "uses-long-cache-ttl",
+   "score": 0.5,
+   "title": "Serve static assets with an efficient cache policy",
+   "dv": "5 resources found",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "offscreen-images",
+   "score": 0.5,
+   "title": "Defer offscreen images",
+   "dv": "Est savings of 116 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02"
+   ]
+  },
+  {
+   "id": "unminified-css",
+   "score": 0,
+   "title": "Minify CSS",
+   "dv": "Est savings of 18 KiB",
+   "items": [
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap"
+   ]
+  },
+  {
+   "id": "modern-image-formats",
+   "score": 0.5,
+   "title": "Serve images in next-gen formats",
+   "dv": "Est savings of 64 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02"
+   ]
+  },
+  {
+   "id": "uses-responsive-images",
+   "score": 0.5,
+   "title": "Properly size images",
+   "dv": "Est savings of 46 KiB",
+   "items": [
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1812&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1800&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1908&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1836&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D72&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1824&w=420&h=559&fit=inside&output=webp&q=78&il"
+   ]
+  },
+  {
+   "id": "cache-insight",
+   "score": 0.5,
+   "title": "Use efficient cache lifetimes",
+   "dv": "Est savings of 34 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js",
+    "https://frankf19-19.github.io/fitroom/demo/f-before.jpg?v=20261029-02",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.jpg?v=20261029-02"
+   ]
+  },
+  {
+   "id": "image-delivery-insight",
+   "score": 0.5,
+   "title": "Improve image delivery",
+   "dv": "Est savings of 31 KiB",
+   "items": [
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1908&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1919&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1931&w=420&h=559&fit=inside&output=webp&q=78&il",
+    "https://wsrv.nl/?url=https%3A%2F%2Ftryon-api.frankccc199.workers.dev%2Fapi%2Fimg%3Fid%3D1872&w=420&h=559&fit=inside&output=webp&q=78&il"
+   ]
+  },
+  {
+   "id": "lcp-discovery-insight",
+   "score": 0,
+   "title": "LCP request discovery",
+   "items": [
+    "{\"type\":\"checklist\",\"items\":{\"priorityHinted\":{\"label\":\"fetchpriority=high applied\",\"value\":true},\"requestDiscoverable\":",
+    "{\"type\":\"node\",\"lhId\":\"page-0-IMG\",\"path\":\"1,HTML,1,BODY,1,MAIN,11,SECTION,5,DIV,0,DIV,0,DIV,0,DIV,0,IMG\",\"selector\":\"di"
+   ]
+  },
+  {
+   "id": "network-dependency-tree-insight",
+   "score": 0,
+   "title": "Network dependency tree",
+   "items": [
+    "{\"type\":\"list-section\",\"value\":{\"type\":\"network-tree\",\"chains\":{\"32F90F461FCAE61C9F8F828CC68FF44F\":{\"url\":\"https://frank",
+    "{\"type\":\"list-section\",\"title\":\"Preconnected origins\",\"description\":\"[preconnect](https://developer.chrome.com/docs/ligh",
+    "{\"type\":\"list-section\",\"title\":\"Preconnect candidates\",\"description\":\"Add [preconnect](https://developer.chrome.com/docs"
+   ]
+  }
+ ]
+}
