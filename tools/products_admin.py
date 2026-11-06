@@ -19,7 +19,11 @@ def sb(method, path, data=None, prefer=None):
     t = r.read().decode(); return json.loads(t) if t else None
 
 def counts():
-  rows = sb('GET', 'products?active=eq.true&select=brand,source&limit=20000')
+  rows, off = [], 0
+  while True:   # Supabase 一次最多回 1000 筆，要分頁
+    page = sb('GET', f'products?active=eq.true&select=brand,source&order=id&limit=1000&offset={off}') or []
+    rows += page; off += 1000
+    if len(page) < 1000: break
   c = {}
   for r in rows: c[(r['brand'], r['source'])] = c.get((r['brand'], r['source']), 0) + 1
   return sorted([{'brand': b, 'source': s, 'n': n} for (b, s), n in c.items()], key=lambda x: -x['n'])
