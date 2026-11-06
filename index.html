@@ -21,13 +21,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="demo/f-after.jpg?v=20261029-02" fetchpriority="high">
-<link rel="preload" as="image" href="demo/f-before.jpg?v=20261029-02">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preload" as="image" type="image/webp" href="demo/f-after.webp?v=20261106" fetchpriority="high">
+<link rel="preload" as="image" type="image/webp" href="demo/f-before.webp?v=20261106">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap"></noscript>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <style>
   :root{
-    --bg:#ffffff; --bg2:#f6f5f3; --card:#ffffff; --ink:#111111; --ink2:#4a4a4a; --muted:#8a8a8a; --line:#e6e4e1;
+    --bg:#ffffff; --bg2:#f6f5f3; --card:#ffffff; --ink:#111111; --ink2:#4a4a4a; --muted:#6e6e6e; --line:#e6e4e1;
     --rose:#111111; --rose-d:#000000; --rose-s:#f1efec; --rose-g:#111111;
     --ok:#2f7d5a; --warn:#a8741f; --bad:#b4342c;
     --mint:#f3f3f0; --butter:#f5f3ee; --blush:#f5f0ee; --lilac:#f1f0f3; --peach:#f5f1ed; --sky:#eff1f3; --cocoa:#f2eeea;
@@ -613,9 +614,9 @@
         <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入，每天送免費額度。</div>
       </div>
       <div class="demo photo" id="demo" aria-label="拖曳比較試穿前後">
-        <img class="ph" id="demoPhAfter" src="demo/f-after.jpg?v=20261029-02" alt="試穿後" width="900" height="1350" decoding="async">
+        <img class="ph" id="demoPhAfter" src="demo/f-after.webp?v=20261106" alt="試穿後" width="749" height="1125" fetchpriority="high" decoding="async">
         <div class="gcard" id="demoGcard"><img id="demoGimg" alt="要試的衣服"><span>想試這件</span></div>
-        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.jpg?v=20261029-02" alt="試穿前" width="900" height="1350" decoding="async"></div>
+        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.webp?v=20261106" alt="試穿前" width="749" height="1125" decoding="async"></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
         <div class="cap" id="demoCap">拖曳中線看看差別（真實 AI 合成結果）</div>
@@ -883,8 +884,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '5.4.0';
-const BUILD = '2026-11-05-02';
+const APP_VERSION = '5.5.0';
+const BUILD = '2026-11-06-01';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1495,7 +1496,7 @@ async function loadShop(reset){
   if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); shopBrandChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
   try{
     if(!CONFIG.WORKER_URL) throw new Error('商店尚未設定');
-    const qs=new URLSearchParams({page:shopPage}); if(shopFilterType) qs.set('type',shopFilterType); if(shopGender) qs.set('gender',shopGender); if(shopBrand) qs.set('brand',shopBrand); const q=$('shopQ').value.trim(); if(q) qs.set('q',q);
+    const qs=new URLSearchParams({page:shopPage, size: window.matchMedia('(max-width:899px)').matches?12:24}); if(shopFilterType) qs.set('type',shopFilterType); if(shopGender) qs.set('gender',shopGender); if(shopBrand) qs.set('brand',shopBrand); const q=$('shopQ').value.trim(); if(q) qs.set('q',q);
     const d=await api('/api/products?'+qs.toString());
     if(seq!==shopSeq) return;
     shopItems=shopItems.concat(d.products||[]); renderShop(); $('shopMore').classList.toggle('hidden',!d.has_more); shopPage++;
@@ -1512,7 +1513,7 @@ function renderShop(){
   const box=$('shopList');
   if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; syncShopClear(); $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map(p=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(p.image_url)}" loading="lazy" referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map((p,pi)=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(p.image_url)}" ${pi<4?'fetchpriority="high" decoding="async"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" alt="${esc(p.name)}" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
   box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); syncRackBtn(b.dataset.rack); });
@@ -2142,7 +2143,7 @@ $('btnTips').onclick=()=>openDoc('tips');
 /* 首頁示範男女切換 + 真人照片模式（demo/manifest.json 存在時自動啟用） */
 const DEMO_V='20261029-02';
 (function(){ const a=$('demoPhAfter'); if(!a) return; const fit=()=>{ if(a.naturalWidth&&a.naturalHeight){ const r=a.naturalWidth/a.naturalHeight; $('demo').style.aspectRatio=Math.max(0.55,Math.min(0.8,r)).toFixed(3); } }; a.addEventListener('load',fit); if(a.complete) fit(); })();
-let demoPhotos={ f:{before:'demo/f-before.jpg?v='+DEMO_V, after:'demo/f-after.jpg?v='+DEMO_V}, m:{before:'demo/m-before.jpg?v='+DEMO_V, after:'demo/m-after.jpg?v='+DEMO_V} }, demoG='f';
+let demoPhotos={ f:{before:'demo/f-before.webp?v='+DEMO_V, after:'demo/f-after.webp?v='+DEMO_V}, m:{before:'demo/m-before.webp?v='+DEMO_V, after:'demo/m-after.webp?v='+DEMO_V} }, demoG='f';
 function applyDemo(){
   const d=$('demo'); if(!d) return;
   const ph=demoPhotos&&demoPhotos[demoG];
@@ -2252,6 +2253,8 @@ if (IS_APP) {
   }); } }catch{}
 }
 
+/* ---------- Service Worker：秒開與離線殼 ---------- */
+if(!IS_APP && 'serviceWorker' in navigator && location.protocol==='https:'){ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js?v='+BUILD).catch(()=>{}); }); }
 /* ---------- 啟動 ---------- */
 track('open');
 restoreSession();

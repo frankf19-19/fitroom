@@ -1180,7 +1180,7 @@ Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"
 /* ---------------- 商品櫥窗 ---------------- */
 async function handleProducts(request, env, cors, url) {
   const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 40);
-  const page = Math.min(10000, Math.max(0, Math.floor(Number(url.searchParams.get('page')) || 0))), size = 24;
+  const page = Math.min(10000, Math.max(0, Math.floor(Number(url.searchParams.get('page')) || 0))), size = Math.min(24, Math.max(6, Math.floor(Number(url.searchParams.get('size')) || 24)));
   let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
   if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
   if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)`;

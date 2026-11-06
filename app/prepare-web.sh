@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf www && mkdir -p www
-cp ../index.html ../icon.svg ../icon-192.png ../icon-512.png ../manifest.json www/
+cp ../index.html ../icon.svg ../icon-192.png ../icon-512.png ../manifest.json www/ && mkdir -p www/demo && cp ../demo/*.webp www/demo/
 # App 內不載入 manifest（避免瀏覽器 PWA 行為）
 sed -i.bak 's#<link rel="manifest" href="manifest.json">##' www/index.html && rm -f www/index.html.bak
 echo "www/ 已準備好：$(ls www | tr '\n' ' ')"
