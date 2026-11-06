@@ -1,0 +1,20 @@
+name: 管理：商品表動作（下架海外商店等）
+on:
+  workflow_dispatch:
+    inputs:
+      action: { description: 'deactivate_overseas | deactivate_source:<source> | brands', required: true, default: 'brands' }
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: 執行
+        env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: mkdir out && cd out && python3 ../tools/products_admin.py "${{ inputs.action }}"
+      - run: |
+          cd out && git init -q && git checkout -q -b qa-debug && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m admin
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-debug
