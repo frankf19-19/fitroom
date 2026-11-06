@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
       max-parallel: 6
       matrix:
-        shop: [obdesign, giordano, vans, adidas, roots, edwin, timberland, levis, puma, thenorthface, underarmour, columbia, lativ, crocs, vacanza, pazzo, meierq, mercci22, 50-shop, lulus, fila, gap, gracegift, birkenstock, plain-me, daf-shoes, caco]
+        shop: [obdesign, giordano, vans, adidas, roots, edwin, timberland, levis, puma, thenorthface, underarmour, columbia, lativ, crocs, vacanza, pazzo, meierq, mercci22, 50-shop, lulus, fila, gap, gracegift, birkenstock, daf-shoes, caco]
     steps:
       - uses: actions/checkout@v4
       - name: 台灣品牌（每家一台機器）

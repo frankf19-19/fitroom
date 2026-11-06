@@ -221,7 +221,8 @@ def links_in(html, base):
 # (網域, 品牌, 預設性別, 預設類別, 起始頁, 分類頁網址樣式（None=起始頁就是分類頁）, 商品頁網址樣式, 最多看幾個分類頁, 最多看幾個商品頁)
 LIST_SITES = [
   ('www.birkenstock.com.tw', 'BIRKENSTOCK', 'u', 'shoes', ['https://www.birkenstock.com.tw/'], r'/product_(?:category|store)\?', r'/product_detail\?product_sn=\d+&color_sn=\d+$', 14, 200),
-  ('www.plain-me.com', 'plain-me', 'u', None, ['https://www.plain-me.com/men/', 'https://www.plain-me.com/women/', 'https://www.plain-me.com/men/product-tags/新品', 'https://www.plain-me.com/women/product-tags/新品'], None, r'/(?:men|women)/product-detail/[\w\-]+$', 0, 240),
+  # plain-me 的商品圖擋 Cloudflare Worker 代理（直接載入可以、/api/img 502），放進試衣間會失敗，先不收：
+  # ('www.plain-me.com', 'plain-me', 'u', None, ['https://www.plain-me.com/men/', 'https://www.plain-me.com/women/', 'https://www.plain-me.com/men/product-tags/新品', 'https://www.plain-me.com/women/product-tags/新品'], None, r'/(?:men|women)/product-detail/[\w\-]+$', 0, 240),
   ('www.daf-shoes.com', 'D+AF', 'f', 'shoes', ['https://www.daf-shoes.com/'], r'/product/list/\d+$', r'/product/show/\d+/\d+/?$', 10, 200),
   ('www.caco.com.tw', 'CACO', 'u', None, [f'https://www.caco.com.tw/productlist/{c}?page={pg}' for c in ('51401', '14304', '14338', '143021', '142021', '14332') for pg in (1, 2)], None, r'/product/[A-Z0-9]+/\d+$', 0, 160),
 ]
