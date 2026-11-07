@@ -1,0 +1,1061 @@
+{
+ "site": "http://localhost:8765/index.html",
+ "runs": [
+  {
+   "img": "real_m.jpg",
+   "height": 178,
+   "weight": 72,
+   "g": "m",
+   "note": "男 3/4 側身、寬版 T 恤、赤腳",
+   "credit": "",
+   "secs": 11.8,
+   "status": "量好了（9 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 178,
+    "weight": 72,
+    "shoulder": 42.6,
+    "arm": 61.1,
+    "leg": 83.2,
+    "inseam": 77.5,
+    "torso": 57.6,
+    "chest": 98.7,
+    "waist": 85.8,
+    "hip": 95.8,
+    "foot": 27.2
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 4,
+    "arm": 2.5,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 7,
+    "waist": 7,
+    "hip": 7,
+    "foot": 1.5
+   },
+   "flags": [
+    "turned"
+   ],
+   "meta": {
+    "yaw": 22,
+    "inseamPhoto": 75.2,
+    "chest_q": 0.4,
+    "chest": {
+     "w": 35.1,
+     "d": 25.8,
+     "side": false
+    },
+    "waist_q": 0.4,
+    "waist": {
+     "w": 34.3,
+     "d": 24.5,
+     "side": false
+    },
+    "hip_q": 0.4,
+    "hip": {
+     "w": 30.5,
+     "d": 24.2,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 42.6,
+     "target": [
+      40,
+      46
+     ],
+     "ok": "PASS"
+    },
+    "chest": {
+     "got": 98.7,
+     "target": [
+      92,
+      98
+     ],
+     "ok": "PASS"
+    },
+    "waist": {
+     "got": 85.8,
+     "target": [
+      78,
+      84
+     ],
+     "ok": "WARN"
+    },
+    "hip": {
+     "got": 95.8,
+     "target": [
+      94,
+      100
+     ],
+     "ok": "PASS"
+    },
+    "arm": {
+     "got": 61.1,
+     "target": [
+      57,
+      62
+     ],
+     "ok": "PASS"
+    },
+    "inseam": {
+     "got": 77.5,
+     "target": [
+      77,
+      83
+     ],
+     "ok": "PASS"
+    },
+    "foot": {
+     "got": 27.2,
+     "target": [
+      26,
+      27.5
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ],
+    [
+     "warning",
+     "W1107 03:26:43.188000 1880752 gl_context.cc:1060] OpenGL error checking is disabled"
+    ],
+    [
+     "warning",
+     "[.WebGL-0x297c08070600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    ],
+    [
+     "warning",
+     "[.WebGL-0x297c08070600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    ],
+    [
+     "warning",
+     "[.WebGL-0x297c08070600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels"
+    ],
+    [
+     "warning",
+     "[.WebGL-0x297c08070600]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    ],
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "real_f.jpg",
+   "height": 168,
+   "weight": 52,
+   "g": "f",
+   "note": "女 連身衣、踮腳尖、雙腿交叉、身體微轉",
+   "credit": "",
+   "secs": 6.5,
+   "status": "量好了（4 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 168,
+    "weight": 52,
+    "shoulder": 34.3,
+    "arm": 56.6,
+    "leg": 88.4,
+    "inseam": 78.9,
+    "torso": 47.4,
+    "chest": 84,
+    "waist": 59.9,
+    "hip": 91.5,
+    "foot": 25.4
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 4,
+    "arm": 2.5,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 8,
+    "waist": 7,
+    "hip": 7,
+    "foot": 1.5
+   },
+   "flags": [
+    "turned",
+    "est:chest"
+   ],
+   "meta": {
+    "yaw": 35,
+    "inseamPhoto": 79.9,
+    "chest_q": 0.3,
+    "chest": {
+     "w": 15.9,
+     "d": 11.1,
+     "side": false
+    },
+    "waist_q": 0.3,
+    "waist": {
+     "w": 18.8,
+     "d": 12.8,
+     "side": false
+    },
+    "hip_q": 0.3,
+    "hip": {
+     "w": 34.1,
+     "d": 25.9,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 34.3,
+     "target": [
+      35,
+      39
+     ],
+     "ok": "PASS"
+    },
+    "chest": {
+     "got": 84,
+     "target": [
+      80,
+      85
+     ],
+     "ok": "PASS"
+    },
+    "waist": {
+     "got": 59.9,
+     "target": [
+      60,
+      66
+     ],
+     "ok": "PASS"
+    },
+    "hip": {
+     "got": 91.5,
+     "target": [
+      86,
+      91
+     ],
+     "ok": "PASS"
+    },
+    "inseam": {
+     "got": 78.9,
+     "target": [
+      74,
+      79
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_6513371.jpg",
+   "height": 163,
+   "weight": 85,
+   "g": "f",
+   "note": "女 大尺碼、背心短褲、手拿皮尺、深色背景、腳踝信心度低",
+   "credit": "Pexels 6513371",
+   "secs": 6.2,
+   "status": "量好了（3 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 163,
+    "weight": 85,
+    "shoulder": 36.2,
+    "arm": 53.8,
+    "leg": 86.7,
+    "inseam": 76.9,
+    "torso": 44.2,
+    "chest": 97.7,
+    "waist": 96.7,
+    "hip": 123.2,
+    "foot": 24.6
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 2,
+    "arm": 4,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 7,
+    "waist": 5,
+    "hip": 4,
+    "foot": 1.5
+   },
+   "flags": [
+    "arm_est",
+    "outlier:chest"
+   ],
+   "meta": {
+    "yaw": 5,
+    "inseamPhoto": 78.2,
+    "chest_q": 0.6,
+    "chest": {
+     "w": 28.8,
+     "d": 23.2,
+     "side": false
+    },
+    "waist_q": 0.8,
+    "waist": {
+     "w": 34.8,
+     "d": 27.4,
+     "side": false
+    },
+    "hip_q": 1,
+    "hip": {
+     "w": 41.1,
+     "d": 35.7,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 36.2,
+     "target": [
+      38,
+      43
+     ],
+     "ok": "WARN"
+    },
+    "chest": {
+     "got": 97.7,
+     "target": [
+      104,
+      116
+     ],
+     "ok": "WARN"
+    },
+    "waist": {
+     "got": 96.7,
+     "target": [
+      92,
+      106
+     ],
+     "ok": "PASS"
+    },
+    "hip": {
+     "got": 123.2,
+     "target": [
+      112,
+      126
+     ],
+     "ok": "PASS"
+    },
+    "inseam": {
+     "got": 76.9,
+     "target": [
+      70,
+      77
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ],
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_8811247.jpg",
+   "height": 168,
+   "weight": 55,
+   "g": "f",
+   "note": "女 牛仔外套襯衫＋牛仔褲、一手叉腰",
+   "credit": "Pexels 8811247",
+   "secs": 5.6,
+   "status": "量好了（3 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 168,
+    "weight": 55,
+    "shoulder": 38.4,
+    "arm": 55.4,
+    "leg": 88.3,
+    "inseam": 79,
+    "torso": 47.3,
+    "chest": 87.7,
+    "waist": 66.4,
+    "hip": 100.3,
+    "foot": 25.4
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 2,
+    "arm": 4,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 5,
+    "waist": 8,
+    "hip": 5,
+    "foot": 1.5
+   },
+   "flags": [
+    "arm_est",
+    "est:waist"
+   ],
+   "meta": {
+    "yaw": 10,
+    "inseamPhoto": 80.1,
+    "chest_q": 0.6,
+    "chest": {
+     "w": 31.9,
+     "d": 22.6,
+     "side": false
+    },
+    "waist_q": 0.8,
+    "waist": {
+     "w": 33,
+     "d": 22.7,
+     "side": false
+    },
+    "hip_q": 0.8,
+    "hip": {
+     "w": 36,
+     "d": 27.7,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 38.4,
+     "target": [
+      36,
+      40
+     ],
+     "ok": "PASS"
+    },
+    "chest": {
+     "got": 87.7,
+     "target": [
+      82,
+      92
+     ],
+     "ok": "PASS"
+    },
+    "waist": {
+     "got": 66.4,
+     "target": [
+      64,
+      74
+     ],
+     "ok": "PASS"
+    },
+    "hip": {
+     "got": 100.3,
+     "target": [
+      88,
+      97
+     ],
+     "ok": "WARN"
+    },
+    "inseam": {
+     "got": 79,
+     "target": [
+      74,
+      80
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ],
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_8217535.jpg",
+   "height": 178,
+   "weight": 70,
+   "g": "m",
+   "note": "男 白 T＋牛仔褲、正面站直",
+   "credit": "Pexels 8217535",
+   "secs": 6.4,
+   "status": "量好了（3 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 178,
+    "weight": 70,
+    "shoulder": 44.4,
+    "arm": 64.1,
+    "leg": 79.4,
+    "inseam": 75.5,
+    "torso": 58.9,
+    "chest": 97.5,
+    "waist": 83.8,
+    "hip": 102.7,
+    "foot": 27.2
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 2,
+    "arm": 2.5,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 5,
+    "waist": 5,
+    "hip": 5,
+    "foot": 1.5
+   },
+   "flags": [],
+   "meta": {
+    "yaw": 2,
+    "inseamPhoto": 71.9,
+    "chest_q": 0.6,
+    "chest": {
+     "w": 34.7,
+     "d": 25.3,
+     "side": false
+    },
+    "waist_q": 0.6,
+    "waist": {
+     "w": 31.8,
+     "d": 22.6,
+     "side": false
+    },
+    "hip_q": 0.8,
+    "hip": {
+     "w": 36.1,
+     "d": 28.4,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 44.4,
+     "target": [
+      42,
+      47
+     ],
+     "ok": "PASS"
+    },
+    "chest": {
+     "got": 97.5,
+     "target": [
+      88,
+      97
+     ],
+     "ok": "PASS"
+    },
+    "waist": {
+     "got": 83.8,
+     "target": [
+      76,
+      85
+     ],
+     "ok": "PASS"
+    },
+    "hip": {
+     "got": 102.7,
+     "target": [
+      90,
+      99
+     ],
+     "ok": "WARN"
+    },
+    "arm": {
+     "got": 64.1,
+     "target": [
+      57,
+      63
+     ],
+     "ok": "WARN"
+    },
+    "inseam": {
+     "got": 75.5,
+     "target": [
+      76,
+      84
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ],
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_28494855.jpg",
+   "height": 175,
+   "weight": 80,
+   "g": "m",
+   "note": "男 POLO＋牛仔褲、手插口袋、微胖",
+   "credit": "Pexels 28494855",
+   "secs": 5.5,
+   "status": "量好了（3 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 175,
+    "weight": 80,
+    "shoulder": 45.3,
+    "arm": 56.3,
+    "leg": 74.5,
+    "inseam": 72,
+    "torso": 59.4,
+    "chest": 109,
+    "waist": 97.7,
+    "hip": 106.2,
+    "foot": 26.8
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 2,
+    "arm": 2.5,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 5,
+    "waist": 7,
+    "hip": 5,
+    "foot": 1.5
+   },
+   "flags": [
+    "outlier:waist"
+   ],
+   "meta": {
+    "yaw": 2,
+    "inseamPhoto": 66.8,
+    "chest_q": 0.6,
+    "chest": {
+     "w": 39.4,
+     "d": 30,
+     "side": false
+    },
+    "waist_q": 0.6,
+    "waist": {
+     "w": 40,
+     "d": 29.6,
+     "side": false
+    },
+    "hip_q": 0.6,
+    "hip": {
+     "w": 36.5,
+     "d": 30,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 45.3,
+     "target": [
+      42,
+      47
+     ],
+     "ok": "PASS"
+    },
+    "chest": {
+     "got": 109,
+     "target": [
+      96,
+      107
+     ],
+     "ok": "WARN"
+    },
+    "waist": {
+     "got": 97.7,
+     "target": [
+      88,
+      100
+     ],
+     "ok": "PASS"
+    },
+    "hip": {
+     "got": 106.2,
+     "target": [
+      97,
+      106
+     ],
+     "ok": "PASS"
+    },
+    "inseam": {
+     "got": 72,
+     "target": [
+      73,
+      80
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ],
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_12969214.jpg",
+   "height": 165,
+   "weight": 55,
+   "g": "f",
+   "note": "裁到大腿：應該被擋下（沒有全身）",
+   "credit": "Pexels 12969214",
+   "secs": 5.6,
+   "status": "沒有拍到完整的全身：頭頂到腳底都要在畫面裡（腳不要被裁掉），請重拍一張。",
+   "vals": null,
+   "unc": {},
+   "flags": [],
+   "meta": null,
+   "check": {
+    "reject": {
+     "got": "rejected",
+     "target": [
+      "rejected",
+      ""
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_7208431.jpg",
+   "height": 160,
+   "weight": 48,
+   "g": "f",
+   "note": "女 雙手抱頭、破洞牛仔吊帶褲、厚底鞋",
+   "credit": "Pexels 7208431",
+   "secs": 5.5,
+   "status": "量好了（3 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 160,
+    "weight": 48,
+    "shoulder": 31.4,
+    "arm": null,
+    "leg": 85.3,
+    "inseam": 75.9,
+    "torso": 44.6,
+    "chest": 85.7,
+    "waist": 67.4,
+    "hip": 96.7,
+    "foot": 24.2
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 2,
+    "arm": 2.5,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 4,
+    "waist": 4,
+    "hip": 6,
+    "foot": 1.5
+   },
+   "flags": [
+    "outlier:hip"
+   ],
+   "meta": {
+    "yaw": 4,
+    "inseamPhoto": 77.4,
+    "chest_q": 1,
+    "chest": {
+     "w": 30.9,
+     "d": 21.7,
+     "side": false
+    },
+    "waist_q": 1,
+    "waist": {
+     "w": 25.3,
+     "d": 17.3,
+     "side": false
+    },
+    "hip_q": 1,
+    "hip": {
+     "w": 35.8,
+     "d": 27.2,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 31.4,
+     "target": [
+      34,
+      38
+     ],
+     "ok": "WARN"
+    },
+    "chest": {
+     "got": 85.7,
+     "target": [
+      78,
+      86
+     ],
+     "ok": "PASS"
+    },
+    "waist": {
+     "got": 67.4,
+     "target": [
+      60,
+      70
+     ],
+     "ok": "PASS"
+    },
+    "hip": {
+     "got": 96.7,
+     "target": [
+      84,
+      93
+     ],
+     "ok": "WARN"
+    },
+    "inseam": {
+     "got": 75.9,
+     "target": [
+      69,
+      76
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ],
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  },
+  {
+   "img": "px_30998323.jpg",
+   "height": 168,
+   "weight": 52,
+   "g": "f",
+   "note": "女 黑背心＋緊身褲、高跟鞋、身體微轉",
+   "credit": "Pexels 30998323",
+   "secs": 5.4,
+   "status": "量好了（3 秒）。點任何一個數字都可以改成皮尺量的值。",
+   "vals": {
+    "height": 168,
+    "weight": 52,
+    "shoulder": 41.4,
+    "arm": 52.2,
+    "leg": 84.4,
+    "inseam": 76.8,
+    "torso": 48.7,
+    "chest": 84.9,
+    "waist": 58.9,
+    "hip": 95.9,
+    "foot": 25.4
+   },
+   "unc": {
+    "height": 0,
+    "weight": 0,
+    "shoulder": 4,
+    "arm": 2.5,
+    "leg": 2.5,
+    "inseam": 3.5,
+    "torso": 2,
+    "chest": 7,
+    "waist": 6,
+    "hip": 6,
+    "foot": 1.5
+   },
+   "flags": [
+    "turned"
+   ],
+   "meta": {
+    "yaw": 24,
+    "inseamPhoto": 76.4,
+    "chest_q": 0.3,
+    "chest": {
+     "w": 31.4,
+     "d": 22,
+     "side": false
+    },
+    "waist_q": 0.5,
+    "waist": {
+     "w": 20.3,
+     "d": 13.8,
+     "side": false
+    },
+    "hip_q": 0.5,
+    "hip": {
+     "w": 36.1,
+     "d": 27.4,
+     "side": false
+    },
+    "foot": {
+     "est": true
+    }
+   },
+   "check": {
+    "shoulder": {
+     "got": 41.4,
+     "target": [
+      35,
+      39
+     ],
+     "ok": "WARN"
+    },
+    "chest": {
+     "got": 84.9,
+     "target": [
+      80,
+      87
+     ],
+     "ok": "PASS"
+    },
+    "waist": {
+     "got": 58.9,
+     "target": [
+      60,
+      67
+     ],
+     "ok": "WARN"
+    },
+    "hip": {
+     "got": 95.9,
+     "target": [
+      85,
+      92
+     ],
+     "ok": "WARN"
+    },
+    "inseam": {
+     "got": 76.8,
+     "target": [
+      74,
+      80
+     ],
+     "ok": "PASS"
+    }
+   },
+   "console": [
+    [
+     "error",
+     "Access to fetch at 'https://tryon-api.frankccc199.workers.dev/api/event' from origin 'http://localhost:8765' has been blocked by CORS policy: Response to preflight request doesn't pass access control "
+    ],
+    [
+     "error",
+     "Failed to load resource: net::ERR_FAILED"
+    ]
+   ]
+  }
+ ],
+ "errors": []
+}
