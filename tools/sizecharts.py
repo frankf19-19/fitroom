@@ -115,6 +115,7 @@ def _layout(head, body):
       lbl = r[0]
       if re.match(r'^[A-DＡ-Ｄ]\s*[：:]', lbl) and group: lbl = group + lbl   # 「B：商品測量」承接上一列的「腰圍」
       key, flat = label_key(lbl)
+      if not key and not group and re.match(r'^[BＢ]\s*[：:]\s*商品(實際)?測量', lbl): key, flat = 'waist', None   # UNIQLO 下身：A＝裸身腰圍、B＝商品腰圍
       if not key: continue
       vals = r[1:]
       if len(vals) != len(hs): vals = vals[-len(hs):] if len(vals) > len(hs) else vals
@@ -410,6 +411,8 @@ if __name__ == '__main__':
   assert body_chart(['24', '25.5'], 'shoes', 'f')['sizes']['25.5'] == {'foot': 25.5}
   assert body_chart(['F'], 'accessory', 'f')['sizes']['F']['chest'] == 84
   assert fit_type_of('寬鬆落肩大學T') == 'oversized' and fit_type_of('修身牛仔褲') == 'slim'
+  uqb2 = '<table><tr><th></th><th>XS</th><th>S</th></tr><tr><th>A：裸身測量</th><th>66～72</th><th>68～76</th></tr><tr><th>B：商品測量</th><th>64</th><th>70</th></tr><tr><th>臀圍</th><td>98.5</td><td>104.5</td></tr></table>'
+  assert parse_tables(uqb2, 'bottom') == {'XS': {'waist': 64, 'hip': 98.5}, 'S': {'waist': 70, 'hip': 104.5}}, parse_tables(uqb2, 'bottom')
   uqb = ('<table><tr><th></th><th>XS</th><th>S</th></tr><tr><th rowspan=2>腰圍</th><th>A：裸身測量</th><td>66～72</td><td>68～76</td></tr><tr><th>B：商品測量</th><td>64</td><td>70</td></tr>'
          '<tr><th>臀圍</th><td>98.5</td><td>104.5</td></tr><tr><th>大腿寬</th><td>32</td><td>34</td></tr><tr><th>褲檔</th><td>27.5</td><td>28</td></tr><tr><th>褲內襠長</th><td>64</td><td>66</td></tr></table>')
   s = parse_tables(uqb, 'bottom'); assert s == {'XS': {'waist': 64, 'hip': 98.5, 'thigh': 64, 'inseam': 64}, 'S': {'waist': 70, 'hip': 104.5, 'thigh': 68, 'inseam': 66}}, s
