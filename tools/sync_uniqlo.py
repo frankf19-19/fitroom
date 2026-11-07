@@ -3,6 +3,7 @@
 環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY、BRAND（uniqlo 預設，或 gu）。用法：python3 tools/sync_uniqlo.py [每分類幾件，預設 12]
 """
 import json, os, sys, urllib.request, time
+import sizecharts as SC   # 商品尺寸表（tools/sizecharts.py）
 
 SUPABASE_URL = os.environ['SUPABASE_URL'].rstrip('/')
 KEY = os.environ['SUPABASE_SERVICE_KEY']
@@ -109,6 +110,19 @@ for code, (ctype, gender, tags) in CATS.items():
   print(code, k)
 
 print('total', len(rows))
+# 尺碼清單（官網 size-list API）與官方商品尺寸表（每件一個請求，間隔 0.3 秒）
+size_lists = SC.fr_size_lists(BRAND, [r['external_id'] for r in rows])
+ng = 0
+for r in rows:
+  if size_lists.get(r['external_id']): r['sizes'] = size_lists[r['external_id']][:20]
+  r['_chart'] = None
+  if r['type'] in ('top', 'bottom', 'dress', 'shoes'):
+    try: r['_chart'] = SC.fr_garment_chart(BRAND, r['external_id'], r['type'], r['name']); ng += 1 if r['_chart'] else 0
+    except Exception as e: print('  size chart skip', r['external_id'], e)
+    time.sleep(0.3)
+print('size lists', len(size_lists), 'garment charts', ng)
+charts = [dict(r) for r in rows]
+rows = [{k: v for k, v in r.items() if k != '_chart'} for r in rows]
 existing = sb('GET', f"products?source=eq.{CFG['source']}&select=id,external_id")
 ex = {r['external_id']: r['id'] for r in existing}
 ins = [r for r in rows if r['external_id'] not in ex]
@@ -126,3 +140,5 @@ gone = [i for e, i in ex.items() if e not in seen]
 for i in gone:
   sb('PATCH', f'products?id=eq.{i}', {'active': False}, prefer='return=minimal')
 print(f'inserted {len(ins)}, updated {len(upd)}, deactivated {len(gone)}')
+try: SC.write_charts(lambda path: sb('GET', path), CFG['source'], charts)
+except Exception as e: print('size charts FAIL', e)

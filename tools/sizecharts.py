@@ -31,14 +31,16 @@ LABELS = [  # (regex, key, flat)
   (r'胸寬|胸圍寬|身寬|胸.*平量|bust\s*width|chest\s*width|pit to pit', 'chest', True), (r'胸圍|上胸圍|bust|chest', 'chest', None),
   (r'腰寬|腰圍寬|腰頭寬|腰.*平量|waist\s*width', 'waist', True), (r'腰圍|waist', 'waist', None),
   (r'臀寬|臀圍寬|臀.*平量|hip\s*width', 'hip', True), (r'臀圍|hips?', 'hip', None),
-  (r'袖長|sleeve', 'sleeve', False),
-  (r'腳長|鞋內長|足長|foot', 'foot', False),
+  (r'連肩袖長|後中袖長|裄丈', 'sleeve_cb', False), (r'袖長|sleeve', 'sleeve', False),
+  (r'對應尺寸|對應腳長|適合腳長|適用腳長|腳長|鞋內長|足長|foot', 'foot', False),
   (r'^(衣長|總長|全長|身長|裙長|褲長|褲\(裙\)長|褲裙長|洋裝長|長度|後衣長|前衣長|衣長\(後\)|length|長)$|衣長|總長|裙長|褲長|全長', 'length', False),
 ]
 SKIP_LABEL = re.compile(r'inch|英吋|下[擺襬]|袖口|褲口|褲管|領|前襠|後襠|褲襠|褲檔|檔長|襠長|股上|袖寬|袖圍|臂|帽|包|深|高|重|身高|體重|彈性|厚', re.I)
 def label_key(lbl):
   t = re.sub(r'\s+', '', html_mod.unescape(lbl or '')).strip(':：')
-  if not t or SKIP_LABEL.search(t) and not re.search(r'衣長|褲長|裙長', t): return None, None
+  if not t or re.search(r'裸身|身體尺寸|適穿身形', t): return None, None   # 身體尺寸那一列，不是商品實測
+  if re.search(LABELS[0][0], t, re.I): return 'inseam', False
+  if SKIP_LABEL.search(t) and not re.search(r'衣長|褲長|裙長', t): return None, None
   for rx, key, flat in LABELS:
     if re.search(rx, t, re.I): return key, flat
   return None, None
@@ -67,6 +69,11 @@ def _finalize(raw, typ):
     d = {}
     for k, (v, flat) in kv.items():
       if v is None: continue
+      if k == 'foot' and typ != 'shoes': continue
+      if k == 'sleeve_cb':   # 連肩袖長（從後領中心量）→ 扣掉半個肩寬換成一般袖長
+        sh = kv.get('shoulder', (None,))[0]
+        if not sh or 'sleeve' in kv: continue
+        k, v = 'sleeve', v - sh / 2
       if k in CIRC_MIN and (flat is True or (flat is None and v < CIRC_MIN[k])): v = v * 2   # 平量寬 → 整圈
       d[k] = round(v, 1)
     out[size] = d
@@ -96,9 +103,13 @@ def parse_tables(page_html, typ=None):
     # A) 尺碼在第一列（橫向）：[尺碼, S, M, L] + [胸寬, 50, 52, 54]
     hs = [norm_size(c) for c in head[1:]]
     if len(hs) >= 1 and sum(is_size(c) for c in head[1:]) >= max(1, len(hs) - 1):
-      raw = {}
+      raw = {}; group = ''
       for r in rows[1:]:
-        key, flat = label_key(r[0])
+        if len(r) == len(hs) + 2 and not num(r[1]):   # [腰圍, B：商品測量, 64, 70…]：第一格是群組名稱
+          group, r = r[0], r[1:]
+        lbl = r[0]
+        if re.match(r'^[A-DＡ-Ｄ]\s*[：:]', lbl) and group: lbl = group + lbl   # 「B：商品測量」承接上一列的「腰圍」
+        key, flat = label_key(lbl)
         if not key: continue
         vals = r[1:]
         if len(vals) != len(hs): vals = vals[-len(hs):] if len(vals) > len(hs) else vals
@@ -257,6 +268,37 @@ def write_charts(sb_get, source, rows, store=None, log=print):
   log(f'  size charts {source}: garment {g}, body {b}, products {len(rows)}')
   return g, b
 
+# ---------- UNIQLO／GU 台灣官網（同一套 Fast Retailing 平台） ----------
+FR_SITE = {'uniqlo': ('https://www.uniqlo.com/tw', 'https://d.uniqlo.com/tw', 'https://www.uniqlo.com'),
+           'gu': ('https://www.gu-global.com/tw', 'https://d.gu-global.com/tw', 'https://www.gu-global.com')}
+def _fr_req(url, origin, data=None):
+  h = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'zh-TW', 'Origin': origin, 'Referer': origin + '/tw/'}
+  req = urllib.request.Request(url, data=json.dumps(data).encode() if data is not None else None, headers=h, method='POST' if data is not None else 'GET')
+  if data is not None: req.add_header('Content-Type', 'application/json')
+  with urllib.request.urlopen(req, timeout=30) as r: return r.read().decode('utf-8', 'replace')
+def fr_size_lists(brand, codes):
+  """POST /product/spu/size-list（官網前端用的 API）：{商品代碼: ['XS','S',…]}，一次 40 筆。"""
+  web, d, origin = FR_SITE[brand]; out = {}
+  for i in range(0, len(codes), 40):
+    try:
+      j = json.loads(_fr_req(d + '/product/spu/size-list', origin, list(codes[i:i + 40])))
+      for r in j.get('resp') or []:
+        if r.get('productCode') and r.get('sizeList'): out[r['productCode']] = [str(x) for x in r['sizeList']]
+    except Exception as e: print('  size-list fail', e)
+  return out
+def fr_garment_chart(brand, code, typ, name):
+  """官方商品尺寸表（商品頁「尺寸表」分頁的 HTML：/hmall/test/<代碼>/zh_TW/sizeAndTryOn.html）。"""
+  web, d, origin = FR_SITE[brand]
+  url = f'{web}/hmall/test/{code}/zh_TW/sizeAndTryOn.html'
+  try: h = _fr_req(url, origin)
+  except urllib.error.HTTPError as e:
+    if e.code != 404: raise
+    j = json.loads(_fr_req(f'{d}/product/detail?productCode={code}', origin))   # 路徑不同時從商品詳細資料取
+    path = (((j.get('resp') or [{}])[0].get('spuInfo') or {}).get('desc') or {}).get('sizeChart')
+    if not path: return None
+    url = web + path; h = _fr_req(url, origin)
+  return pick_chart(h, typ, name, f'{brand.upper()} 官網尺寸表 {web}/zh_TW/product-detail.html?productCode={code}')
+
 def pick_chart(page_html, typ, name, brand_source):
   """商品頁 HTML → 商品實測尺寸表（沒有就 None）。"""
   if typ not in ('top', 'bottom', 'dress', 'shoes'): return None
@@ -286,4 +328,11 @@ if __name__ == '__main__':
   assert body_chart(['24', '25.5'], 'shoes', 'f')['sizes']['25.5'] == {'foot': 25.5}
   assert body_chart(['F'], 'accessory', 'f')['sizes']['F']['chest'] == 84
   assert fit_type_of('寬鬆落肩大學T') == 'oversized' and fit_type_of('修身牛仔褲') == 'slim'
+  uqb = ('<table><tr><th></th><th>XS</th><th>S</th></tr><tr><th rowspan=2>腰圍</th><th>A：裸身測量</th><td>66～72</td><td>68～76</td></tr><tr><th>B：商品測量</th><td>64</td><td>70</td></tr>'
+         '<tr><th>臀圍</th><td>98.5</td><td>104.5</td></tr><tr><th>大腿寬</th><td>32</td><td>34</td></tr><tr><th>褲檔</th><td>27.5</td><td>28</td></tr><tr><th>褲內襠長</th><td>64</td><td>66</td></tr></table>')
+  s = parse_tables(uqb, 'bottom'); assert s == {'XS': {'waist': 64, 'hip': 98.5, 'thigh': 64, 'inseam': 64}, 'S': {'waist': 70, 'hip': 104.5, 'thigh': 68, 'inseam': 66}}, s
+  gut = '<table><tr><th>&nbsp;</th><th>S</th><th>M</th></tr><tr><th>衣長</th><td>61.5</td><td>62.5</td></tr><tr><th>連肩袖長</th><td>79</td><td>80.5</td></tr><tr><th>肩寬</th><td>49</td><td>50</td></tr><tr><th>胸寬</th><td>48</td><td>51</td></tr></table>'
+  s = parse_tables(gut, 'top'); assert s['S'] == {'length': 61.5, 'sleeve': 54.5, 'shoulder': 49, 'chest': 96}, s
+  gus = '<table><tr><th>&nbsp;</th><th>S</th><th>M</th></tr><tr><th>對應尺寸</th><td>22.5</td><td>23.5</td></tr><tr><th>鞋長</th><td>23.7</td><td>24.7</td></tr><tr><th>鞋跟高度</th><td>5.6</td><td>5.7</td></tr></table>'
+  assert parse_tables(gus, 'shoes') == {'S': {'foot': 22.5}, 'M': {'foot': 23.5}}
   print('sizecharts self-test ok')

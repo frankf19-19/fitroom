@@ -1,0 +1,25 @@
+name: 管理：補齊商品尺寸表（一次性，可重跑）
+on:
+  workflow_dispatch:
+    inputs:
+      only: { description: '只跑來源含此字串（例如 uniqlo、web:www.goopi.co；空白＝全部）', default: '', required: false }
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - name: 寫尺寸表到 Supabase Storage 並統計覆蓋率
+        env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ONLY: ${{ inputs.only }}
+        run: python3 tools/sizecharts.py && python3 tools/backfill_sizecharts.py
+      - name: 覆蓋率報告推到 qa-debug 分支
+        if: always()
+        run: |
+          mkdir -p rep && cp out/coverage.* rep/ 2>/dev/null || true
+          cd rep && git init -q && git checkout -q -b qa-debug && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m sizecharts || exit 0
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-debug

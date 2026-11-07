@@ -3,6 +3,7 @@
 遵守 robots.txt、放慢請求。環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY。用法：python3 tools/sync_tw.py [每家每類幾件，預設 12]
 """
 import json, os, re, sys, time, gzip, urllib.request, urllib.parse, urllib.robotparser, concurrent.futures as cf, html as html_mod
+import sizecharts as SC   # 商品尺寸表（tools/sizecharts.py）
 
 SUPABASE_URL = os.environ['SUPABASE_URL'].rstrip('/'); KEY = os.environ['SUPABASE_SERVICE_KEY']
 PER = int(sys.argv[1]) if len(sys.argv) > 1 else 12
@@ -64,6 +65,12 @@ def sb(method, path, data=None, prefer=None):
   with urllib.request.urlopen(req, timeout=60) as r:
     t = r.read().decode(); return json.loads(t) if t else None
 def save(src, rows):
+  charts = [dict(r) for r in rows]                              # 尺寸表另外存 Storage（_chart 不進資料表）
+  rows = [{k: v for k, v in r.items() if k != '_chart'} for r in rows]
+  _save(src, rows)
+  try: SC.write_charts(lambda path: sb('GET', path), src, charts)
+  except Exception as e: print(src, 'size charts FAIL', e)
+def _save(src, rows):
   existing = sb('GET', f'products?source=eq.{urllib.parse.quote(src)}&select=id,external_id')
   ex = {r['external_id']: r['id'] for r in existing}; seen = {r['external_id'] for r in rows}
   ins = [r for r in rows if r['external_id'] not in ex]
@@ -130,11 +137,13 @@ def sync91(host, brand, gdef):
       parts = (k.get('PropertyNameSet') or '').split(':')
       for j, p in enumerate(parts):
         if p in ('尺寸', '尺碼', 'SIZE', 'Size', '腰圍', '鞋碼') and j + 1 < len(parts): sizes.append(parts[j + 1])
+    desc = ' '.join(str(d.get(k) or '') for k in ('SubDescript', 'ShortDescription', 'Description'))
+    chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 https://{host}/SalePage/Index/{sid}') if '<table' in desc else None
     pic = imgs[0].get('PicUrl') or ''
     pic = ('https:' + pic) if pic.startswith('//') else pic.replace('http://', 'https://')
     return {'source': '91app:' + host, 'external_id': str(sid), 'brand': b, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),
             'price': int(price), 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': f'https://{host}/SalePage/Index/{sid}', 'tags': [cat.split('>')[-1].strip(' -')[:20]] if cat else [],
-            'sizes': norm_sizes(sizes), 'active': True, 'featured': False}
+            'sizes': norm_sizes(sizes) or SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart}
   rows = []
   with cf.ThreadPoolExecutor(3) as ex:
     for r in ex.map(one, ids):
@@ -248,8 +257,9 @@ def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
       b = re.sub(r'(?i)\s+hom(m)?e$', '', (p.get('brand') or '').strip())
       b = {'GELATO PIQUE': 'gelato pique', 'LILY BROWN': 'Lily Brown'}.get(b.upper(), b)
       if not b or len(b) > 30: return None
+    chart = SC.pick_chart(h, typ, name, '商品頁尺寸表 ' + u)   # 同一份 HTML，不多花請求
     return {'source': 'web:' + host, 'external_id': re.sub(r'^https?://[^/]+', '', u)[:200], 'brand': b, 'name': name[:120], 'type': typ, 'gender': gender_of(name, gdef),
-            'price': price, 'currency': 'TWD', 'image_url': img, 'buy_url': u, 'tags': [], 'sizes': [], 'active': True, 'featured': False}
+            'price': price, 'currency': 'TWD', 'image_url': img, 'buy_url': u, 'tags': [], 'sizes': SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart}
   rows = []
   with cf.ThreadPoolExecutor(1 if delay >= 2 else 4) as ex:   # 有 Crawl-delay 的網站單線慢慢抓
     for r in ex.map(one, urls):
@@ -322,9 +332,10 @@ def sync_shopify(host, brand, gdef, deftype):
       try: price = int(float(vs[0]['price']))
       except Exception: continue
       if price <= 0: continue
+      chart = SC.pick_chart(p.get('body_html') or '', typ, p['title'], '商品頁尺寸表 ' + u)
       sizes = [v.get('option2') or v.get('option1') for v in vs if re.fullmatch(r'(?i)(XXS|XS|S|M|L|XL|XXL|2XL|3XL|\d{2}(\.5)?)', str(v.get('option2') or v.get('option1') or ''))]
       rows.append({'source': 'shop:' + host, 'external_id': str(p['id']), 'brand': brand, 'name': p['title'][:120], 'type': typ, 'gender': gender_of(p['title'] + ' ' + ' '.join(tags), gdef),
-                   'price': price, 'currency': 'TWD', 'image_url': ims[0]['src'].split('?')[0], 'buy_url': u, 'tags': [], 'sizes': norm_sizes(sizes), 'active': True, 'featured': False})
+                   'price': price, 'currency': 'TWD', 'image_url': ims[0]['src'].split('?')[0], 'buy_url': u, 'tags': [], 'sizes': norm_sizes(sizes) or SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart})
     if len(ps) < 100: break
   rows, counts = pick(rows)
   if not rows: print(host, 'no rows'); return
