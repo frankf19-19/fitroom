@@ -67,6 +67,12 @@ def write(p, chart):
   if not chart: result[p['id']] = None; return
   result[p['id']] = chart['kind'] if store.put(p['id'], chart) else None
 
+_ROBOTS = {}
+def robots_ok(u):
+  h = urllib.parse.urlparse(u).netloc
+  if h not in _ROBOTS:
+    rp = urllib.robotparser.RobotFileParser(); st, rt = get(f'https://{h}/robots.txt', 300000); rp.parse(rt.splitlines() if st == 200 else []); _ROBOTS[h] = rp
+  return _ROBOTS[h].can_fetch(UA, u)
 def do_web(host, group):
   rp = urllib.robotparser.RobotFileParser(); st, rt = get(f'https://{host}/robots.txt', 300000)
   rp.parse(rt.splitlines() if st == 200 else [])
@@ -80,6 +86,10 @@ def do_web(host, group):
       if s == 200:
         try: chart = SC.pick_chart(h, p['type'], p['name'], '商品頁尺寸表 ' + p['buy_url'])
         except Exception as e: lock_print('  parse fail', p['buy_url'][:80], e)
+        pop = not chart and p['type'] in ('top', 'bottom', 'dress') and re.search(r"popSizeChart\('(https://[^']+\.html?)'\)", h)   # Queen Shop：尺寸表在另一個小頁面
+        if pop and robots_ok(pop.group(1)):
+          time.sleep(delay); s2, h2 = get(pop.group(1), 600000)
+          if s2 == 200: chart = SC.pick_chart(h2, p['type'], p['name'], '商品尺寸表 ' + pop.group(1))
       if chart and not p.get('sizes'):
         sz = SC.chart_sizes(chart)[:20]
         try: sb('PATCH', f"products?id=eq.{p['id']}", {'sizes': sz}, prefer='return=minimal'); p['sizes'] = sz

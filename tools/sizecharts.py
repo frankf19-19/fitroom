@@ -90,50 +90,56 @@ def _finalize(raw, typ):
   out = {s: d for s, d in out.items() if d}
   return out or None
 
+def _layout(head, body):
+  """一張表（已知表頭列）→ raw {size: {key: (value, flat)}}；不像尺寸表回傳 None。"""
+  raw = None
+  # A) 尺碼在表頭列（橫向）：[尺碼, S, M, L] + [胸寬, 50, 52, 54]
+  hs = [norm_size(c) for c in head[1:]]
+  if len(hs) >= 1 and sum(is_size(c) for c in head[1:]) >= max(1, len(hs) - 1):
+    raw = {}; group = ''
+    for r in body:
+      if len(r) == len(hs) + 2 and not num(r[1]):   # [腰圍, B：商品測量, 64, 70…]：第一格是群組名稱
+        group, r = r[0], r[1:]
+      lbl = r[0]
+      if re.match(r'^[A-DＡ-Ｄ]\s*[：:]', lbl) and group: lbl = group + lbl   # 「B：商品測量」承接上一列的「腰圍」
+      key, flat = label_key(lbl)
+      if not key: continue
+      vals = r[1:]
+      if len(vals) != len(hs): vals = vals[-len(hs):] if len(vals) > len(hs) else vals
+      for sz, v in zip(hs, vals):
+        if is_size(sz): raw.setdefault(sz, {}).setdefault(key, (num(v), flat))
+  else:
+    # B) 尺碼在第一欄（直向）：[尺寸, 衣長, 胸寬] + [S, 62, 61.5]
+    keys = [label_key(c) for c in head[1:]]
+    if any(k for k, _ in keys) and sum(is_size(r[0]) for r in body if r) >= max(1, len(body) // 2):
+      raw = {}
+      for r in body:
+        if not r or not is_size(r[0]): continue
+        sz = norm_size(r[0])
+        for (key, flat), v in zip(keys, r[1:]):
+          if key: raw.setdefault(sz, {}).setdefault(key, (num(v), flat))
+  return raw or None
+
 def parse_tables(page_html, typ=None):
-  """從商品頁 HTML 找出尺寸表；回傳 sizes dict 或 None。支援「尺碼在第一列」與「尺碼在第一欄」兩種排法。"""
+  """從商品頁 HTML 找出尺寸表；回傳 sizes dict 或 None。支援「尺碼在表頭列」與「尺碼在第一欄」兩種排法，表頭可以在前 3 列（上面可能有標題列）。"""
   best = None
   for t in re.findall(r'<table.*?</table>', page_html or '', re.S | re.I):
     if re.search(r'身材測量|國際尺碼|美碼', t): continue   # 品牌身體尺寸對照表，不是商品實測
     rows = cells_of(t)
     if len(rows) < 2: continue
-    if re.search(r'\binch\b|英吋|\(in\)|單位\s*[:：]?\s*(in|吋)', ' '.join(' '.join(r) for r in rows[:2]), re.I) and not re.search(r'cm|公分', ' '.join(' '.join(r) for r in rows[:2]), re.I): continue
-    raw = None
-    head = rows[0]
-    # A) 尺碼在第一列（橫向）：[尺碼, S, M, L] + [胸寬, 50, 52, 54]
-    hs = [norm_size(c) for c in head[1:]]
-    if len(hs) >= 1 and sum(is_size(c) for c in head[1:]) >= max(1, len(hs) - 1):
-      raw = {}; group = ''
-      for r in rows[1:]:
-        if len(r) == len(hs) + 2 and not num(r[1]):   # [腰圍, B：商品測量, 64, 70…]：第一格是群組名稱
-          group, r = r[0], r[1:]
-        lbl = r[0]
-        if re.match(r'^[A-DＡ-Ｄ]\s*[：:]', lbl) and group: lbl = group + lbl   # 「B：商品測量」承接上一列的「腰圍」
-        key, flat = label_key(lbl)
-        if not key: continue
-        vals = r[1:]
-        if len(vals) != len(hs): vals = vals[-len(hs):] if len(vals) > len(hs) else vals
-        for s, v in zip(hs, vals):
-          if is_size(s): raw.setdefault(s, {}).setdefault(key, (num(v), flat))
-    else:
-      # B) 尺碼在第一欄（直向）：[尺寸, 衣長, 胸寬] + [S, 62, 61.5]
-      keys = [label_key(c) for c in head[1:]]
-      if any(k for k, _ in keys) and sum(is_size(r[0]) for r in rows[1:] if r) >= max(1, (len(rows) - 1) // 2):
-        raw = {}
-        for r in rows[1:]:
-          if not r or not is_size(r[0]): continue
-          s = norm_size(r[0])
-          vals = r[1:]
-          for (key, flat), v in zip(keys, vals):
-            if key: raw.setdefault(s, {}).setdefault(key, (num(v), flat))
-    if not raw: continue
-    sizes = _finalize(raw, typ)
-    if not sizes: continue
-    score = sum(len(d) for d in sizes.values())
-    if not best or score > best[0]: best = (score, sizes)
+    if re.search(r'\binch\b|英吋|\(in\)|單位\s*[:：]?\s*(in|吋)', ' '.join(' '.join(r) for r in rows[:3]), re.I) and not re.search(r'cm|公分', ' '.join(' '.join(r) for r in rows[:3]), re.I): continue
+    for hi in range(min(3, len(rows) - 1)):
+      if len(rows[hi]) < 2: continue          # 標題列（PRODUCT MEASUREMENTS、商品平量尺寸表）
+      raw = _layout(rows[hi], rows[hi + 1:])
+      if not raw: continue
+      sizes = _finalize(raw, typ)
+      if not sizes: continue
+      score = sum(len(d) for d in sizes.values())
+      if not best or score > best[0]: best = (score, sizes)
+      break
   if not best: return None
   sizes = best[1]
-  if all(s in SIZE_ORDER for s in sizes): sizes = {s: sizes[s] for s in SIZE_ORDER if s in sizes}
+  if all(x in SIZE_ORDER for x in sizes): sizes = {x: sizes[x] for x in SIZE_ORDER if x in sizes}
   return sizes
 
 def garment_chart(sizes, source, fit_type=None):
@@ -162,31 +168,82 @@ BODY_ASIA = {
 }
 US_FOOT = {'m': {6: 24, 6.5: 24.5, 7: 25, 7.5: 25.5, 8: 26, 8.5: 26.5, 9: 27, 9.5: 27.5, 10: 28, 10.5: 28.5, 11: 29, 12: 30, 13: 31},
            'f': {4: 21, 4.5: 21.5, 5: 22, 5.5: 22.5, 6: 23, 6.5: 23.5, 7: 24, 7.5: 24.5, 8: 25, 8.5: 25.5, 9: 26, 10: 27, 11: 28}}
+def _clean_label(raw):
+  t = re.sub(r';.*$', '', str(raw or ''))            # 91APP「34;-1」
+  t = re.sub(r'\s*[－\-~～]\s*M$', '', t, flags=re.I) if re.match(r'(?i)^F\s*[－\-~～]', t) else t   # 「F－M」
+  return t
+def _numeric_scheme(nums, typ, g, brand):
+  """整組數字尺碼的意義：'fr'（法／歐碼女 34-46）、'eu_m'（歐碼男 44-56）、'lacoste'（2-8）、'us_w'（美碼女 0-16）、'inch'（腰圍英吋）、'cm'（腰圍公分）。"""
+  if not nums: return None
+  lo, hi, even = min(nums), max(nums), all(n == int(n) and int(n) % 2 == 0 for n in nums)
+  b = (brand or '').upper()
+  if typ == 'bottom':
+    if 56 <= lo and hi <= 110: return 'cm'
+    if g == 'm' and 26 <= lo and hi <= 44: return 'inch'
+    if g != 'm' and 22 <= lo and hi <= 33: return 'inch'
+    if g != 'm' and even and 32 <= lo and hi <= 46: return 'fr'
+    if g != 'm' and even and hi <= 16: return 'us_w'
+    if g == 'm' and even and 44 <= lo and hi <= 56: return 'eu_m'
+    return None
+  if g != 'm' and even and 32 <= lo and hi <= 46: return 'fr'
+  if g == 'm' and even and 44 <= lo and hi <= 56: return 'eu_m'
+  if b == 'LACOSTE' and 1 <= lo and hi <= 8: return 'lacoste'
+  if typ == 'dress' and even and hi <= 16: return 'us_w'
+  return None
+SCHEME_TO_ALPHA = {'fr': {32: 'XXS', 34: 'XS', 36: 'S', 38: 'M', 40: 'L', 42: 'XL', 44: 'XXL', 46: '3XL'},
+                   'eu_m': {44: 'XS', 46: 'S', 48: 'M', 50: 'L', 52: 'XL', 54: 'XXL', 56: '3XL'},
+                   'lacoste': {2: 'XS', 3: 'S', 4: 'M', 5: 'L', 6: 'XL', 7: 'XXL', 8: '3XL'},
+                   'us_w': {0: 'XXS', 2: 'XS', 4: 'S', 6: 'S', 8: 'M', 10: 'L', 12: 'L', 14: 'XL', 16: 'XXL'}}
+def _foot(label, g):
+  t = str(label).upper().replace(' ', '')
+  m = re.search(r'(\d{2}(?:\.\d)?)CM', t) or re.search(r'JP(\d{2}(?:\.\d)?)', t)
+  if m and 12 <= float(m.group(1)) <= 34: return float(m.group(1))
+  m = re.fullmatch(r'UK(\d{1,2}(?:\.5)?)', t)
+  if m: return US_FOOT['m'].get(float(m.group(1)) + 1) or round(19.9 + 0.85 * float(m.group(1)), 1)   # 英碼＝美國男碼 −1
+  m = re.fullmatch(r'US[MW]?(\d{1,2}(?:\.5)?)', t)
+  if m: return US_FOOT['f' if 'W' in t[:3] else g].get(float(m.group(1)))
+  m = re.fullmatch(r'EU(\d{2}(?:\.5)?)', t)
+  if m: return round(float(m.group(1)) * 2 / 3 - 1.5, 1)
+  try: n = float(norm_size(label))
+  except ValueError: return None
+  if 21 <= n <= 31: return n                          # 台灣／日本鞋碼＝腳長公分
+  if 34 <= n <= 47: return round(n * 2 / 3 - 1.5, 1)    # 歐碼
+  if 4 <= n <= 13: return US_FOOT[g].get(n)
+  if 210 <= n <= 310: return n / 10                    # 230＝23 公分
+  return None
 def body_chart(sizes, typ, gender, brand=''):
   """依商品的尺碼清單產生身體尺寸表；對不上的尺碼略過，全部對不上回傳 None。"""
+  if typ not in ('top', 'bottom', 'dress', 'shoes'): typ = typ or 'top'
   g = 'm' if gender == 'm' else 'f'
   uq = (brand or '').upper() in ('UNIQLO', 'GU')
   base = (BODY_UQ if uq else BODY_ASIA)[g]
   src = ('UNIQLO/GU 台灣官網身體尺寸對照（亞洲尺碼）' if uq else '通用亞洲尺碼身體尺寸對照（非商品實測）')
   out = {}
-  for raw in sizes or []:
-    s = norm_size(raw)
-    if typ == 'shoes':
-      try: n = float(s)
-      except ValueError: continue
-      if 21 <= n <= 31: out[raw] = {'foot': n}                       # 台灣／日本鞋碼＝腳長公分
-      elif 34 <= n <= 47: out[raw] = {'foot': round(n * 2 / 3 - 1.5, 1)}   # 歐碼
-      elif 4 <= n <= 13: v = US_FOOT[g].get(n); out.update({raw: {'foot': v}} if v else {})
-      elif 210 <= n <= 310: out[raw] = {'foot': n / 10}             # 230＝23 公分
-      continue
-    s = {'LL': 'XL', '2L': 'XL', '3L': 'XXL', '4L': '3XL'}.get(s, s)   # 日系 2L/3L 碼
-    if s in base: d = dict(base[s])
-    elif s == 'F': d = dict(base['M'])
-    elif re.fullmatch(r'\d{2}', s) and typ in ('bottom',) and 22 <= int(s) <= 44: d = {'waist': round(int(s) * 2.54, 1)}   # 褲子腰圍英吋碼
-    elif re.fullmatch(r'\d{2}', s) and typ in ('bottom', 'dress') and 56 <= int(s) <= 110: d = {'waist': float(s)}   # 腰圍公分碼
-    else: continue
-    if typ == 'bottom': d.pop('chest', None); d.pop('shoulder', None)
-    out[raw] = d
+  if typ == 'shoes':
+    for raw in sizes or []:
+      v = _foot(_clean_label(raw), g)
+      if v: out[raw] = {'foot': v}
+  else:
+    labels = [(raw, norm_size(_clean_label(raw))) for raw in sizes or []]
+    nums = []
+    for _, s2 in labels:
+      try: nums.append(float(s2))
+      except ValueError: pass
+    scheme = _numeric_scheme(nums, typ, g, brand) if len(nums) == len(labels) else None
+    for raw, s2 in labels:
+      d = None
+      m = re.fullmatch(r'(\d{2})腰(\d{2})褲長', s2)           # Levi's「32腰34褲長」＝腰圍 32 吋、內長 34 吋
+      if m: d = {'waist': round(int(m.group(1)) * 2.54, 1), 'inseam': round(int(m.group(2)) * 2.54, 1)}
+      else:
+        a = {'LL': 'XL', '2L': 'XL', '3L': 'XXL', '4L': '3XL', 'FREE': 'F'}.get(s2, s2)   # 日系 2L/3L 碼
+        if scheme in SCHEME_TO_ALPHA: a = SCHEME_TO_ALPHA[scheme].get(int(float(s2)), a)
+        if a in base: d = dict(base[a])
+        elif a == 'F': d = dict(base['M'])
+        elif scheme == 'inch': d = {'waist': round(float(s2) * 2.54, 1)}
+        elif scheme == 'cm': d = {'waist': float(s2)}
+      if not d: continue
+      if typ == 'bottom': d.pop('chest', None); d.pop('shoulder', None)
+      out[raw] = d
   if not out: return None
   return {'unit': 'cm', 'kind': 'body', 'fit_type': None, 'sizes': out, 'source': src, 'updated': now()}
 
@@ -335,4 +392,13 @@ if __name__ == '__main__':
   s = parse_tables(gut, 'top'); assert s['S'] == {'length': 61.5, 'sleeve': 54.5, 'shoulder': 49, 'chest': 96}, s
   gus = '<table><tr><th>&nbsp;</th><th>S</th><th>M</th></tr><tr><th>對應尺寸</th><td>22.5</td><td>23.5</td></tr><tr><th>鞋長</th><td>23.7</td><td>24.7</td></tr><tr><th>鞋跟高度</th><td>5.6</td><td>5.7</td></tr></table>'
   assert parse_tables(gus, 'shoes') == {'S': {'foot': 22.5}, 'M': {'foot': 23.5}}
+  airb = '<table><tr><th colspan=4>PRODUCT MEASUREMENTS</th></tr><tr><th>Size</th><th>S</th><th>M</th></tr><tr><td>褲長</td><td>30.5</td><td>31.8</td></tr><tr><td>平腰寬</td><td>30.5</td><td>33</td></tr><tr><td>拉腰寬</td><td>36.8</td><td>39.4</td></tr><tr><td>臀寬</td><td>59.7</td><td>62.2</td></tr></table>'
+  assert parse_tables(airb, 'bottom') == {'S': {'length': 30.5, 'waist': 61, 'hip': 119.4}, 'M': {'length': 31.8, 'waist': 66, 'hip': 124.4}}, parse_tables(airb, 'bottom')
+  assert body_chart(['34', '36', '38'], 'top', 'f', 'LACOSTE')['sizes']['38']['chest'] == 84
+  assert body_chart(['3', '4', '5'], 'top', 'm', 'LACOSTE')['sizes']['4']['chest'] == 94
+  assert body_chart(['28腰32褲長'], 'bottom', 'm', "Levi's")['sizes']['28腰32褲長'] == {'waist': 71.1, 'inseam': 81.3}
+  assert body_chart(['UK7.5（26.5CM）', 'UK 3', 'US 8', '23CM'], 'shoes', 'm')['sizes'] == {'UK7.5（26.5CM）': {'foot': 26.5}, 'UK 3': {'foot': 22.4}, 'US 8': {'foot': 26}, '23CM': {'foot': 23.0}}
+  assert body_chart(['34;-1', '36;-1'], 'dress', 'f')['sizes']['36;-1']['chest'] == 80
+  assert body_chart(['4', '6', '8'], 'bottom', 'f')['sizes']['8'] == {'waist': 66, 'hip': 92}
+  assert body_chart(['F－M'], 'dress', 'f')['sizes']['F－M']['chest'] == 84
   print('sizecharts self-test ok')

@@ -104,6 +104,20 @@ def sub_brand(cat, title):
   b = re.sub(r'[^\w&.\' +\-]', '', b).strip()
   if not b or re.search(r'[\u4e00-\u9fff]', b) or len(b) > 30 or re.search(r'(?i)^(new|sale|outlet|top|best|all|men|women|ladies|kids)$', b): return None
   return BRAND_FIX.get(b.upper(), b)
+SIZE_TITLE = re.compile(r'尺寸|尺碼|size|腰圍|鞋碼|鞋號|碼數|規格', re.I)
+def sku_sizes(d):
+  """91APP 規格：優先用 MajorList 的「尺寸」規格清單；沒有就從 SKU 的 PropertyNameSet（「-1:-1:顏色:黑;-1:-1:尺寸:M」）取。"""
+  for major in d.get('MajorList') or []:
+    for sku in major.get('SKUList') or []:
+      names = [str(x.get('Name') or '').strip() for x in sku.get('PropertyList') or []]
+      if names and (SIZE_TITLE.search(sku.get('Title') or '') or sum(bool(re.fullmatch(r'(?i)(XXS|XS|S|M|L|XL|XXL|[2-4]XL|F|FREE|\d{1,2}(\.5)?|UK ?\d.*|US ?\d.*|\d{2}(\.5)?CM)', n)) for n in names) >= max(1, len(names) - 1)):
+        return [n for n in names if n]
+  out = []
+  for k in d.get('SKUPropertySetList') or []:
+    for part in (k.get('PropertyNameSet') or '').split(';'):
+      bits = part.split(':')
+      if len(bits) >= 4 and SIZE_TITLE.search(bits[2]) and bits[3] not in out: out.append(bits[3])
+  return out
 stats = {'blocked': 0}
 def sync91(host, brand, gdef):
   rp, rt = robots(host)
@@ -132,11 +146,7 @@ def sync91(host, brand, gdef):
     imgs = d.get('ImageList') or []
     price = d.get('Price') or d.get('MinPrice')
     if not typ or not imgs or not price: return None
-    sizes = []
-    for k in d.get('SKUPropertySetList') or []:
-      parts = (k.get('PropertyNameSet') or '').split(':')
-      for j, p in enumerate(parts):
-        if p in ('尺寸', '尺碼', 'SIZE', 'Size', '腰圍', '鞋碼') and j + 1 < len(parts): sizes.append(parts[j + 1])
+    sizes = sku_sizes(d)
     desc = ' '.join(str(d.get(k) or '') for k in ('SubDescript', 'ShortDescription', 'Description'))
     chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 https://{host}/SalePage/Index/{sid}') if '<table' in desc else None
     pic = imgs[0].get('PicUrl') or ''
@@ -234,6 +244,11 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail', opts=None):
   if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
 
+_ROBOTS = {}
+def robots_ok(u):
+  host = urllib.parse.urlparse(u).netloc
+  if host not in _ROBOTS: _ROBOTS[host] = robots(host)[0]
+  return _ROBOTS[host].can_fetch(UA, u)
 def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
   def one(u):
     try: return one_(u)
@@ -258,6 +273,10 @@ def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
       b = {'GELATO PIQUE': 'gelato pique', 'LILY BROWN': 'Lily Brown'}.get(b.upper(), b)
       if not b or len(b) > 30: return None
     chart = SC.pick_chart(h, typ, name, '商品頁尺寸表 ' + u)   # 同一份 HTML，不多花請求
+    pop = not chart and typ in ('top', 'bottom', 'dress') and re.search(r"popSizeChart\('(https://[^']+\.html?)'\)", h)   # Queen Shop：尺寸表在另一個小頁面
+    if pop and robots_ok(pop.group(1)):
+      time.sleep(delay); s2, h2 = get(pop.group(1), 600000)
+      if s2 == 200: chart = SC.pick_chart(h2, typ, name, '商品尺寸表 ' + pop.group(1))
     return {'source': 'web:' + host, 'external_id': re.sub(r'^https?://[^/]+', '', u)[:200], 'brand': b, 'name': name[:120], 'type': typ, 'gender': gender_of(name, gdef),
             'price': price, 'currency': 'TWD', 'image_url': img, 'buy_url': u, 'tags': [], 'sizes': SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart}
   rows = []
