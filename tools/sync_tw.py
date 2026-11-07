@@ -111,12 +111,14 @@ def sku_sizes(d):
     for sku in major.get('SKUList') or []:
       names = [str(x.get('Name') or '').strip() for x in sku.get('PropertyList') or []]
       if names and (SIZE_TITLE.search(sku.get('Title') or '') or sum(bool(re.fullmatch(r'(?i)(XXS|XS|S|M|L|XL|XXL|[2-4]XL|F|FREE|\d{1,2}(\.5)?|UK ?\d.*|US ?\d.*|\d{2}(\.5)?CM)', n)) for n in names) >= max(1, len(names) - 1)):
-        return [n for n in names if n]
+        names = [SC.split_color_size(n) or n for n in names if n]   # 「15灰M」→「M」
+        return list(dict.fromkeys(names))
   out = []
   for k in d.get('SKUPropertySetList') or []:
     for part in (k.get('PropertyNameSet') or '').split(';'):
       bits = part.split(':')
-      if len(bits) >= 4 and SIZE_TITLE.search(bits[2]) and bits[3] not in out: out.append(bits[3])
+      v = SC.split_color_size(bits[3]) or bits[3] if len(bits) >= 4 else None
+      if v and SIZE_TITLE.search(bits[2]) and v not in out: out.append(v)
   return out
 stats = {'blocked': 0}
 def sync91(host, brand, gdef):

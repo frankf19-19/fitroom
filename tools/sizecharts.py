@@ -168,8 +168,18 @@ BODY_ASIA = {
 }
 US_FOOT = {'m': {6: 24, 6.5: 24.5, 7: 25, 7.5: 25.5, 8: 26, 8.5: 26.5, 9: 27, 9.5: 27.5, 10: 28, 10.5: 28.5, 11: 29, 12: 30, 13: 31},
            'f': {4: 21, 4.5: 21.5, 5: 22, 5.5: 22.5, 6: 23, 6.5: 23.5, 7: 24, 7.5: 24.5, 8: 25, 8.5: 25.5, 9: 26, 10: 27, 11: 28}}
+COLOR_SIZE = re.compile(r'^\d{1,3}[\u4e00-\u9fff][^\d]*?[\s　]*(XXS|XS|S|M|L|XL|XXL|[2-4]XL|F|FREE)$', re.I)
+def split_color_size(label):
+  """多品牌館把顏色和尺碼併在一起（「15灰M」「09黑F」「08象牙X人字紋F」）→ 'M'；不是這種寫法回傳 None。"""
+  m = COLOR_SIZE.match(str(label or '').strip())
+  return m.group(1).upper() if m else None
 def _clean_label(raw):
   t = re.sub(r';.*$', '', str(raw or ''))            # 91APP「34;-1」
+  t = split_color_size(t) or t
+  t = re.sub(r'^[A-Z][／/]', '', t.strip())          # adidas「A／M」（亞洲版）
+  m = re.search(r'亞規\s*([A-Z0-9]+)', t)            # The North Face「美規S（亞規M）」
+  if m: t = m.group(1)
+  t = re.sub(r'(?i)^(\d{2})\s*(inch|吋|腰)$', r'\1', t)   # 「28inch」「28腰」＝腰圍英吋
   t = re.sub(r'\s*[－\-~～]\s*M$', '', t, flags=re.I) if re.match(r'(?i)^F\s*[－\-~～]', t) else t   # 「F－M」
   return t
 def _numeric_scheme(nums, typ, g, brand):
@@ -179,7 +189,8 @@ def _numeric_scheme(nums, typ, g, brand):
   b = (brand or '').upper()
   if typ == 'bottom':
     if 56 <= lo and hi <= 110: return 'cm'
-    if g == 'm' and 26 <= lo and hi <= 44: return 'inch'
+    if (brand or '').upper() == 'LACOSTE' and 1 <= lo and hi <= 8: return 'lacoste'
+    if g == 'm' and 22 <= lo and hi <= 44: return 'inch'
     if g != 'm' and 22 <= lo and hi <= 33: return 'inch'
     if g != 'm' and even and 32 <= lo and hi <= 46: return 'fr'
     if g != 'm' and even and hi <= 16: return 'us_w'
@@ -198,6 +209,8 @@ def _foot(label, g):
   t = str(label).upper().replace(' ', '')
   m = re.search(r'(\d{2}(?:\.\d)?)CM', t) or re.search(r'JP(\d{2}(?:\.\d)?)', t)
   if m and 12 <= float(m.group(1)) <= 34: return float(m.group(1))
+  m = re.fullmatch(r'(\d{1,2}(?:\.5)?)/(\d{1,2}(?:\.5)?)', t)   # Under Armour「8/9.5」＝美國男碼／女碼
+  if m: return US_FOOT['m'].get(float(m.group(1)))
   m = re.fullmatch(r'UK(\d{1,2}(?:\.5)?)', t)
   if m: return US_FOOT['m'].get(float(m.group(1)) + 1) or round(19.9 + 0.85 * float(m.group(1)), 1)   # 英碼＝美國男碼 −1
   m = re.fullmatch(r'US[MW]?(\d{1,2}(?:\.5)?)', t)
@@ -232,7 +245,7 @@ def body_chart(sizes, typ, gender, brand=''):
     scheme = _numeric_scheme(nums, typ, g, brand) if len(nums) == len(labels) else None
     for raw, s2 in labels:
       d = None
-      m = re.fullmatch(r'(\d{2})腰(\d{2})褲長', s2)           # Levi's「32腰34褲長」＝腰圍 32 吋、內長 34 吋
+      m = re.fullmatch(r'(\d{2})腰(\d{2})褲長', s2) or re.fullmatch(r'(\d{2})[／/∕](\d{2})', s2)   # Levi's「32腰34褲長」、PUMA「30∕32」＝腰圍／內長（吋）
       if m: d = {'waist': round(int(m.group(1)) * 2.54, 1), 'inseam': round(int(m.group(2)) * 2.54, 1)}
       else:
         a = {'LL': 'XL', '2L': 'XL', '3L': 'XXL', '4L': '3XL', 'FREE': 'F'}.get(s2, s2)   # 日系 2L/3L 碼
@@ -401,4 +414,9 @@ if __name__ == '__main__':
   assert body_chart(['34;-1', '36;-1'], 'dress', 'f')['sizes']['36;-1']['chest'] == 80
   assert body_chart(['4', '6', '8'], 'bottom', 'f')['sizes']['8'] == {'waist': 66, 'hip': 92}
   assert body_chart(['F－M'], 'dress', 'f')['sizes']['F－M']['chest'] == 84
+  assert body_chart(['A／M', '美規S（亞規M）', '15灰M', '28inch'], 'top', 'f')['sizes'].keys() == {'A／M', '美規S（亞規M）', '15灰M'}
+  assert body_chart(['28腰', '30腰'], 'bottom', 'm')['sizes']['28腰'] == {'waist': 71.1}
+  assert body_chart(['30∕32'], 'bottom', 'm')['sizes']['30∕32'] == {'waist': 76.2, 'inseam': 81.3}
+  assert body_chart(['8/9.5'], 'shoes', 'm')['sizes']['8/9.5'] == {'foot': 26}
+  assert split_color_size('08象牙X人字紋F') == 'F' and split_color_size('M') is None
   print('sizecharts self-test ok')
