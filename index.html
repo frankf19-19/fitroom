@@ -448,6 +448,67 @@
   .shape b{font-family:var(--serif);font-weight:500;font-size:18px;letter-spacing:1.5px;display:block}
   .shape small{color:var(--muted);font-size:12px;letter-spacing:.5px}
 
+  /* 量身與合身度 */
+  .mtip{font-size:13px;line-height:1.75;margin:-2px 0 12px;color:var(--ink2)}
+  .mphotos{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+  .mph{position:relative;background:var(--bg2);border-radius:var(--r-m);min-height:84px;display:flex;align-items:center;gap:10px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.5}
+  .mph img{width:46px;height:62px;object-fit:cover;border-radius:var(--r-s);background:#fff;flex:none}
+  .mph b{display:block;font-weight:500;color:var(--ink);font-size:13px;letter-spacing:.5px}
+  .mph.add{border:1.5px dashed #dccfc7;background:#fbf8f6;cursor:pointer;justify-content:center;text-align:center;transition:background var(--t),border-color var(--t)}
+  @media(hover:hover){.mph.add:hover{background:var(--accent-s);border-color:var(--accent)}}
+  .mph .mx{position:absolute;top:6px;right:6px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;font-size:12px;display:grid;place-items:center}
+  .mchk{display:flex;align-items:center;gap:10px;font-size:14px;margin:6px 0 12px;cursor:pointer;min-height:40px}
+  .mchk input{width:20px;height:20px;accent-color:var(--accent-btn);margin:0;flex:none}
+  .mchk .muted{font-size:12px}
+  .mres{display:grid;grid-template-columns:112px 1fr;gap:14px;margin-top:14px;align-items:start}
+  @media(min-width:700px){.mres{grid-template-columns:170px 1fr;gap:20px}}
+  .mfig{background:var(--bg2);border-radius:var(--r-m);overflow:hidden}
+  .mfig canvas,.mfig svg{display:block;width:100%;height:auto}
+  .mrow{display:grid;grid-template-columns:1fr auto;grid-template-areas:"k v" "u v";align-items:center;column-gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);cursor:pointer;min-height:50px;border-radius:6px;transition:background var(--t)}
+  @media(hover:hover){.mrow:hover{background:var(--bg)}}
+  .mrow:last-child{border-bottom:0}
+  .mrow .mk{grid-area:k;font-size:13px;color:var(--ink2);letter-spacing:.5px;line-height:1.4}
+  .mrow .mu{grid-area:u;font-size:12px;color:var(--muted);line-height:1.4}
+  .mrow .mv{grid-area:v;font-family:var(--serif);font-size:19px;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums;line-height:1.2}
+  .mrow .mv small{font-family:var(--sans);font-size:12px;color:var(--muted);margin-left:3px}
+  .mrow .mv i{font-style:normal;font-family:var(--sans);font-size:13px;color:var(--accent-ink)}
+  .mrow .mv input{width:86px;padding:7px 10px;text-align:right;font-size:16px}
+  .mfix{font-style:normal;color:var(--accent-ink);background:var(--accent-s);border-radius:999px;padding:1px 8px;font-size:12px;letter-spacing:.5px}
+  .mnote{margin-top:12px;font-size:12px;color:var(--ink2);background:var(--bg2);border-radius:var(--r-s);padding:10px 12px;line-height:1.75}
+  .mflag{margin-top:10px;font-size:12px;color:var(--warn);line-height:1.7;background:var(--warn-s);border-radius:var(--r-s);padding:8px 12px}
+  .mmeta{margin-top:8px;font-size:12px}
+  .szhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;letter-spacing:.5px;color:var(--muted);margin-top:10px}
+  .szchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px}
+  .szchip{min-width:48px;min-height:40px;padding:6px 14px;border:1px solid var(--line2);border-radius:999px;background:#fff;font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background var(--t),border-color var(--t),box-shadow var(--t)}
+  @media(hover:hover){.szchip:hover{background:var(--bg2)}}
+  .szchip.on{border-color:var(--accent);background:var(--accent-s);color:var(--accent-ink);font-weight:500;box-shadow:0 0 0 1px var(--accent)}
+  .szchip em{font-style:normal;font-size:11px;letter-spacing:.5px;font-weight:500;color:#fff;background:var(--accent-btn);border-radius:999px;padding:0 7px;line-height:18px}
+  .fitbar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .fz{display:inline-flex;align-items:center;gap:5px;font-size:12px;letter-spacing:.3px;padding:3px 10px;border-radius:999px;background:var(--bg2);color:var(--ink2);line-height:1.6;white-space:nowrap}
+  .fz::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.75}
+  .fz.tight{background:var(--bad-s);color:var(--bad)}.fz.snug{background:var(--warn-s);color:var(--warn)}.fz.fit{background:var(--ok-s);color:var(--ok)}.fz.loose{background:#eaf0f8;color:#5b7fb5}.fz.short,.fz.long{background:var(--bg2);color:var(--ink2)}
+  .fitsum{font-size:13px;color:var(--ink2);line-height:1.7;margin-top:4px}
+  .fitrow .rec .fitbar{margin-top:6px}
+  .fitnudge{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--accent-s);color:var(--ink2);border-radius:var(--r-m);padding:8px 8px 8px 14px;font-size:13px;line-height:1.5;margin-top:14px}
+  .fitnudge .btn{flex:none;background:#fff;border-color:transparent;color:var(--accent-ink)}
+  .fitnudge.in{margin-top:10px}
+  .slot .szb{position:absolute;top:5px;left:28px;z-index:1;display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.95);border-radius:999px;padding:0 7px;font-size:11px;font-weight:500;line-height:18px;color:var(--ink);box-shadow:var(--sh-s);max-width:calc(100% - 64px);overflow:hidden;white-space:nowrap}
+  .slot .szb::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:var(--ok)}
+  .slot .szb.tight::before{background:var(--bad)}.slot .szb.snug::before{background:var(--warn)}.slot .szb.loose::before{background:#5b7fb5}.slot .szb.short::before,.slot .szb.long::before,.slot .szb.na::before{background:#b1a8a2}
+  .fitres{background:#fff;border-radius:var(--r-l);box-shadow:var(--sh);padding:14px 16px 6px;margin-top:14px}
+  .frhead{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:6px}
+  .frhead b{font-family:var(--serif);font-weight:500;font-size:16px;letter-spacing:1px}
+  .frhead .muted{font-size:12px}
+  .fritem{display:grid;grid-template-columns:48px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+  .fritem img,.fritem .frph{width:48px;height:62px;object-fit:contain;background:var(--bg2);border-radius:var(--r-s);display:block}
+  .frt{font-size:12px;letter-spacing:1px;color:var(--muted)}.frt b{color:var(--ink);font-weight:500;font-size:14px;letter-spacing:.5px}
+  .frs{font-size:13px;color:var(--ink);line-height:1.7;margin-top:2px}
+  .fitmapbtn{position:absolute;left:10px;bottom:10px;z-index:3;border:0;border-radius:999px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:var(--ink);font-family:inherit;font-size:12px;letter-spacing:1px;padding:7px 13px;min-height:36px;box-shadow:var(--sh-s);cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+  .fitmapbtn::before{content:"";width:9px;height:9px;border-radius:50%;border:1.5px solid var(--accent-ink);box-sizing:border-box}
+  .fitmapbtn.on{background:var(--ink);color:#fff}.fitmapbtn.on::before{background:var(--accent);border-color:var(--accent)}
+  .cmp canvas.fitmap{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+  .cmp.fm .after,.cmp.fm .hd,.cmp.fm .tag{display:none}
+
   /* 設定 */
   .setrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px}
   .setrow:last-child{border-bottom:none}
@@ -674,6 +735,7 @@
           <div class="opt-row" style="margin-top:0"><span>高品質模式 <span class="muted">更像商品，速度稍慢</span></span><div class="switch" id="hqMode" aria-label="高品質模式（更像商品，速度稍慢）"></div></div>
           <div class="switch on hidden" id="faceLock" aria-hidden="true"></div>
           </details>
+          <div class="fitnudge hidden" id="fitNudge"><span>先量身，才能看出合不合身</span><button class="btn sm" id="fitNudgeGo">去量身</button></div>
           <button class="btn primary lg block" id="btnRun">開始 AI 試穿</button>
           <div class="muted" id="pfHint" style="font-size:12px;margin-top:6px;min-height:1em"></div>
           <div class="progress hidden" id="prog"><i></i></div>
@@ -709,7 +771,7 @@
           </div>
           <div class="muted" id="fitHint" style="margin-top:6px;font-size:12px">沒量過三圍？到「我的身形」做分析，AI 會從照片與身高體重估一組，這裡自動帶入。</div>
           <div id="fitRows" style="margin-top:10px"><div class="muted">放入上衣、下身、洋裝或鞋子後，這裡會依品牌尺碼表建議尺寸；你選了別的尺寸會提醒哪裡會緊或鬆。</div></div>
-          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">尺碼表怎麼來的</summary><div class="muted" style="margin-top:6px;line-height:1.7">內建 UNIQLO／GU（亞洲尺碼）、ZARA、H&amp;M 的身體尺寸對照表，其他品牌用通用亞洲尺碼。判斷方式：你的圍度落在該尺碼範圍內＝合身；超過上限＝會緊；低於下限＝會鬆。鞋子以腳長＋0.5–1 cm 餘裕換算該品牌標示。各品牌版型仍有差異，僅供參考，賣場有平量尺寸時以賣場為準。</div></details>
+          <details style="margin-top:8px"><summary class="muted" style="cursor:pointer">尺碼表怎麼來的</summary><div class="muted" style="margin-top:6px;line-height:1.7">商品有平量尺寸表時，用「衣服尺寸 − 你的身體尺寸」的寬鬆量判斷（上衣胸圍多 4–12 公分＝剛好，依合身／寬鬆版型調整），並看肩線、衣長落點與袖長。沒有尺寸表的商品，用內建 UNIQLO／GU（亞洲尺碼）、ZARA、H&amp;M 的身體尺寸對照表，其他品牌用通用亞洲尺碼：你的圍度落在該尺碼範圍內＝合身；超過上限＝會緊；低於下限＝會鬆。鞋子以腳長＋0.5–1 cm 餘裕換算該品牌標示。各品牌版型仍有差異，僅供參考，賣場有平量尺寸時以賣場為準。</div></details>
         </details>
         <details class="card fold" id="outfitCard"><summary><h2>AI 幫我搭配 <span class="muted" style="font-weight:400">免費</span></h2></summary>
           <div class="muted" style="font-size:13px;line-height:1.7">AI 依你的身形和目前的單品，從商店挑出能一起搭的衣服、鞋子和配件。</div>
@@ -790,6 +852,15 @@
       <div class="muted" style="margin-top:10px" id="bodyPhotoNote">分析會用試衣間目前的全身照。</div>
       <div class="row" style="margin-top:14px"><button class="btn primary" id="btnAnalyze">分析我的身形</button><button class="btn ghost" data-go="tryon" id="bodyBackTry">回試衣間</button></div>
       <div class="muted" id="analyzeStatus" style="margin-top:8px"></div>
+    </div>
+    <div class="card" id="measureBox">
+      <h3>量身 <span class="muted" style="font-weight:400;letter-spacing:0">用照片估肩寬、三圍、手臂與腿長</span></h3>
+      <div class="mtip">穿貼身衣服拍最準：正面站直、雙手微微離開身體，頭頂到腳底都要入鏡。身高必填，體重填了更準。照片只在你的手機上分析，不會上傳。</div>
+      <div class="mphotos"><div class="mph" id="mFront"></div><div class="mph add" id="mSide" role="button" tabindex="0"></div></div>
+      <label class="mchk"><input type="checkbox" id="mLoose"><span>穿著寬鬆衣服 <span class="muted">會扣掉約 2 公分</span></span></label>
+      <div class="row"><button class="btn primary" id="btnMeasure">開始量身</button></div>
+      <div class="muted" id="measureStatus" style="margin-top:8px"></div>
+      <div id="measureCard"></div>
     </div>
     <div id="bodyReport"></div>
   </section>
@@ -899,8 +970,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '6.0.1';
-const BUILD = '2026-11-07-04';
+const APP_VERSION = '6.1.0';
+const BUILD = '2026-11-07-05';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1270,7 +1341,7 @@ function setSlot(type, v){ if(v) state.slots[type]=v; else delete state.slots[ty
 function renderSlots(){
   $('slots').innerHTML = SLOT_DEFS.map(s=>{
     const v=state.slots[s.type];
-    if (v && v.image) return `<div class="slot has" data-type="${s.type}"><img src="${v.image}" alt=""><span class="lb">${s.label}${v.name?' · '+esc(v.name):''}</span><button class="x" data-x="${s.type}" aria-label="移除${s.label}">✕</button></div>`;
+    if (v && v.image) return `<div class="slot has" data-type="${s.type}"><img src="${v.image}" alt="">${slotBadge(s.type)}<span class="lb">${s.label}${v.name?' · '+esc(v.name):''}</span><button class="x" data-x="${s.type}" aria-label="移除${s.label}">✕</button></div>`;
     if (v && v.text) return `<div class="slot hair-text" data-type="${s.type}"><span class="ic">${s.ic}</span><span class="lb">${s.label}：${esc(v.text.length>8?v.text.slice(0,8)+'…':v.text)}</span><button class="x" data-x="${s.type}" style="display:grid" aria-label="移除髮型">✕</button></div>`;
     return `<div class="slot" data-type="${s.type}" style="--tint:${s.tint}"><span class="ic">${s.ic}</span><span class="lb">${s.label}</span></div>`;
   }).join('');
@@ -1282,7 +1353,7 @@ function renderSlots(){
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0);
   runCost=n; $('btnRun').textContent = n ? `開始 AI 試穿 · ${n} 點` : '開始 AI 試穿';
   if (state.me && state.me.views_available===false){ $('wantViews').classList.remove('on'); $('wantViews').closest('.opt-row').classList.add('hidden'); }
-  renderFit(); pfHint();
+  renderFit(); pfHint(); try{ renderFitNudge(); }catch{}
   $('btnRun').disabled = !n || busy;
   try{ updateSticky(); }catch{}
 }
@@ -1332,8 +1403,7 @@ function cropSheet(img, askType){
 let faceDetector=null;
 async function getFaceDetector(){
   if(faceDetector) return faceDetector;
-  const vision=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs');
-  const files=await vision.FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+  const {v:vision, files}=await loadVision();
   faceDetector=await vision.FaceDetector.createFromOptions(files,{ baseOptions:{ modelAssetPath:'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite' }, runningMode:'IMAGE', minDetectionConfidence:0.5 });
   return faceDetector;
 }
@@ -1408,20 +1478,21 @@ function renderFit(){
   const cl=['top','bottom','dress','shoes'].filter(t=>state.slots[t]);
   const fb=$('fitBadge'); if(fb) fb.textContent=cl.length?cl.length+' 件可看建議尺寸':'';
   const box=$('fitRows'); if(!cl.length){ box.innerHTML='<div class="muted">放入上衣、下身、洋裝或鞋子後，這裡會依品牌尺碼表建議尺寸；你選了別的尺寸會提醒哪裡會緊或鬆。</div>'; return; }
-  box.innerHTML=cl.map(t=>{ const item=state.slots[t]; if(t==='shoes') return shoeRow(item);
-    const bk=brandKey(item.brand); const bc=BRAND_CHARTS[bk]; const g=(item.pgender==='m'||item.pgender==='f')?item.pgender:fitGender; const chart=bc[g]||bc.f;
-    const avail=(item.sizes&&item.sizes.length)?item.sizes.filter(x=>chart[x]):[]; const sizes=avail.length?avail:Object.keys(chart);
-    const sz=fitSizes[t]||''; const hasBody=dimsFor(t).some(d=>body[d]);
+  const B=getBody();
+  box.innerHTML=cl.map(t=>{ const item={type:t,...state.slots[t]}; const ch=item.product_id!=null?scGet(item.product_id):null;
+    if(t==='shoes'&&!(ch&&Object.values(ch.sizes).some(z=>z.foot!=null))) return shoeRow(item);
+    const bk=brandKey(item.brand), bc=BRAND_CHARTS[bk]; const srcLabel=ch?'商品尺寸表':bc.label+(item.brand&&bk==='generic'?'（'+item.brand+' 無內建表）':'');
+    const sizes=sizeOptions(item); const sz=fitSizes[t]||''; const hasB=hasBodyFor(t,B);
     let rec='';
-    if(!hasBody) rec='填上面的三圍（或先做身形分析）就能建議尺寸';
-    else { const best=recommendSize(chart,sizes,t,body);
-      if(best){ rec=`依 ${bc.label}${item.brand&&bk==='generic'?'（'+item.brand+' 無內建表）':''}：建議 <b>${best.sz}</b>`;
-        const parts=Object.entries(best.sc.dims).filter(([,x])=>x!=null).map(([d,x])=>x===0?`${DIM_LABEL[d]}合身`:x<0?`${DIM_LABEL[d]}緊 ${x*-1} cm`:`${DIM_LABEL[d]}鬆 ${x} cm`); if(parts.length) rec+=`（${parts.join('、')}）`;
-        if(sz&&sz!==best.sz){ const sc=scoreSize(chart,sz,t,body); if(sc){ const bad=Object.entries(sc.dims).filter(([,x])=>x!=null&&x<0).map(([d,x])=>`${DIM_LABEL[d]}會緊 ${-x} cm`); const loose=Object.entries(sc.dims).filter(([,x])=>x!=null&&x>0).map(([d,x])=>`${DIM_LABEL[d]}會鬆 ${x} cm`); rec+=`<br><span class="${bad.length?'bad':'warn'}">⚠ 你選 ${sz}：${[...bad,...loose].join('、')||'與建議不同'}，建議改 ${best.sz}</span>`; } }
-        else if(sz) rec+='<br><span class="ok">✓ 你選的尺寸合適</span>';
+    if(!hasB) rec=t==='shoes'?'填上面的「腳長」就能建議鞋號':'填上面的三圍（或到「我的身形」量身）就能建議尺寸';
+    else { const best=recommendFit(item,sizes,B);
+      if(best){ rec=`依${/^[A-Za-z]/.test(srcLabel)?' ':''}${esc(srcLabel)}：建議 <b>${esc(best.size)}</b>`;
+        if(sz&&sz!==best.size){ const f=fitFor(item,sz,B); rec+=f?`<br><span class="${f.zones.some(z=>z.verdict==='tight')?'bad':'warn'}">⚠ 你選 ${esc(sz)}：${esc(f.summary_zh.replace(/^.*?號：/,''))}，建議改 ${esc(best.size)}</span>${fitBarHTML(f)}`:`<br><span class="warn">你選 ${esc(sz)}：尺寸表沒有這個尺碼的資料</span>`; }
+        else rec+=`（${esc(best.summary_zh.replace(/^.*?號：/,''))}）${sz?'<br><span class="ok">✓ 你選的尺寸合適</span>':''}${fitBarHTML(best)}`;
       } else rec='這個品牌的尺碼表沒有對應資料，請以賣場尺寸表為準'; }
-    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${esc(k)}</option>`).join('')}</select></span><span class="muted" style="font-size:12px">${esc(item.brand||'')}${avail.length?' · 賣場有 '+esc(avail.join('/')):''}</span><div class="rec">${rec}</div></div>`; }).join('');
-  box.querySelectorAll('[data-fit]').forEach(sel=>sel.onchange=()=>{ fitSizes[sel.dataset.fit]=sel.value; renderFit(); });
+    return `<div class="fitrow"><span>${TYPE_LABEL[t]} <select data-fit="${t}"><option value="">選尺碼</option>${sizes.map(k=>`<option ${k===sz?'selected':''}>${esc(k)}</option>`).join('')}</select></span><span class="muted" style="font-size:12px">${esc(item.brand||'')}${ch?' · 有尺寸表':(item.sizes&&item.sizes.length?' · 賣場有 '+esc(sizes.join('/')):'')}</span><div class="rec">${rec}</div></div>`; }).join('');
+  cl.forEach(t=>{ const pid=state.slots[t].product_id; if(pid!=null&&scGet(pid)===undefined) ensureChart(pid).then(()=>renderSlots()); });
+  box.querySelectorAll('[data-fit]').forEach(sel=>sel.onchange=()=>{ fitSizes[sel.dataset.fit]=sel.value; saveFitSizes(); renderSlots(); });
 }
 ['fHeight','fBust','fWaist','fHip','fFoot'].forEach(id=>$(id).addEventListener('input',renderFit));
 $('fitGender').querySelectorAll('.chip').forEach(c=>{ c.classList.toggle('on',c.dataset.g===fitGender); c.onclick=()=>{ fitGender=c.dataset.g; try{ localStorage.setItem('tryon.fitGender',fitGender); }catch{} $('fitGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); renderFit(); }; });
@@ -1571,7 +1642,7 @@ function renderShop(){
 }
 async function tryProduct(p, opt={}){
   if(!p) return;
-  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } try{ delete fitSizes[p.type]; }catch{} setSlot(p.type,{image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay) go('tryon'); }
+  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } try{ const ps=pendingSize[String(p.id)]; if(ps) fitSizes[p.type]=ps; else delete fitSizes[p.type]; saveFitSizes(); }catch{} setSlot(p.type,{image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay) go('tryon'); }
   catch{ toast('商品圖載入失敗，請改用截圖上傳'); }
 }
 function buyProduct(p){ if(!p||!p.buy_url) return; fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'buy',anon_id:anonId}),keepalive:true}).catch(()=>{}); track('buy_click',{product:p.id}); if(IS_APP&&Plug('Browser')) Plug('Browser').open({url:p.buy_url}); else window.open(p.buy_url,'_blank','noopener'); }
@@ -1603,7 +1674,7 @@ function renderRack(){
 renderRack();
 
 /* ---------- 預先合成：挑好就先在背景跑，按下「開始」才扣點 ---------- */
-async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, 'engine:'+(engineParam()||''), ...items.map(i=>i.type+':'+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, 'engine:'+(engineParam()||''), ...items.map(i=>i.type+':'+(i.fit&&i.fit.size?'@'+i.fit.size+':':'')+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
 function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
 const pf={key:null,id:null,st:null,timer:null};
 function pfHint(){ const h=$('pfHint'); if(!h) return; const parts=[]; if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
@@ -1612,13 +1683,13 @@ async function doPrefetch(){
   try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
   if(busy||!state.user||!state.person||!configured) return;
   if($('twoVariants').classList.contains('on')) return;
-  const items=Object.entries(state.slots).map(([type,v])=>({type, image:v.image, text:v.text, photo_type:v.photo_type, name:v.name||null, product_id:v.product_id||null, buy_url:v.buy_url||null}));
+  const run=buildRun(); const items=run.items;
   if(!items.length) { pf.key=null; pf.st=null; pfHint(); return; }
   let key; try{ key=await comboKey(items); }catch{ return; }
   if(pf.key===key) return;
   pf.key=key; pf.id=null; pf.st=null; pfHint();
   try{
-    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect(), engine:engineParam() })});
+    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, body:run.body, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect(), engine:engineParam() })});
     if(pf.key!==key||!d||!d.id) return;
     pf.id=d.id; pf.st=d.ready?'ready':'running'; pfHint();
     while(pf.key===key && pf.st==='running' && !busy){
@@ -1681,25 +1752,28 @@ function openItemView(it, mode){
     ov.classList.add('on'); $('ivClose').onclick=close; $('ivChange').onclick=()=>{ close(); openPersonMenu(); }; return;
   }
   if(mode==='shop'){
-    const p=it; const on=inRack(p.id); const sizes=(p.sizes||[]); const hint=productFitHint(p); const price=priceTxt(p);
+    const p=it; const on=inRack(p.id); const sizes=(p.sizes||[]); const useFit=FIT_TYPES.includes(p.type); const hint=useFit?'':productFitHint(p); const price=priceTxt(p);
     ov.innerHTML=`<div class="iv-card shop"><div class="iv-img"><img src="${esc(p.image_url)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'"></div>
       <div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">${TYPE_LABEL[p.type]||''}${p.brand?' · '+esc(p.brand):''}${p.featured?' · 精選':''}</div><div style="font-size:15px;margin:4px 0 4px;line-height:1.5">${esc(p.name)}</div>${price?`<div class="iv-price">${price}</div>`:''}
-      ${sizes.length?`<div class="muted" style="font-size:12px;letter-spacing:1px">尺寸</div><div class="iv-sizes">${sizes.map(s=>`<span class="pill gray">${esc(s)}</span>`).join('')}</div>`:''}
+      ${useFit?'<div id="ivFit"></div>':sizes.length?`<div class="muted" style="font-size:12px;letter-spacing:1px">尺寸</div><div class="iv-sizes">${sizes.map(s=>`<span class="pill gray">${esc(s)}</span>`).join('')}</div>`:''}
       ${hint?`<div class="muted" style="font-size:12px;line-height:1.6;margin-top:6px">${hint}</div>`:''}
       <div class="iv-acts"><button class="btn primary" id="ivTry">試穿</button><button class="btn rackbtn${on?' on':''}" id="ivRack" aria-pressed="${on}">${on?'✓ 衣架':'＋衣架'}</button>${p.buy_url?'<button class="btn" id="ivBuy">購買</button>':''}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
     ov.classList.add('on');
+    if(useFit) mountFitUI($('ivFit'), {type:p.type, product_id:p.id, brand:p.brand, pgender:p.gender, sizes:p.sizes||[]}, 'shop');
     $('ivClose').onclick=close;
     $('ivTry').onclick=()=>{ close(); tryProduct(p); };
     $('ivRack').onclick=()=>{ toggleRack(p); const now=inRack(p.id); $('ivRack').classList.toggle('on',now); $('ivRack').textContent=now?'✓ 衣架':'＋衣架'; $('ivRack').setAttribute('aria-pressed',now); syncRackBtn(p.id); };
     if($('ivBuy')) $('ivBuy').onclick=()=>buyProduct(p);
     return;
   }
-  const fitTxt=(()=>{ try{ const row=[...document.querySelectorAll('#fitRows .fitrow')].find(r=>r.querySelector(`[data-fit="${it.type}"]`)); return row?row.querySelector('.rec')?.innerHTML||'':''; }catch{ return ''; } })();
+  const slotFitUI=mode==='slot'&&FIT_TYPES.includes(it.type);
+  const fitTxt=slotFitUI?'':(it.fit&&it.fit.zones&&it.fit.zones.length)?`尺寸 <b>${esc(it.fit.size)}</b>${fitBarHTML(it.fit)}`:(()=>{ try{ const row=[...document.querySelectorAll('#fitRows .fitrow')].find(r=>r.querySelector(`[data-fit="${it.type}"]`)); return row?row.querySelector('.rec')?.innerHTML||'':''; }catch{ return ''; } })();
   ov.innerHTML=`<div class="iv-card"><div class="iv-img">${it.image?`<img src="${it.image}" alt="">`:`<div class="muted" style="padding:40px">${esc(it.text||'')}</div>`}</div>
     <div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">${TYPE_LABEL[it.type]||''}${it.brand?' · '+esc(it.brand):''}</div><div style="font-size:15px;margin:4px 0 8px">${esc(it.name||'你上傳的單品')}</div>
-    ${fitTxt?`<div class="muted" style="font-size:12px;line-height:1.6;margin-bottom:10px">${fitTxt}</div>`:''}
+    ${slotFitUI?'<div id="ivFit" style="margin-bottom:12px"></div>':''}${fitTxt?`<div class="muted" style="font-size:12px;line-height:1.6;margin-bottom:10px">${fitTxt}</div>`:''}
     <div class="row">${it.buy_url?'<button class="btn primary" id="ivBuy">購買</button>':''}${mode==='slot'?'<button class="btn" id="ivSwap">換一件</button><button class="btn" id="ivDel">移除</button>':'<button class="btn" id="ivBack">放回試衣間</button>'}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
   ov.classList.add('on');
+  if(slotFitUI){ const {image,text,...rest}=it; mountFitUI($('ivFit'), {...rest, type:it.type}, 'slot'); }
   $('ivClose').onclick=()=>ov.classList.remove('on');
   if($('ivSwap')) $('ivSwap').onclick=()=>{ ov.classList.remove('on'); openSlotMenu(it.type); };
   if($('ivDel')) $('ivDel').onclick=()=>{ setSlot(it.type,null); ov.classList.remove('on'); };
@@ -1734,6 +1808,7 @@ function renderBody(){
   $('btnAnalyze').disabled = !state.person;
   if(state.me && state.me.analyze_available===false){ $('analyzeStatus').textContent='身形分析服務尚未啟用（伺服器未設定影像金鑰）。'; $('btnAnalyze').disabled=true; }
   renderReport(a);
+  try{ renderMeasureBox(); }catch{}
 }
 function renderReport(a){
   const box=$('bodyReport'); if(!a||a.error||!a.body_shape){ box.innerHTML=''; return; }
@@ -1774,12 +1849,444 @@ $('btnAnalyze').onclick=async()=>{
     if(state.me){ state.me.analysis=d.analysis; state.me.body={...(state.me.body||{}), height:h, weight:w, gender:bodyGender, bust:+$('bBust').value||null, waist:+$('bWaist').value||null, hip:+$('bHip').value||null}; }
     $('analyzeStatus').textContent='分析完成。'; renderReport(d.analysis); haptic('success');
     // 同步到尺寸預估
-    $('fHeight').value=h; const mm=d.analysis.measured||{}; $('fBust').value=$('bBust').value||mm.est_bust||''; $('fWaist').value=$('bWaist').value||mm.est_waist||''; $('fHip').value=$('bHip').value||mm.est_hip||''; if(!$('bBust').value&&mm.est_bust) $('fitHint').textContent=`已帶入 AI 估計的三圍（胸 ${mm.est_bust}／腰 ${mm.est_waist}／臀 ${mm.est_hip} cm），實際量過更準。`; renderFit();
+    const mm=d.analysis.measured||{}; const M0=loadMeasure();
+    if(M0&&M0.src==='photo'){ saveMeasure(M0); syncMeasureToFit(M0); } else { $('fHeight').value=h; $('fBust').value=$('bBust').value||mm.est_bust||''; $('fWaist').value=$('bWaist').value||mm.est_waist||''; $('fHip').value=$('bHip').value||mm.est_hip||''; if(!$('bBust').value&&mm.est_bust) $('fitHint').textContent=`已帶入 AI 估計的三圍（胸 ${mm.est_bust}／腰 ${mm.est_waist}／臀 ${mm.est_hip} cm），實際量過更準。`; renderFit(); }
     updateAnalyzeCta();
   }catch(e){ $('analyzeStatus').textContent=friendlyErr(e.message); haptic('error'); }
   finally{ $('btnAnalyze').disabled=false; }
 };
 function updateAnalyzeCta(){ const a=state.me&&state.me.analysis; const t=$('analyzeCtaText'); const b=$('btnAnalyzeGo'); if(!t) return; if(a){ const parts=[SHAPE_LABEL[a.body_shape],FACE_LABEL[a.face_shape],TONE_LABEL[a.skin_tone]].filter(Boolean); t.textContent=parts.length?`已套用你的身形：${parts.join('・')}。合成會依真實比例調整。`:'已套用你的身形分析，合成會依真實比例調整。'; b.textContent='查看報告'; } else { t.textContent='填身高體重，合成會更貼合你的身形。'; b.textContent='我的身形'; } }
+
+/* ---------- 量身（瀏覽器端 MediaPipe Pose＋輪廓遮罩）與合身度引擎 ---------- */
+// 照片只在這台裝置上分析，不會上傳。模型第一次使用時才下載（約 30 MB），之後瀏覽器會快取。
+const MP_BASE='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const POSE_MODELS=['https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task','https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'];
+const withTimeout=(p,ms)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(Object.assign(new Error('timeout'),{code:'LOAD'})),ms))]);
+let visionP=null, poseP=null;
+function loadVision(){ if(!visionP) visionP=withTimeout((async()=>{ const v=await import(MP_BASE+'/vision_bundle.mjs'); const files=await v.FilesetResolver.forVisionTasks(MP_BASE+'/wasm'); return {v,files}; })(),45000).catch(e=>{ visionP=null; throw Object.assign(e instanceof Error?e:new Error(String(e)),{code:'LOAD'}); }); return visionP; }
+function getPose(){
+  if(!poseP) poseP=(async()=>{ const {v,files}=await loadVision(); let last=null;
+    for(const model of POSE_MODELS) for(const delegate of ['GPU','CPU']){ try{ return await withTimeout(v.PoseLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:model,delegate},runningMode:'IMAGE',numPoses:1,outputSegmentationMasks:true,minPoseDetectionConfidence:0.5,minPosePresenceConfidence:0.5}),90000); }catch(e){ last=e; } }
+    throw Object.assign(last||new Error('pose'),{code:'LOAD'}); })().catch(e=>{ poseP=null; if(!e.code) e.code='LOAD'; throw e; });
+  return poseP;
+}
+// 回傳 {lm:[33 個正規化點], mask:Float32Array(0–1), mw, mh}
+async function runPose(src){
+  const lmk=await getPose(); const im=typeof src==='string'?await loadImg(src):src;
+  const s=Math.min(1,960/Math.max(im.width,im.height)); const c=document.createElement('canvas'); c.width=Math.round(im.width*s); c.height=Math.round(im.height*s); c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+  const r=lmk.detect(c); const lm=r&&r.landmarks&&r.landmarks[0]; let mask=null,mw=c.width,mh=c.height;
+  try{ const mk=r.segmentationMasks&&r.segmentationMasks[0]; if(mk){ mw=mk.width; mh=mk.height; mask=new Float32Array(mk.getAsFloat32Array()); } }catch{}
+  try{ (r.segmentationMasks||[]).forEach(m=>m&&m.close&&m.close()); }catch{}
+  if(!lm) throw Object.assign(new Error('no person'),{code:'NO_PERSON'});
+  return {lm:lm.map(p=>({x:p.x,y:p.y,visibility:p.visibility==null?1:p.visibility})), mask, mw, mh};
+}
+
+/* ---- 純數學（window.__tryon.fit 可單元測試） ---- */
+const r1=x=>Math.round(x*10)/10;
+// Ramanujan 第二近似：寬 width、厚 depth 的橢圓周長
+function ellipseCirc(width, depth){ const a=width/2, b=depth/2; if(!(a>0&&b>0)) return null; const h=((a-b)/(a+b))**2; return Math.PI*(a+b)*(1+3*h/(10+Math.sqrt(4-3*h))); }
+// 沒有側面照時：厚度 = 寬度 × 比例（依 BMI 微調）
+function depthRatio(zone,bmi){ const base={chest:.72,waist:.70,hip:.78}[zone]||.72; const r=base+((bmi||21)-21)*0.008; return Math.max(base-0.08,Math.min(base+0.14,r)); }
+// 身高換算：頭頂（遮罩最上緣）到腳底（腳跟／腳尖／遮罩最下緣）＝ 身高
+function cmPerPx(topY, footY, heightCm){ const px=footY-topY; return px>10&&heightCm>0 ? heightCm/px : null; }
+function rowCount(mask,mw,y,x0,x1){ let n=0; for(let x=Math.max(0,x0);x<=Math.min(mw-1,x1);x++) if(mask[y*mw+x]>0.5) n++; return n; }
+function maskTopY(mask,mw,mh,x0,x1,yMax){ for(let y=0;y<=Math.min(mh-1,yMax);y++) if(rowCount(mask,mw,y,x0,x1)>=2) return y; return null; }
+function maskBottomY(mask,mw,mh,x0,x1,yFrom,yTo){ const need=Math.max(3,Math.round((x1-x0)*0.08)); let b=null; for(let y=Math.max(0,yFrom);y<=Math.min(mh-1,yTo);y++){ if(rowCount(mask,mw,y,x0,x1)>=need) b=y; else if(b!=null) break; } return b; }
+// 第 y 列、包含 cx 的連續人形像素區段 [l, r)
+function rowRun(mask,mw,mh,y,cx){
+  y=Math.round(y); if(!mask||y<0||y>=mh) return null; const at=x=>mask[y*mw+x]>0.5; let x0=Math.round(cx); if(x0<0||x0>=mw) return null;
+  if(!at(x0)){ let f=-1; const lim=Math.max(4,Math.round(mw*0.02)); for(let d=1;d<=lim;d++){ if(x0-d>=0&&at(x0-d)){f=x0-d;break;} if(x0+d<mw&&at(x0+d)){f=x0+d;break;} } if(f<0) return null; x0=f; }
+  let l=x0,r=x0; while(l>0&&at(l-1)) l--; while(r<mw-1&&at(r+1)) r++; return {l, r:r+1};
+}
+// 由關節點＋遮罩找出肩／胸／腰／臀的水平線與輪廓寬度（像素）
+function poseGeometry(p){
+  const {lm,mask,mw,mh}=p||{}; if(!lm||lm.length<33) return null;
+  const P=i=>({x:lm[i].x*mw,y:lm[i].y*mh,v:lm[i].visibility==null?1:lm[i].visibility});
+  const ls=P(11),rs=P(12),lh=P(23),rh=P(24),nose=P(0);
+  const shY=(ls.y+rs.y)/2, hipJ=(lh.y+rh.y)/2, T=hipJ-shY; if(!(T>4)) return null;
+  const cx=(ls.x+rs.x+lh.x+rh.x)/4, shPx=Math.hypot(ls.x-rs.x,ls.y-rs.y), hipPx=Math.hypot(lh.x-rh.x,lh.y-rh.y);
+  const feet=[27,28,29,30,31,32].map(P).filter(q=>q.v>0.3); let foot=feet.length?Math.max(...feet.map(q=>q.y)):null;
+  let top=null;
+  if(mask){ const hw=Math.max(6,shPx*0.6); top=maskTopY(mask,mw,mh,Math.round(nose.x-hw),Math.round(nose.x+hw),Math.round(nose.y)); }
+  if(top==null) top=nose.y-(shY-nose.y)*0.75;
+  if(mask&&foot!=null){ const xs=feet.map(q=>q.x), pad=Math.max(6,(foot-top)*0.06); const b=maskBottomY(mask,mw,mh,Math.round(Math.min(...xs)-pad),Math.round(Math.max(...xs)+pad),Math.round(foot),Math.round(foot+(foot-top)*0.04)); if(b!=null) foot=Math.max(foot,b+1); }
+  const bodyPx=foot!=null?foot-top:null;
+  const armHalf=(bodyPx||T*3.4)*0.028;
+  const chains=[[11,13,15,19],[12,14,16,20]].map(c=>c.map(P));
+  const armXAt=(ch,y)=>{ for(let i=0;i<ch.length-1;i++){ const a=ch[i],b=ch[i+1]; if(a.v<0.3||b.v<0.3) continue; const lo=Math.min(a.y,b.y),hi=Math.max(a.y,b.y); if(y>=lo&&y<=hi&&hi-lo>0.5) return a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y); } return null; };
+  // 手臂貼著身體時，輪廓會連在一起：在手臂內緣切開（手放在身體前面就不切）
+  const torsoAt=(y,cut=true)=>{ const run=rowRun(mask,mw,mh,y,cx); if(!run) return null; let {l,r}=run;
+    if(cut) for(const ch of chains){ const ax=armXAt(ch,y); if(ax==null||Math.abs(ax-cx)<shPx*0.3) continue; if(ax>l&&ax<r){ if(ax<cx) l=Math.max(l,ax+armHalf); else r=Math.min(r,ax-armHalf); } }
+    return r>l?{y:Math.round(y),l,r}:null; };
+  const rows={};
+  if(mask){
+    rows.shoulder=torsoAt(shY+0.04*T,false); rows.chest=torsoAt(shY+0.33*T);
+    let best=null; for(let y=shY+0.55*T;y<=shY+0.85*T;y+=1){ const q=torsoAt(y); if(q&&(!best||q.r-q.l<best.r-best.l)) best=q; } rows.waist=best;
+    best=null; for(let y=hipJ-0.05*T;y<=hipJ+0.15*T;y+=1){ const q=torsoAt(y); if(q&&(!best||q.r-q.l>best.r-best.l)) best=q; } rows.hip=best;
+  }
+  const avgY=(a,b)=>(P(a).y+P(b).y)/2;
+  return {mw,mh,top,foot,bodyPx,shY,hipJ,T,cx,shPx,hipPx,rows,kneeY:avgY(25,26),ankleY:avgY(27,28),wrists:[P(15),P(16)],feet:[P(31),P(32)],P};
+}
+const mErr=(code,msg)=>Object.assign(new Error(msg),{code});
+// 體重推估的常見範圍（只當成合理性檢查）
+function regressCirc(H,bmi,g){ return g==='m' ? {chest:H*0.545*(1+(bmi-22)*0.02), waist:H*(0.45+(bmi-22)*0.014), hip:H*(0.555+(bmi-22)*0.011)} : {chest:H*0.53*(1+(bmi-21)*0.022), waist:H*(0.415+(bmi-21)*0.013), hip:H*(0.565+(bmi-21)*0.013)}; }
+// fp/sp：runPose 的結果；o：{height, weight, gender, loose, llm:{bust,waist,hip}}
+function measureFromPose(fp, sp, o){
+  const H=+o.height; if(!(H>=100&&H<=230)) throw mErr('NO_HEIGHT','請先填身高');
+  const g=poseGeometry(fp); if(!g) throw mErr('NO_PERSON','照片裡找不到清楚的人像，請換一張正面、全身入鏡的照片。');
+  const P=g.P, vis=i=>P(i).v;
+  if(vis(0)<0.6||vis(27)<0.6||vis(28)<0.6||!g.bodyPx||g.bodyPx<g.T*2.4) throw mErr('NOT_FULL','沒有拍到完整的全身：頭頂到腳底都要在畫面裡（腳不要被裁掉），請重拍一張。');
+  if(!fp.mask) throw mErr('NO_MASK','這張照片抓不到身體輪廓，換一張背景乾淨、光線均勻的照片試試。');
+  if(g.shPx/g.T<0.42||g.hipPx/g.shPx<0.4||g.hipPx/g.shPx>1.1) throw mErr('NOT_FRONT','看起來是側身或轉了角度：量身要用正面照，請面對鏡頭站直再拍一張。');
+  if(!g.rows.chest||!g.rows.waist||!g.rows.hip) throw mErr('NO_MASK','抓不到胸、腰、臀的輪廓：請穿貼身一點的衣服、雙手微微離開身體，再拍一張。');
+  const cm=cmPerPx(g.top,g.foot,H); const flags=[];
+  const wOf=k=>(g.rows[k].r-g.rows[k].l)*cm;
+  // 肩寬：關節點距離 ×1.12（關節中心→肩峰）與肩線輪廓 ×0.90（扣三角肌）取平均
+  const shLm=g.shPx*1.12*cm; let shoulder=shLm; if(g.rows.shoulder){ const sil=wOf('shoulder')*0.9; if(Math.abs(sil-shLm)/shLm<0.2) shoulder=(sil+shLm)/2; }
+  const W={chest:wOf('chest'),waist:wOf('waist'),hip:wOf('hip')};
+  const seg=(a,b)=>Math.hypot(P(a).x-P(b).x,P(a).y-P(b).y);
+  const arms=[[11,13,15],[12,14,16]].filter(c=>c.every(i=>vis(i)>0.5)).map(c=>(seg(c[0],c[1])+seg(c[1],c[2]))*cm+2);   // +2：肩關節中心到肩峰
+  const arm=arms.length?arms.reduce((a,b)=>a+b)/arms.length:null;
+  const inseam=(seg(23,27)+seg(24,28))/2*cm*0.92, leg=(g.foot-g.hipJ)*cm, torso=g.T*cm;
+  const bmi=o.weight?o.weight/((H/100)**2):null;
+  // 側面照：同一個身高比例的那一列量厚度
+  let depth={}, side=false, gs=null, cmS=null;
+  if(sp){ gs=poseGeometry(sp);
+    const ok=gs&&sp.mask&&gs.bodyPx&&gs.bodyPx>gs.T*2.4&&gs.P(27).v>0.5&&gs.P(28).v>0.5&&gs.shPx/gs.T<0.42;
+    if(!ok){ flags.push('side_bad'); gs=null; }
+    else { cmS=cmPerPx(gs.top,gs.foot,H); side=true;
+      for(const k of ['chest','waist','hip']){ const f=(g.rows[k].y-g.top)/g.bodyPx; let best=null;
+        for(let dy=-2;dy<=2;dy++){ const q=rowRun(sp.mask,sp.mw,sp.mh,gs.top+f*gs.bodyPx+dy*gs.bodyPx*0.004,gs.cx); if(q){ const ww=q.r-q.l; best=best==null?ww:(k==='waist'?Math.min(best,ww):Math.max(best,ww)); } }
+        if(best!=null){ const d=best*cmS, rr=d/W[k]; if(rr>=0.45&&rr<=1.1) depth[k]=d; else flags.push('side_'+k); } } } }
+  const FACT={chest:1.03,waist:1.0,hip:1.02};   // 胸廓與臀部比橢圓稍方
+  const vals={height:H, weight:o.weight||null, shoulder:r1(shoulder), arm:arm?r1(arm):null, leg:r1(leg), inseam:r1(inseam), torso:r1(torso)};
+  const unc={height:0, weight:0, shoulder:1.5, arm:2, leg:2, inseam:2, torso:2}; const meta={};
+  const reg=bmi?regressCirc(H,bmi,o.gender):null; const outl=[];
+  for(const k of ['chest','waist','hip']){
+    const fromSide=depth[k]!=null; const D=fromSide?depth[k]:W[k]*depthRatio(k,bmi||21);
+    let c=ellipseCirc(W[k],D)*FACT[k]; if(o.loose) c-=2;
+    const llm=o.llm&&+o.llm[k==='chest'?'bust':k]; if(llm>40&&llm<200) c=c*0.75+llm*0.25;
+    let u=fromSide?2:4;
+    if(reg&&Math.abs(c-reg[k])/reg[k]>0.12){ c=c*0.7+reg[k]*0.3; u+=2; outl.push(k); }
+    vals[k]=r1(c); unc[k]=u; meta[k]={w:r1(W[k]),d:r1(D),side:fromSide};
+  }
+  if(outl.length) flags.push('outlier:'+outl.join(','));
+  // 腳長：側面照量腳跟到腳尖，否則用身高比例估
+  let foot=null; if(gs){ const fl=[[29,31],[30,32]].filter(c=>gs.P(c[0]).v>0.5&&gs.P(c[1]).v>0.5).map(c=>Math.abs(gs.P(c[0]).x-gs.P(c[1]).x)*cmS*1.04); if(fl.length){ const f=Math.max(...fl); if(f/H>0.13&&f/H<0.17) foot=f; } }
+  vals.foot=r1(foot||H*(o.gender==='m'?0.153:0.151)); unc.foot=foot?0.7:1.5; meta.foot={est:!foot};
+  const drops={waist:r1((g.rows.waist.y-g.shY)*cm), hip:r1((g.rows.hip.y-g.shY)*cm), crotch:r1((g.hipJ+0.2*g.T-g.shY)*cm), knee:r1((g.kneeY-g.shY)*cm)};
+  const nr=q=>q?{y:q.y/g.mh,l:q.l/g.mw,r:q.r/g.mw}:null;
+  const geo={ar:g.mw/g.mh, top:g.top/g.mh, foot:g.foot/g.mh, rows:{shoulder:g.rows.shoulder?nr(g.rows.shoulder):{y:g.shY/g.mh,l:(g.cx-g.shPx*0.56)/g.mw,r:(g.cx+g.shPx*0.56)/g.mw}, chest:nr(g.rows.chest), waist:nr(g.rows.waist), hip:nr(g.rows.hip)}};
+  return {v:1, at:new Date().toISOString(), gender:o.gender||'f', side, loose:!!o.loose, vals, unc, manual:{}, meta, drops, flags, geo, src:'photo'};
+}
+
+/* ---- 量身結果：存取、同步 ---- */
+let measureCache=null;
+function loadMeasure(){ if(measureCache) return measureCache; try{ const s=localStorage.getItem('tryon.measure'); if(s){ measureCache=JSON.parse(s); return measureCache; } }catch{} const b=state.me&&state.me.body&&state.me.body.measure; if(b&&b.vals){ measureCache={...b, manual:b.manual||{}, flags:[]}; return measureCache; } return null; }
+const mval=(M,k)=>!M?null:(M.manual&&M.manual[k]!=null?M.manual[k]:(M.vals||{})[k]??null);
+let measureSaveT=null;
+function saveMeasure(M){
+  measureCache=M; try{ localStorage.setItem('tryon.measure', JSON.stringify(M)); }catch{}
+  clearTimeout(measureSaveT); measureSaveT=setTimeout(()=>{ if(!supa||!state.user) return; const v=k=>mval(M,k); const prev=(state.me&&state.me.body)||{};
+    const body={...prev, height:v('height')||prev.height||null, weight:v('weight')||prev.weight||null, gender:M.gender||prev.gender, bust:v('chest'), waist:v('waist'), hip:v('hip'), shoulder:v('shoulder'), arm:v('arm'), inseam:v('inseam'), foot:v('foot'), measure:{v:M.v, at:M.at, side:M.side, gender:M.gender, vals:M.vals, unc:M.unc, manual:M.manual, drops:M.drops}};
+    if(state.me) state.me.body=body;
+    try{ supa.from('profiles').update({body}).eq('id',state.user.id).then(()=>{},()=>{}); }catch{} },800);
+}
+function syncMeasureToFit(M){
+  if(!M) return; const v=k=>mval(M,k); const set=(id,x,half)=>{ if(x!=null&&$(id)) $(id).value=half?Math.round(x*2)/2:Math.round(x); };
+  set('fHeight',v('height')); set('fBust',v('chest')); set('fWaist',v('waist')); set('fHip',v('hip'));
+  if(v('foot')!=null&&((M.manual&&M.manual.foot!=null)||M.side||!$('fFoot').value)) set('fFoot',v('foot'),true);
+  if(v('chest')) $('fitHint').textContent=`已帶入量身結果（胸 ${Math.round(v('chest'))}／腰 ${Math.round(v('waist'))}／臀 ${Math.round(v('hip'))} cm）。拿皮尺量過的數字可以直接改。`;
+  renderSlots();
+}
+// 尺寸建議用的身體數字：試衣間「尺寸建議」的欄位優先（使用者可能自己改過），其餘用量身結果
+function getBody(){
+  const M=loadMeasure(); const mv=k=>mval(M,k); const num=id=>{ const el=$(id); const v=el?+el.value:0; return v>0?v:null; };
+  const height=num('fHeight')||mv('height')||num('bHeight');
+  const b={height, weight:mv('weight')||num('bWeight'), chest:num('fBust')||mv('chest'), waist:num('fWaist')||mv('waist'), hip:num('fHip')||mv('hip'), foot:num('fFoot')||mv('foot'), shoulder:mv('shoulder'), arm:mv('arm'), inseam:mv('inseam'), leg:mv('leg'), drops:(M&&M.drops)||null, measured:!!(M&&M.src==='photo')};
+  // 只有「衣長落點」用身高比例補（誤差約 ±3 cm）；肩寬、手臂、內長沒量就不判斷
+  if(height&&!b.drops) b.drops={waist:r1(height*0.19),hip:r1(height*0.31),crotch:r1(height*0.35),knee:r1(height*0.53),est:true};
+  if(b.hip) b.thigh=r1(b.hip*0.59);
+  return b;
+}
+const hasBodyFor=(t,b)=>!!b&&(t==='top'?!!b.chest:t==='bottom'?!!(b.waist||b.hip):t==='dress'?!!(b.chest||b.waist||b.hip):t==='shoes'?!!b.foot:false);
+function bodyPayload(){ const b=getBody(); const o={height_cm:b.height, weight_kg:b.weight, chest_cm:b.chest, waist_cm:b.waist, hip_cm:b.hip, shoulder_cm:b.shoulder, inseam_cm:b.inseam}; for(const k in o){ if(o[k]==null) delete o[k]; else o[k]=r1(+o[k]); } return Object.keys(o).length?o:undefined; }
+
+/* ---- 商品尺寸表 ---- */
+const scMem=new Map(), scInflight=new Map();
+function numOrRange(v,u){ if(Array.isArray(v)){ const a=+v[0],b=+v[1]; if(a>0&&b>0) return [Math.min(a,b)*u,Math.max(a,b)*u]; return a>0?a*u:null; } if(typeof v==='string'){ const m=v.match(/(\d+(?:\.\d+)?)\s*[-–~]\s*(\d+(?:\.\d+)?)/); if(m) return [+m[1]*u,+m[2]*u]; } const n=+v; return n>0&&isFinite(n)?n*u:null; }
+const SC_ALIAS={bust:'chest',chest:'chest',shoulder:'shoulder',length:'length',sleeve:'sleeve',waist:'waist',hip:'hip',hips:'hip',inseam:'inseam',thigh:'thigh',foot:'foot',foot_length:'foot'};
+function normChart(raw){
+  if(!raw||typeof raw!=='object'||!raw.sizes||typeof raw.sizes!=='object') return null;
+  const u=/^in/.test(String(raw.unit||'cm').toLowerCase())?2.54:1; const sizes={};
+  for(const [sz,o] of Object.entries(raw.sizes)){ if(!o||typeof o!=='object') continue; const m={}; for(const [k,v] of Object.entries(o)){ const kk=SC_ALIAS[String(k).toLowerCase()]; if(!kk) continue; const n=numOrRange(v,u); if(n!=null) m[kk]=n; } if(Object.keys(m).length) sizes[String(sz)]=m; }
+  if(!Object.keys(sizes).length) return null;
+  return {kind:raw.kind==='body'?'body':'garment', fit_type:String(raw.fit_type||'regular').toLowerCase(), sizes};
+}
+function scGet(pid){ if(pid==null) return null; const k=String(pid); if(scMem.has(k)) return scMem.get(k); try{ const s=sessionStorage.getItem('tryon.sc.'+k); if(s!=null){ const v=s==='null'?null:normChart(JSON.parse(s)); scMem.set(k,v); return v; } }catch{} return undefined; }
+function ensureChart(pid){
+  if(pid==null||!CONFIG.WORKER_URL) return Promise.resolve(null); const k=String(pid); const have=scGet(k); if(have!==undefined) return Promise.resolve(have); if(scInflight.has(k)) return scInflight.get(k);
+  const p=fetch(CONFIG.WORKER_URL+'/api/sizechart?id='+encodeURIComponent(k)).then(async r=>{ if(r.status===404) return null; if(!r.ok) throw new Error('sc '+r.status); return r.json(); })
+    .then(raw=>{ const src=raw&&raw.chart&&raw.chart.sizes?raw.chart:raw; const v=normChart(src); scMem.set(k,v); try{ sessionStorage.setItem('tryon.sc.'+k, v?JSON.stringify(src):'null'); }catch{} return v; })
+    .catch(()=>{ scMem.set(k,null); return null; })   // 暫時失敗：這次開啟期間不再重試（避免一直打）
+    .finally(()=>scInflight.delete(k));
+  scInflight.set(k,p); return p;
+}
+
+/* ---- 合身度引擎 ---- */
+const FIT_TYPES=['top','bottom','dress','shoes'];
+const FT_SHIFT={slim:-3,fitted:-3,regular:0,relaxed:4,loose:4,oversized:10,oversize:10,cropped:0};
+const ZONE_ORDER=['shoulder','chest','waist','hip','thigh','length','sleeve','inseam','foot'];
+const midv=v=>Array.isArray(v)?(v[0]+v[1])/2:v;
+// ease 落在哪一段：< tb 緊、tb–lo 微緊、lo–hi 剛好、> hi 鬆；delta = 超出該段邊界的公分數
+function bandZone(zone, ease, B){ let verdict,d; if(ease<B.tb){verdict='tight';d=ease-B.tb;} else if(ease<B.lo){verdict='snug';d=ease-B.lo;} else if(ease<=B.hi){verdict='fit';d=0;} else {verdict='loose';d=ease-B.hi;} return {zone,verdict,delta_cm:r1(d),ease:r1(ease)}; }
+const shiftB=(B,s,k)=>({tb:B.tb+Math.min(s*k,2), lo:B.lo+s*k, hi:B.hi+s*k});
+// 身體尺寸表：身體數字落在範圍內＝剛好；超過上限＝緊；低於下限＝鬆
+function bodyZone(zone, range, v, tol=2){ const [a,b]=Array.isArray(range)?range:[range-tol,range+tol]; let d=0; if(v>b) d=b-v; else if(v<a) d=a-v; const verdict=d<-tol?'tight':d<0?'snug':d>tol*2?'loose':'fit'; return {zone,verdict,delta_cm:r1(verdict==='fit'?0:d)}; }
+function endLabel(end,D,lang){ const zh=['到腰上','到腰','到臀部中間','蓋過臀部','到大腿','到膝蓋','過膝'], en=['above the waist','at the waist','at mid-hip','covering the hips','at mid-thigh','at the knee','below the knee']; const i=end<D.waist-3?0:end<(D.waist+D.hip)/2?1:end<D.hip+3?2:end<D.crotch+4?3:end<D.knee-10?4:end<D.knee+4?5:6; return (lang==='en'?en:zh)[i]; }
+function lengthZone(t, L, b, ft){ const D=b.drops; const end=L-4;   // 衣長從肩頸點量，比肩線高約 4 cm
+  let lo,hi; if(t==='dress'){ lo=D.crotch; hi=999; } else if(ft==='cropped'){ lo=D.waist-8; hi=D.waist+4; } else if(ft==='oversized'||ft==='oversize'||ft==='long'){ lo=D.hip-2; hi=D.crotch+14; } else { lo=D.hip-6; hi=D.crotch+4; }
+  const verdict=end<lo?'short':end>hi?'long':'fit'; return {zone:'length',verdict,delta_cm:r1(verdict==='short'?end-lo:verdict==='long'?end-hi:0),end_cm:r1(end),end_label:endLabel(end,D)}; }
+function sleeveZone(S, b, gShoulder){ const eff=S+Math.max(0,gShoulder&&b.shoulder?(gShoulder-b.shoulder)/2:0); if(eff<b.arm*0.7) return null;   // 短袖不判斷
+  const d=eff-b.arm; return {zone:'sleeve',verdict:d<-2?'short':d>4?'long':'fit',delta_cm:r1(d)}; }
+function inseamZone(I, b, ft){ const tgt=ft==='cropped'?-6:0; const d=I-b.inseam-tgt; return {zone:'inseam',verdict:d<-2?'short':d>2?'long':'fit',delta_cm:r1(d)}; }
+function footZone(e){ let verdict,d; if(e<0){verdict='tight';d=e;} else if(e<0.3){verdict='snug';d=e-0.5;} else if(e<=1.5){verdict='fit';d=0;} else {verdict='loose';d=e-1;} return {zone:'foot',verdict,delta_cm:r1(d)}; }
+const ZONES_FOR={top:['shoulder','chest','length','sleeve'],bottom:['waist','hip','thigh','inseam'],dress:['shoulder','chest','waist','hip','length'],shoes:['foot']};
+function chartZones(t, g, b, ch){
+  const s=FT_SHIFT[ch.fit_type]??0, out=[], G=k=>g[k]!=null?midv(g[k]):null, want=ZONES_FOR[t]||[], body=ch.kind==='body';
+  for(const z of want){
+    if(z==='length'){ if(G('length')&&b.drops) out.push(lengthZone(t,G('length'),b,ch.fit_type)); continue; }
+    if(z==='sleeve'){ if(G('sleeve')&&b.arm){ const q=sleeveZone(G('sleeve'),b,body?null:G('shoulder')); if(q) out.push(q); } continue; }
+    if(z==='inseam'){ if(G('inseam')&&b.inseam) out.push(inseamZone(G('inseam'),b,ch.fit_type)); continue; }
+    const bv=b[z]; if(g[z]==null||!bv) continue;
+    if(body){ out.push(bodyZone(z,g[z],bv,z==='foot'?0.5:2)); continue; }
+    const e=G(z)-bv;
+    if(z==='foot') out.push(footZone(e));
+    else if(z==='shoulder'){ const extra=Math.max(0,s)*0.5; out.push(bandZone(z,e,{tb:-1.5,lo:-1.5,hi:2.5+extra})); }
+    else if(z==='chest') out.push(bandZone(z,e,shiftB({tb:0,lo:4,hi:12},s,1)));
+    else if(z==='waist') out.push(bandZone(z,e,t==='dress'?shiftB({tb:0,lo:2,hi:10},s,.6):shiftB({tb:-2,lo:0,hi:4},s,.3)));
+    else if(z==='hip') out.push(bandZone(z,e,t==='dress'?shiftB({tb:0,lo:4,hi:14},s,1):shiftB({tb:0,lo:3,hi:10},s,.8)));
+    else if(z==='thigh') out.push(bandZone(z,e,shiftB({tb:0,lo:3,hi:10},s,.8)));
+  }
+  return out;
+}
+function shoeSizeCm(size, g){ const s=String(size); let m=s.match(/(\d{2}(?:\.\d)?)\s*cm/i); if(m) return +m[1]; m=s.match(/EU\s*(\d{2}(?:\.\d)?)/i); if(m){ const r=SHOE_TABLE.find(x=>x[1]==+m[1]); if(r) return r[0]; } m=s.match(/US\s*(\d{1,2}(?:\.\d)?)/i); if(m){ const r=SHOE_TABLE.find(x=>x[g==='m'?3:2]==+m[1]); if(r) return r[0]; } const n=parseFloat(s); if(n>=20&&n<=32) return n; if(n>=34&&n<=48){ const r=SHOE_TABLE.find(x=>x[1]==n); if(r) return r[0]; } return null; }
+function fitFor(item, size, body){
+  if(!item||!size||!body) return null; const t=item.type; if(!FIT_TYPES.includes(t)) return null;
+  const ch=item.product_id!=null?scGet(item.product_id):null; const gnd=(item.pgender==='m'||item.pgender==='f')?item.pgender:fitGender;
+  let zones=[], src='';
+  if(ch&&ch.sizes[size]){ src='chart'; zones=chartZones(t,ch.sizes[size],body,ch); }
+  else if(t==='shoes'){ const c=shoeSizeCm(size,gnd); if(c&&body.foot){ zones=[footZone(c-body.foot)]; src='table'; } }
+  else { const bc=BRAND_CHARTS[brandKey(item.brand)]; const row=(bc[gnd]||bc.f)[size]; if(row){ src='brand'; for(const d of dimsFor(t)){ const z=d==='bust'?'chest':d; if(body[z]&&row[d]) zones.push(bodyZone(z,row[d],body[z])); } } }
+  zones=zones.filter(Boolean).sort((a,b)=>ZONE_ORDER.indexOf(a.zone)-ZONE_ORDER.indexOf(b.zone)); if(!zones.length) return null;
+  return {type:t, size:String(size), zones, src, summary_zh:summarize(size,zones,'zh',t), summary_en:summarize(size,zones,'en',t)};
+}
+function fitCost(zones){ let c=0; for(const z of zones){ const a=Math.abs(z.delta_cm||0); if(z.verdict==='tight') c+=100+a*10; else if(z.verdict==='snug') c+=a*2; else if(z.verdict==='loose') c+=(z.zone==='shoulder'?0:5)+a*1.5; else if(z.verdict==='short'||z.verdict==='long') c+=a*(z.zone==='length'?0.6:1.2); } return c; }
+// 推薦：先避免「緊」，再挑最接近剛好的
+function recommendFit(item, sizes, body){ let best=null; for(const s of sizes){ const f=fitFor(item,s,body); if(!f) continue; const cost=fitCost(f.zones); if(!best||cost<best.cost-1e-9) best={...f,cost}; } return best; }
+const ZN={chest:['胸','胸口','chest'],shoulder:['肩','肩線','shoulders'],waist:['腰','腰圍','waist'],hip:['臀','臀圍','hips'],thigh:['大腿','大腿','thighs'],length:['衣長','衣長','hem'],sleeve:['袖','袖長','sleeves'],inseam:['褲長','褲長','inseam'],foot:['鞋','鞋長','length']};
+const VW={tight:'緊',snug:'微緊',fit:'剛好',loose:'鬆',short:'短',long:'長'};
+const absr=d=>Math.max(1,Math.round(Math.abs(d||0)));
+function pillText(z,t){ const n=(z.zone==='length'&&t==='dress')?'裙長':ZN[z.zone][0]; if(z.zone==='length'&&z.verdict==='fit') return `${n} ${String(z.end_label||'剛好').replace('到臀部中間','到臀中')}`; if(z.zone==='shoulder'&&z.verdict==='loose') return Math.abs(z.delta_cm||0)<=2?'肩 略寬':`肩 落肩 ${absr(z.delta_cm)}cm`; if(z.verdict==='fit') return `${n} 剛好`; if(z.zone==='foot') return `${n} ${VW[z.verdict]} ${Math.abs(z.delta_cm||0).toFixed(1).replace(/\.0$/,'')}cm`; return `${n} ${VW[z.verdict]} ${absr(z.delta_cm)}cm`; }
+function summarize(size, zones, lang, t){
+  const zh=lang!=='en';
+  const parts=(zones||[]).map(z=>{ const a=absr(z.delta_cm), N=ZN[z.zone]||[z.zone,z.zone,z.zone], v=z.verdict;
+    if(z.zone==='length'){ const nm=t==='dress'?(zh?'裙長':'hem'):(zh?'衣長':'hem'); const where=z.end_label?(zh?z.end_label:(z.end_cm!=null?'':'')):''; const base=zh?`${nm}${where}`:`hem ${z.end_label?endLabelEn(z.end_label):'length ok'}`; return v==='short'?(zh?`${base}，偏短 ${a} 公分`:`${base}, ${a} cm short`):v==='long'?(zh?`${base}，偏長 ${a} 公分`:`${base}, ${a} cm long`):base; }
+    if(z.zone==='foot'){ const d=Math.abs(z.delta_cm||0).toFixed(1).replace(/\.0$/,''); return zh?({tight:`鞋子偏緊約 ${d} 公分`,snug:'鞋子剛好偏貼',fit:'鞋長剛好',loose:`鞋子偏大約 ${d} 公分`})[v]:({tight:`about ${d} cm too short`,snug:'snug fit',fit:'length fits',loose:`about ${d} cm too long`})[v]; }
+    if(zh){ if(z.zone==='shoulder') return ({tight:`肩線偏窄約 ${a} 公分`,snug:'肩線略貼',fit:'肩線剛好',loose:Math.abs(z.delta_cm||0)<=2?'肩線略寬':`落肩約 ${a} 公分`})[v];
+      if(z.zone==='sleeve'||z.zone==='inseam') return ({short:`${N[1]}略短 ${a} 公分`,long:`${N[1]}偏長 ${a} 公分`,fit:`${N[1]}剛好`})[v]||`${N[1]}剛好`;
+      return ({tight:`${N[1]}偏緊約 ${a} 公分`,snug:`${N[1]}略貼身`,fit:`${N[1]}剛好`,loose:`${N[1]}寬鬆約 ${a} 公分`})[v]; }
+    if(z.zone==='shoulder') return ({tight:`shoulders ~${a} cm narrow`,snug:'shoulders snug',fit:'shoulders fit',loose:Math.abs(z.delta_cm||0)<=2?'shoulders slightly wide':`dropped shoulders ~${a} cm`})[v];
+    if(z.zone==='sleeve'||z.zone==='inseam') return ({short:`${N[2]} ${a} cm short`,long:`${N[2]} ${a} cm long`,fit:`${N[2]} fit`})[v]||`${N[2]} fit`;
+    return ({tight:`${N[2]} tight by ~${a} cm`,snug:`${N[2]} snug`,fit:`${N[2]} fits`,loose:`${N[2]} loose by ~${a} cm`})[v];
+  }).filter(Boolean);
+  return zh?`${size} 號：${parts.join('、')}`:`Size ${size}: ${parts.join(', ')}`;
+}
+function endLabelEn(zhLabel){ const zh=['到腰上','到腰','到臀部中間','蓋過臀部','到大腿','到膝蓋','過膝'], en=['above the waist','at the waist','at mid-hip','covering the hips','at mid-thigh','at the knee','below the knee']; const i=zh.indexOf(zhLabel); return i>=0?en[i]:zhLabel; }
+const VERDICT_RANK=['tight','snug','short','long','loose','fit'];
+const worstVerdict=zones=>(zones||[]).map(z=>z.verdict).sort((a,b)=>VERDICT_RANK.indexOf(a)-VERDICT_RANK.indexOf(b))[0]||'fit';
+function fitBarHTML(f){ return f&&f.zones&&f.zones.length?`<div class="fitbar">${f.zones.map(z=>`<span class="fz ${z.verdict}">${esc(pillText(z,f.type))}</span>`).join('')}</div>`:''; }
+
+/* ---- 尺寸選擇：試衣間格子／單品頁／商品頁共用 ---- */
+const pendingSize={};
+try{ Object.assign(fitSizes, JSON.parse(localStorage.getItem('tryon.fitSizes')||'{}')); }catch{}
+function saveFitSizes(){ try{ localStorage.setItem('tryon.fitSizes', JSON.stringify(fitSizes)); }catch{} }
+function sizeOptions(item){
+  const t=item.type, ch=item.product_id!=null?scGet(item.product_id):null, own=(item.sizes||[]).map(String).filter(Boolean);
+  if(ch) return own.length?own:Object.keys(ch.sizes);
+  if(t==='top'||t==='bottom'||t==='dress'){ const bc=BRAND_CHARTS[brandKey(item.brand)]; const g=(item.pgender==='m'||item.pgender==='f')?item.pgender:fitGender; const keys=Object.keys(bc[g]||bc.f); const avail=own.filter(x=>keys.includes(x)); return avail.length?avail:keys; }
+  return own;
+}
+function slotFit(type, body){
+  const v=state.slots[type]; if(!v||!FIT_TYPES.includes(type)) return null; body=body||getBody(); const item={type,...v}; const chosen=fitSizes[type];
+  if(!hasBodyFor(type,body)) return chosen?{type,size:chosen,zones:[],summary_zh:'',summary_en:''}:null;
+  if(chosen) return fitFor(item,chosen,body)||{type,size:chosen,zones:[],summary_zh:'',summary_en:''};
+  return recommendFit(item,sizeOptions(item),body);
+}
+function slotBadge(type){ if(!FIT_TYPES.includes(type)) return ''; let f=null; try{ f=slotFit(type); }catch{} if(!f||!f.size) return ''; return `<span class="szb ${f.zones.length?worstVerdict(f.zones):'na'}">${esc(f.size)}</span>`; }
+const slotMatches=item=>{ const sl=state.slots[item.type]; return !!(sl&&item.product_id!=null&&String(sl.product_id)===String(item.product_id)); };
+function pickedSize(item,ctx){ return (ctx==='slot'||slotMatches(item))?(fitSizes[item.type]||''):(pendingSize[String(item.product_id)]||''); }
+function setPicked(item,ctx,s){ if(ctx==='shop'&&item.product_id!=null) pendingSize[String(item.product_id)]=s; if(ctx==='slot'||slotMatches(item)){ fitSizes[item.type]=s; saveFitSizes(); renderSlots(); } }
+function mountFitUI(box, item, ctx){
+  if(!box) return;
+  const draw=()=>{ if(!box.isConnected) return; const t=item.type; if(!FIT_TYPES.includes(t)){ box.innerHTML=''; return; }
+    const sizes=sizeOptions(item); const B=getBody(); const hasB=hasBodyFor(t,B);
+    if(!sizes.length){ box.innerHTML=hasB?'':`<div class="fitnudge in"><span>先量身，才能看出合不合身</span><button type="button" class="btn sm" data-gomeasure>去量身</button></div>`; bindGo(); return; }
+    const rec=hasB?recommendFit(item,sizes,B):null; const cur=pickedSize(item,ctx)||(rec&&rec.size)||''; const f=cur&&hasB?fitFor(item,cur,B):null;
+    const ch=item.product_id!=null?scGet(item.product_id):null;
+    box.innerHTML=`<div class="szhead"><span>尺寸${rec?'　點一下看合不合身':''}</span><span>${ch===undefined?'讀取尺寸表…':ch?'依商品尺寸表':''}</span></div><div class="szchips" role="radiogroup" aria-label="尺寸">${sizes.map(s=>`<button type="button" role="radio" aria-checked="${s===cur}" class="szchip${s===cur?' on':''}" data-sz="${esc(s)}">${esc(s)}${rec&&rec.size===s?'<em>推薦</em>':''}</button>`).join('')}</div>`
+      +(f?fitBarHTML(f)+`<div class="fitsum">${esc(f.summary_zh)}</div>`:!hasB?`<div class="fitnudge in"><span>先量身，才能看出合不合身</span><button type="button" class="btn sm" data-gomeasure>去量身</button></div>`:cur?'<div class="fitsum muted">這個尺碼沒有尺寸資料，請以賣場尺寸表為準</div>':'');
+    box.querySelectorAll('[data-sz]').forEach(b=>b.onclick=()=>{ setPicked(item,ctx,b.dataset.sz); haptic(); draw(); });
+    bindGo(); };
+  const bindGo=()=>{ const gm=box.querySelector('[data-gomeasure]'); if(gm) gm.onclick=()=>{ const iv=$('itemView'); if(iv) iv.classList.remove('on'); go('body'); setTimeout(()=>{ const m=$('measureBox'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); },350); }; };
+  draw();
+  if(item.product_id!=null&&scGet(item.product_id)===undefined) ensureChart(item.product_id).then(draw);
+}
+function renderFitNudge(){ const n=$('fitNudge'); if(!n) return; const want=Object.keys(state.slots).some(t=>FIT_TYPES.includes(t)&&t!=='shoes'); let has=false; try{ const b=getBody(); has=!!(b.chest||b.waist||b.hip); }catch{} n.classList.toggle('hidden', !want||has); }
+$('fitNudgeGo').onclick=()=>{ go('body'); setTimeout(()=>{ const m=$('measureBox'); if(m) m.scrollIntoView({behavior:'smooth',block:'start'}); },350); };
+// 送出試穿用：items（含 fit）＋完整合身資料（結果卡片用）
+function buildRun(){
+  let body=null; try{ body=getBody(); }catch{} const fits={};
+  const items=Object.entries(state.slots).map(([type,v])=>{ const it={type, image:v.image, text:v.text, photo_type:v.photo_type, name:v.name||null, product_id:v.product_id||null, buy_url:v.buy_url||null};
+    let f=null; try{ f=slotFit(type,body); }catch{} if(f&&f.size){ fits[type]=f; it.fit={size:f.size, zones:(f.zones||[]).map(z=>({zone:z.zone,delta_cm:z.delta_cm,verdict:z.verdict})), summary_en:f.summary_en||''}; } return it; });
+  return {items, fits, body:bodyPayload()};
+}
+
+/* ---- 我的身形：量身卡片 ---- */
+const MKEYS=[['height','身高','cm'],['weight','體重','kg'],['shoulder','肩寬','cm'],['chest','胸圍','cm'],['waist','腰圍','cm'],['hip','臀圍','cm'],['arm','手臂長','cm'],['leg','腿長','cm'],['inseam','內長（褲長）','cm'],['foot','腳長','cm']];
+const MRANGE={height:[120,220],weight:[30,200],shoulder:[25,60],chest:[60,160],waist:[45,160],hip:[60,170],arm:[40,90],leg:[55,130],inseam:[45,100],foot:[18,32]};
+const photoKey=u=>u?(u.length+':'+u.slice(-48)):'';
+state.sidePhoto=null;
+function renderMeasureBox(){
+  const fr=$('mFront'); if(!fr) return;
+  fr.innerHTML=state.person?`<img src="${state.person}" alt=""><div><b>正面照</b>用試衣間的全身照</div>`:`<div><b>正面照</b>還沒有全身照，<button type="button" class="btn ghost sm" id="mFrontAdd" style="padding:0;min-height:0;text-decoration:underline">放一張</button></div>`;
+  if($('mFrontAdd')) $('mFrontAdd').onclick=()=>pickImage(im=>{ onPersonImage(im); setTimeout(renderBody,300); });
+  const sd=$('mSide');
+  if(state.sidePhoto){ sd.classList.remove('add'); sd.innerHTML=`<img src="${state.sidePhoto}" alt=""><div><b>側面照</b>圍度會更準</div><button type="button" class="mx" id="mSideX" aria-label="移除側面照">✕</button>`; $('mSideX').onclick=e=>{ e.stopPropagation(); state.sidePhoto=null; renderMeasureBox(); }; sd.onclick=null; }
+  else { sd.classList.add('add'); sd.innerHTML='<div><b>＋ 側面照（選填）</b>加一張側面照，圍度更準</div>'; sd.onclick=()=>pickImage(im=>{ state.sidePhoto=downscale(im,1280,'image/jpeg',0.9); renderMeasureBox(); toast('側面照已放好：身體側向鏡頭、手自然垂放最準'); }); }
+  $('btnMeasure').disabled=!state.person; $('btnMeasure').textContent=loadMeasure()&&loadMeasure().src==='photo'?'重新量身':'開始量身';
+  renderMeasureCard();
+}
+function measureFigure(M){
+  const g=M.geo;
+  if(g&&g.rows&&M.photoKey&&M.photoKey===photoKey(state.person)) return '<canvas id="mCanvas" aria-label="量測位置示意"></canvas>';
+  // 沒有照片幾何（手動填寫）：畫簡單人形示意
+  const ys={shoulder:62,chest:80,waist:104,hip:124};
+  return `<svg viewBox="0 0 100 230" aria-hidden="true"><g fill="#efe8e2"><circle cx="50" cy="28" r="15"/><path d="M28 56 Q50 48 72 56 L76 92 Q72 104 70 108 L74 128 Q76 140 72 150 L66 222 L54 222 L50 152 L46 222 L34 222 L28 150 Q24 140 26 128 L30 108 Q28 104 24 92 Z"/></g>${Object.entries(ys).map(([k,y])=>`<line x1="16" x2="84" y1="${y}" y2="${y}" stroke="#c96f61" stroke-width="1.6" stroke-dasharray="${mval(M,k)?'0':'3 3'}" stroke-linecap="round"/>`).join('')}</svg>`;
+}
+function drawMeasureCanvas(M){
+  const cv=$('mCanvas'); if(!cv||!state.person) return;
+  loadImg(state.person).then(im=>{ if(!cv.isConnected) return; const g=M.geo; const y0=Math.max(0,g.top-0.03), y1=Math.min(1,g.foot+0.02); const sh=(y1-y0)*im.height, sw=Math.min(im.width, sh*0.66); const rx=g.rows; const cxn=((rx.chest.l+rx.chest.r)/2)*im.width; const sx=Math.max(0,Math.min(im.width-sw,cxn-sw/2));
+    const W=360, H=Math.round(W*sh/sw); cv.width=W; cv.height=H; const x=cv.getContext('2d'); x.drawImage(im,sx,y0*im.height,sw,sh,0,0,W,H);
+    x.fillStyle='rgba(250,247,244,.28)'; x.fillRect(0,0,W,H);
+    const map=(nx,ny)=>[(nx*im.width-sx)/sw*W,(ny*im.height-y0*im.height)/sh*H];
+    const lab={shoulder:'肩',chest:'胸',waist:'腰',hip:'臀'};
+    x.font='600 34px "Noto Sans TC",sans-serif'; x.textBaseline='middle';
+    for(const k of ['shoulder','chest','waist','hip']){ const r=rx[k]; if(!r) continue; const [a,yy]=map(r.l,r.y), [b]=map(r.r,r.y);
+      x.strokeStyle='rgba(255,255,255,.9)'; x.lineWidth=11; x.lineCap='round'; x.beginPath(); x.moveTo(a,yy); x.lineTo(b,yy); x.stroke();
+      x.strokeStyle='#c96f61'; x.lineWidth=6; x.beginPath(); x.moveTo(a,yy); x.lineTo(b,yy); x.stroke();
+      x.fillStyle='#c96f61'; [a,b].forEach(px=>{ x.beginPath(); x.arc(px,yy,8,0,Math.PI*2); x.fill(); });
+      const t=lab[k], tw=x.measureText(t).width+24, lx=b+tw+10>W?Math.max(4,a-tw-10):b+10; rrect(x,lx,yy-23,tw,46,23); x.fillStyle='rgba(255,255,255,.95)'; x.fill(); x.fillStyle='#b35a4c'; x.fillText(t,lx+12,yy+2); }
+  }).catch(()=>{});
+}
+function rrect(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
+function fmtM(v,k){ return k==='foot'?(Math.round(v*2)/2).toString():String(Math.round(v)); }
+function renderMeasureCard(){
+  const box=$('measureCard'); if(!box) return; const M=loadMeasure(); if(!M){ box.innerHTML=''; return; }
+  const rows=MKEYS.map(([k,lb,u])=>{ const v=mval(M,k), man=M.manual&&M.manual[k]!=null, un=(M.unc||{})[k];
+    return `<div class="mrow" role="button" tabindex="0" data-k="${k}" aria-label="修改${lb}"><span class="mk">${lb}</span><span class="mu">${man?'<em class="mfix">已手動修正</em>':(v!=null&&un?'±'+un+' '+u:(k==='foot'&&M.meta&&M.meta.foot&&M.meta.foot.est&&v!=null?'依身高估':''))}</span><span class="mv">${v!=null?fmtM(v,k)+'<small>'+u+'</small>':'<i>點這裡填</i>'}</span></div>`; }).join('');
+  const fl=(M.flags||[]).map(f=>f==='side_bad'?'側面照抓不到完整的側身，這次只用正面照估算（圍度誤差較大）。':/^side_/.test(f)?'側面照有一處輪廓不清楚，那個部位改用正面照推估。':/^outlier:/.test(f)?((ks=>ks.length?`${ks.map(k=>({chest:'胸圍',waist:'腰圍',hip:'臀圍'})[k]).join('、')}和身高體重推估的差很多，已往常見範圍修正，建議用皮尺量一次。`:'')(f.slice(8).split(',').filter(k=>!(M.manual&&M.manual[k]!=null)))):'').filter(Boolean);
+  const how=M.src==='photo'?(M.side?'正面＋側面照量測':'正面照量測（加側面照會更準）')+(M.loose?'・已扣寬鬆衣服 2 cm':''):'手動填寫';
+  box.innerHTML=`<div class="mres"><div class="mfig">${measureFigure(M)}</div><div class="mlist2">${rows}</div></div>${fl.length?`<div class="mflag">${fl.map(esc).join('<br>')}</div>`:''}<div class="mnote">照片量測是估計值，誤差約 ±2–4 公分；拿皮尺量過的數字可以直接改。</div><div class="mmeta muted">${how}${M.at?' · '+new Date(M.at).toLocaleDateString('zh-TW'):''} · 已同步到「尺寸建議」</div>`;
+  box.querySelectorAll('.mrow').forEach(r=>{ r.onclick=()=>editMeasure(r); r.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===r){ e.preventDefault(); editMeasure(r); } }; });
+  drawMeasureCanvas(M);
+}
+function editMeasure(row){
+  if(row.querySelector('input')) return; const k=row.dataset.k, lb=(MKEYS.find(x=>x[0]===k)||[])[1]||''; const M=loadMeasure(); const cur=mval(M,k);
+  const mv=row.querySelector('.mv'); mv.innerHTML=`<input type="number" inputmode="decimal" step="${k==='foot'?0.5:1}" value="${cur!=null?fmtM(cur,k):''}" aria-label="${lb}">`; const inp=mv.querySelector('input'); inp.onclick=e=>e.stopPropagation(); inp.focus(); try{ inp.select(); }catch{}
+  let done=false;
+  const commit=save=>{ if(done) return; if(save){ const raw=inp.value.trim(); const M2={...loadMeasure()}; M2.manual={...(M2.manual||{})};
+      if(raw===''){ delete M2.manual[k]; }
+      else { const n=+raw, [a,b]=MRANGE[k]; if(!(n>=a&&n<=b)){ toast(`${lb}的數字看起來不太對（${a}–${b}）`); inp.focus(); return; }
+        if(k==='height'&&M2.src==='photo'&&M2.vals&&M2.vals.height&&n!==mval(M2,'height')){ const f=n/mval(M2,'height'); M2.vals={...M2.vals}; for(const kk of ['shoulder','chest','waist','hip','arm','leg','inseam','torso','foot']) if(M2.vals[kk]!=null) M2.vals[kk]=r1(M2.vals[kk]*f); if(M2.drops){ M2.drops={...M2.drops}; for(const kk in M2.drops) if(typeof M2.drops[kk]==='number') M2.drops[kk]=r1(M2.drops[kk]*f); } M2.vals.height=n; }
+        if(k==='height'){ $('bHeight').value=n; if(M2.src==='photo') delete M2.manual.height; else M2.manual.height=n; } else M2.manual[k]=n;
+        if(k==='weight') $('bWeight').value=n; }
+      done=true; saveMeasure(M2); syncMeasureToFit(M2); haptic(); }
+    else done=true;
+    renderMeasureCard(); };
+  inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(true); } else if(e.key==='Escape'){ commit(false); } };
+  inp.onblur=()=>setTimeout(()=>commit(true),0);
+}
+function measureErrMsg(e){ const c=e&&e.code; if(c==='LOAD'||/import|fetch|module|network|timeout/i.test(String(e&&e.message))) return '量身元件載入失敗：第一次使用需要連網下載模型（約 30 MB），請確認網路後再試一次。也可以直接在下方填皮尺量的數字。'; if(c==='NO_PERSON') return '照片裡找不到清楚的人像，請換一張正面、全身入鏡的照片。'; if(e&&e.code&&e.message) return e.message; return '量身沒有成功，請換一張正面、全身、背景乾淨的照片再試一次。'; }
+async function doMeasure(){
+  const st=$('measureStatus'); const h=+$('bHeight').value, w=+$('bWeight').value||null;
+  if(!state.person){ st.textContent='請先放一張正面全身照。'; return; }
+  if(!(h>=120&&h<=220)){ st.textContent='請先在上面填身高（必填），量身要用身高換算公分。'; $('bHeight').focus(); return; }
+  if(w!=null&&!(w>=30&&w<=200)){ st.textContent='體重看起來不太對，請再確認一下。'; return; }
+  const btn=$('btnMeasure'); btn.disabled=true; const t0=Date.now();
+  try{
+    st.textContent=poseP?'準備中…':'正在載入量身元件（第一次約需下載 30 MB，之後會快很多）…';
+    await getPose();
+    st.textContent='正在分析正面照…'; const fp=await runPose(state.person);
+    let sp=null; if(state.sidePhoto){ st.textContent='正在分析側面照…'; try{ sp=await runPose(state.sidePhoto); }catch{ sp={lm:null}; } }
+    const mm=(state.me&&state.me.analysis&&state.me.analysis.measured)||{};
+    const M=measureFromPose(fp, sp, {height:h, weight:w, gender:bodyGender, loose:$('mLoose').checked, llm:{bust:mm.est_bust, waist:mm.est_waist, hip:mm.est_hip}});
+    const old=loadMeasure(); if(old&&old.manual){ M.manual={...old.manual}; delete M.manual.height; delete M.manual.weight; }
+    M.photoKey=photoKey(state.person); saveMeasure(M); syncMeasureToFit(M); renderMeasureBox();
+    st.textContent=`量好了（${Math.round((Date.now()-t0)/1000)} 秒）。點任何一個數字都可以改成皮尺量的值。`; haptic('success'); track('measure',{side:M.side});
+  }catch(e){
+    st.textContent=measureErrMsg(e); haptic('error');
+    if(!loadMeasure()){ const M={v:1, at:null, gender:bodyGender, side:false, loose:false, vals:{height:h, weight:w}, unc:{}, manual:{}, drops:null, flags:[], src:'manual'}; saveMeasure(M); renderMeasureCard(); }
+  }finally{ btn.disabled=!state.person; }
+}
+$('btnMeasure').onclick=doMeasure;
+$('mLoose').onchange=()=>{ try{ localStorage.setItem('tryon.mLoose',$('mLoose').checked?'1':''); }catch{} };
+try{ $('mLoose').checked=localStorage.getItem('tryon.mLoose')==='1'; }catch{}
+
+/* ---- 試穿結果：合身度卡片與「合身標示」 ---- */
+function renderFitResult(echo){
+  let box=$('fitResult');
+  const list=(state.runItems||[]).map((it,i)=>{ let f=it.fit;
+    if((!f||!f.zones||!f.zones.length)&&echo){ const e=Array.isArray(echo)?(echo.find(x=>x&&x.type===it.type)||echo[i]):echo[it.type]; if(e&&e.size&&Array.isArray(e.zones)&&e.zones.length) f={type:it.type,size:e.size,zones:e.zones,summary_zh:summarize(e.size,e.zones,'zh',it.type)}; }
+    return f&&f.size?{it,f}:null; }).filter(Boolean);
+  if(!list.length){ if(box) box.remove(); return; }
+  if(!box){ box=document.createElement('div'); box.id='fitResult'; box.className='fitres'; $('result').after(box); }
+  box.innerHTML=`<div class="frhead"><b>合身度</b><span class="muted">依你的量身數字與尺寸表估算，僅供參考</span></div>`+list.map(({it,f})=>`<div class="fritem">${it.image?`<img src="${it.image}" alt="">`:'<span class="frph"></span>'}<div><div class="frt">${TYPE_LABEL[it.type]||''} · <b>${esc(f.size)}</b></div>${f.zones&&f.zones.length?`<div class="frs">${esc((f.summary_zh||'').replace(/^.*?號：/,''))}</div>${fitBarHTML(f)}`:'<div class="frs muted">還沒量身，看不出合不合身</div>'}</div></div>`).join('');
+}
+let fitMapOn=false, fitMapGeo=null;
+function fitZonesForMap(){ const out=[]; (state.runItems||[]).forEach(it=>{ const f=it.fit; if(f&&f.zones) f.zones.forEach(z=>out.push({...z,type:it.type})); }); return out; }
+function addFitMapChip(){
+  fitMapOn=false; const cmp=$('cmp'); if(!cmp||!fitZonesForMap().length) return;
+  const b=document.createElement('button'); b.type='button'; b.className='fitmapbtn'; b.id='fitMapBtn'; b.textContent='合身標示'; b.setAttribute('aria-pressed','false');
+  b.addEventListener('pointerdown',e=>e.stopPropagation()); b.onclick=e=>{ e.stopPropagation(); toggleFitMap(); }; cmp.appendChild(b);
+}
+async function toggleFitMap(){
+  const btn=$('fitMapBtn'), cmp=$('cmp'); if(!btn||!cmp) return; fitMapOn=!fitMapOn; btn.classList.toggle('on',fitMapOn); btn.setAttribute('aria-pressed',fitMapOn);
+  const old=cmp.querySelector('canvas.fitmap'); if(old) old.remove(); cmp.classList.toggle('fm',fitMapOn); if(!fitMapOn) return;
+  if(!fitMapGeo||fitMapGeo.src!==state.result){ btn.disabled=true; btn.textContent='標示中…';
+    try{ const p=await runPose(state.result); const g=poseGeometry(p); if(!g||!g.bodyPx) throw new Error('geo'); fitMapGeo={src:state.result,g}; }
+    catch(e){ fitMapGeo=null; fitMapOn=false; cmp.classList.remove('fm'); btn.classList.remove('on'); btn.classList.add('hidden'); toast('這張圖抓不到身體位置，請看下方「合身度」卡片'); return; }
+    finally{ btn.disabled=false; btn.textContent='合身標示'; } }
+  if(!fitMapOn||!$('cmp')) return; drawFitMap($('cmp'), fitMapGeo.g, fitZonesForMap(), (getBody().height)||165);
+}
+const FM_COL={tight:'196,85,74',snug:'176,122,42',fit:'63,138,102',loose:'91,127,181',short:'122,113,108',long:'122,113,108'};
+function drawFitMap(cmp, g, zones, heightCm){
+  const cv=document.createElement('canvas'); cv.className='fitmap'; cv.width=g.mw; cv.height=g.mh; cmp.appendChild(cv); const x=cv.getContext('2d');
+  const s=g.mw/Math.max(1,cmp.clientWidth||g.mw); const pxcm=g.bodyPx/heightCm; const placed=[];
+  const fs=Math.round(12*s), pad=6*s, lh=fs+pad*1.4;
+  const label=(txt,col,ax,ay,side)=>{ x.font=`600 ${fs}px "Noto Sans TC",sans-serif`; const w=x.measureText(txt).width+pad*2; let lx=side<0?ax-w-6*s:ax+6*s; if(lx+w>g.mw-2) lx=ax-w-6*s; if(lx<2) lx=Math.min(g.mw-w-2,ax+6*s); let ly=ay-lh/2; for(let k=0;k<12&&placed.some(p=>!(lx+w<p.x||lx>p.x+p.w||ly+lh<p.y||ly>p.y+p.h));k++) ly+=lh+2*s; placed.push({x:lx,y:ly,w,h:lh}); rrect(x,lx,ly,w,lh,lh/2); x.fillStyle='rgba(255,255,255,.94)'; x.fill(); x.strokeStyle=`rgba(${col},.55)`; x.lineWidth=1*s; x.stroke(); x.fillStyle=`rgb(${col})`; x.textBaseline='middle'; x.fillText(txt,lx+pad,ly+lh/2+0.5*s); };
+  const band=(cx,cy,rx,ry,col)=>{ x.beginPath(); x.ellipse(cx,cy,Math.max(4,rx),Math.max(3,ry),0,0,Math.PI*2); x.fillStyle=`rgba(${col},.35)`; x.fill(); x.strokeStyle=`rgba(${col},.85)`; x.lineWidth=2*s; x.stroke(); };
+  const hip=g.rows.hip||{l:g.cx-g.hipPx,r:g.cx+g.hipPx,y:g.hipJ};
+  for(const z of zones){ const col=FM_COL[z.verdict]||FM_COL.fit; const txt=pillText(z,z.type);
+    if(['shoulder','chest','waist','hip'].includes(z.zone)){ const r=g.rows[z.zone]; if(!r) continue; const w2=(r.r-r.l)/2; band((r.l+r.r)/2,r.y,w2*1.06,g.bodyPx*0.016,col); label(txt,col,r.r+w2*0.06,r.y,1); }
+    else if(z.zone==='thigh'){ const y=g.hipJ+0.45*g.T; band((hip.l+hip.r)/2,y,(hip.r-hip.l)/2,g.bodyPx*0.016,col); label(txt,col,hip.r,y,1); }
+    else if(z.zone==='length'&&z.end_cm!=null){ const y=g.shY+z.end_cm*pxcm; if(y<g.shY||y>g.mh) continue; x.save(); x.setLineDash([7*s,5*s]); x.strokeStyle=`rgba(${col},.95)`; x.lineWidth=2.5*s; x.lineCap='round'; x.beginPath(); x.moveTo(hip.l-8*s,y); x.lineTo(hip.r+8*s,y); x.stroke(); x.restore(); label(txt,col,hip.l-8*s,y,-1); }
+    else if(z.zone==='sleeve'){ g.wrists.filter(w=>w.v>0.4).forEach((w,i)=>band(w.x,w.y,g.bodyPx*0.025,g.bodyPx*0.02,col)); const w=g.wrists[0]; if(w&&w.v>0.4) label(txt,col,w.x,w.y,w.x<g.cx?-1:1); }
+    else if(z.zone==='inseam'){ const y=g.ankleY; x.strokeStyle=`rgba(${col},.95)`; x.lineWidth=2.5*s; x.beginPath(); x.moveTo(hip.l,y); x.lineTo(hip.r,y); x.stroke(); label(txt,col,hip.r,y,1); }
+    else if(z.zone==='foot'){ g.feet.filter(f=>f.v>0.3).forEach(f=>band(f.x,f.y,g.bodyPx*0.03,g.bodyPx*0.015,col)); const f=g.feet[1]; if(f) label(txt,col,f.x+g.bodyPx*0.03,f.y,1); }
+  }
+}
+try{ if(window.__tryon) Object.assign(window.__tryon,{ fit:{ellipseCirc,depthRatio,cmPerPx,rowRun,poseGeometry,measureFromPose,normChart,fitFor,recommendFit,summarize,pillText,getBody,scMem,sizeOptions,slotFit,buildRun,bodyPayload,regressCirc,chartZones}, fitSizes, saveMeasure, loadMeasure, renderMeasureBox, renderMeasureCard, syncMeasureToFit, renderFitResult, drawFitMap, toggleFitMap, mountFitUI, get renderCompare(){ return renderCompare; }, comboKey, setFitMapGeo(v){ fitMapGeo=v; }, resetMeasureCache(){ measureCache=null; } }); }catch{}
 
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
@@ -1866,13 +2373,13 @@ async function runTryon(opts={}){
   if (busy) return;
   const resumeId=opts.resumeId||null;
   if (!state.person) return toast('請先放一張全身照');
-  const items = Object.entries(state.slots).map(([type,v])=>({type, image:v.image, text:v.text, photo_type:v.photo_type, name:v.name||null, product_id:v.product_id||null, buy_url:v.buy_url||null}));
-  state.runItems = Object.entries(state.slots).map(([type,v])=>({type, ...v}));
+  const run=buildRun(); const items=run.items;
+  state.runItems = Object.entries(state.slots).map(([type,v])=>({type, ...v, fit:run.fits[type]||null}));
   if (!items.length && !resumeId) return toast('請至少放一個單品');
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
   const person0=state.personOrig; const isPhone=window.matchMedia('(max-width:899px)').matches;
-  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); try{ updateSticky(); }catch{}
+  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); const fr=$('fitResult'); if(fr) fr.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); try{ updateSticky(); }catch{}
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='6%';
   waitScreen(); $('result').classList.remove('busy');
   state.views=null; state.preferSpin=false; stopSpin(); spinState=null; $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
@@ -1891,7 +2398,7 @@ async function runTryon(opts={}){
       let key; try{ key=await comboKey(items); }catch{}
       const nocache=(()=>{ try{ return !!localStorage.getItem('tryon.nocache'); }catch{ return false; } })() || !!opts.retry;
       wasReady=!opts.retry&&pf.key===key&&pf.st==='ready'; pf.key=null; pf.st=null; pfHint();
-      const body={ person: state.person, items, variants, views, async:true, aspect, key: opts.retry?undefined:key, nocache, engine: opts.retry?'pro':engineParam(), res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() };
+      const body={ person: state.person, items, body:run.body, variants, views, async:true, aspect, key: opts.retry?undefined:key, nocache, engine: opts.retry?'pro':engineParam(), res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() };
       d = await api('/api/tryon', { method:'POST', body: JSON.stringify(body) });
       if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
     }
@@ -1946,7 +2453,7 @@ async function runTryon(opts={}){
     }
     state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried);
     renderCompare(person0, finalImg);
-    $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems();
+    $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems(); try{ renderFitResult(d.fit); }catch{}
     renderFit(); try{ updateSticky(); }catch{}
     if(isPhone) $('result').scrollIntoView({behavior:'smooth',block:'start'});
     toast('完成，看看你穿起來的樣子'); haptic('success'); if(!resumeId) track('tryon_ok',{n:items.length,variants,retry:!!opts.retry}); state.historyLoaded=false;
@@ -2028,6 +2535,7 @@ function renderCompare(before, after){
   cmp.addEventListener('pointerdown',e=>{ dragging=true; cmp.setPointerCapture(e.pointerId); set(e.clientX); });
   cmp.addEventListener('pointermove',e=>{ if(dragging) set(e.clientX); });
   cmp.addEventListener('pointerup',()=>dragging=false); cmp.addEventListener('pointercancel',()=>dragging=false);
+  try{ addFitMapChip(); }catch{}
 }
 $('btnDownload').onclick=async()=>{ if(curAngle==='spin'&&state.views&&state.views.video){ let href=state.views.video; try{ href=URL.createObjectURL(await (await fetch(state.views.video)).blob()); }catch{} const a=document.createElement('a'); a.href=href; a.download='試穿吧_360_'+Date.now()+'.mp4'; document.body.appendChild(a); a.click(); a.remove(); return; } if(state.result){ const im=currentResultImage(); saveImage(im,'試穿吧_'+({front:'正面',side:'側面',back:'背面',spin:'360'})[curAngle]+'_'+Date.now()+imgExt(im)); } };
 function imgExt(uri){ return /^data:image\/jpe?g/i.test(uri||'')?'.jpg':'.png'; }
@@ -2060,7 +2568,7 @@ async function storyImage(before, after){
 async function makeStory(){ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.resultPerson||state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } }
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!Object.keys(state.slots).length) return toast('單品已清空，請重新放入再試'); if(!await ask('再做一次？','會改用高品質模式重新合成同一組單品，結果會和這張不一樣；會再扣一次點數。',{ok:'再做一次'})) return; runTryon({retry:true}); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
-function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); const ui=$('usedItems'); if(ui) ui.remove(); state.result=null; state.views=null; state.qaRetried=false; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
+function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); const ui=$('usedItems'); if(ui) ui.remove(); state.result=null; state.views=null; state.qaRetried=false; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
 $('btnContinue').onclick=()=>{ if(!state.result) return; const img=state.result; resetResult(); setPerson(img); state.slots={}; renderSlots(); persistSlots(); setStep(2); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */
