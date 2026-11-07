@@ -140,15 +140,23 @@ def page91(h):
   try: d = _js_json(h[m.end():m.end() + 1500000])
   except Exception: return None
   return d if isinstance(d, dict) and d.get('Id') else None
-def parse91(host, brand, gdef, sid, h):
-  """商品頁 HTML → 商品資料列（不合用回傳 None）。"""
+def addl91(host, shop, sid):
+  """商品詳細描述（尺寸表多半在這裡）：/webapi/SalePageV2/GetSalePageAdditionalInfo 是各家 robots.txt 明確 Allow 的路徑（其他 /webapi/ 都禁止），仍經過 robots 守門。"""
+  s, t = get(f'https://{host}/webapi/SalePageV2/GetSalePageAdditionalInfo/{shop}/{sid}', 1500000, min_delay=0.4)
+  if s != 200: return ''
+  try: return str(((json.loads(t).get('Data') or {}).get('MoreInfo') or {}).get('SaleProductDesc_Content') or '')
+  except Exception: return ''
+def parse91(host, brand, gdef, sid, h, more=False):
+  """商品頁 HTML → 商品資料列（不合用回傳 None）。more=True 時衣物鞋子另抓詳細描述找尺寸表。"""
   url = f'https://{host}/SalePage/Index/{sid}'
   ld = ld_product(h) or {}
   if ld.get('oos'): return None
   d = page91(h)
   if d:
     if d.get('StatusDef') not in (None, 'Normal'): return None
-    title = d.get('Title') or ''; cat = (d.get('CategoryLevelName') or {}).get('ShopCategory_ShowName') or d.get('CategoryName') or ''
+    lv = d.get('CategoryLevelName') or {}
+    title = d.get('Title') or ''
+    cat = lv.get('ShopCategory_ShowName') or ' > '.join(str(lv.get(f'Level{i}_ShopCategory_Name')) for i in range(1, 5) if lv.get(f'Level{i}_ShopCategory_Name')) or d.get('CategoryName') or ''   # 分類有隱藏層時 ShowName 是空的（and ST）
     imgs = d.get('ImageList') or []; pic = (imgs[0].get('PicUrl') or '') if imgs else ''
     price = d.get('Price') or d.get('MinPrice'); sizes = sku_sizes(d)
     desc = ' '.join(str(d.get(k) or '') for k in ('SubDescript', 'ShortDescription', 'Description'))
@@ -165,9 +173,12 @@ def parse91(host, brand, gdef, sid, h):
   except Exception: return None
   if not typ or not pic or price <= 0: return None
   chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 {url}') if desc.strip() else None
+  if not chart and more and d and d.get('ShopId') and typ in ('top', 'bottom', 'dress', 'shoes'):
+    more_html = addl91(host, d['ShopId'], sid)
+    if more_html: chart = SC.pick_chart(more_html, typ, title, f'商品頁尺寸表 {url}')
   pic = ('https:' + pic) if pic.startswith('//') else pic.replace('http://', 'https://')
   return {'source': '91app:' + host, 'external_id': str(sid), 'brand': b, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),
-          'price': price, 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': url, 'tags': [cat.split('>')[-1].strip(' -')[:20]] if cat else [],
+          'price': price, 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': url, 'tags': [cat.split('>')[-1].strip(' -▷')[:20]] if cat else [],
           'sizes': norm_sizes(sizes) or SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart}
 def ids91(host, brand):
   """網站地圖（robots.txt 列的 Sitemap_Index → sitemap_ShopSalePage.xml.gz）裡的商品編號，新的在前。"""
@@ -189,7 +200,7 @@ def rows91(host, brand, gdef, ids=None):
     s, h = get(url, 2500000, min_delay=0.4)
     if s in (403, 429): stats['blocked'] += 1
     if s != 200: return None
-    try: return parse91(host, brand, gdef, sid, h)
+    try: return parse91(host, brand, gdef, sid, h, more=True)
     except Exception as e: print('  skip', url, repr(e)[:80]); return None
   rows = []
   with cf.ThreadPoolExecutor(2) as ex:
@@ -238,11 +249,11 @@ def ld_product(html):
     return {'name': t, 'image': im, 'price': fallback_price, 'oos': False, 'category': ''}
   return None
 # (網域, 品牌, 預設性別, 預設類別, 商品網址樣式, 最多看幾個商品網址)
-LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('www.crocs.com.tw', 'Crocs', 'u', 'shoes', r'/products/', 160), ('www.vacanza.com.tw', 'VACANZA', 'f', 'accessory', r'/products/', 120),
+LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('www.crocs.com.tw', 'Crocs', 'u', 'shoes', r'/products/', 160), ('www.vacanza.com.tw', 'VACANZA', 'f', 'accessory', r'/products/', 110),
             # PAZZO／MEIER.Q／Mercci22 同一套系統：/market/n/<id>（網站地圖另有 /zh-tw/、/en-us/ 重複網址，會去重）
             ('www.pazzo.com.tw', 'PAZZO', 'f', None, r'\.tw/market/n/\d+$', 240, 'id_desc'), ('www.meierq.com', 'MEIER.Q', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'), ('www.mercci22.com', 'Mercci22', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'),
-            # Shopline：/zh-hant/products/<handle>
-            ('www.50-shop.com', '50% FIFTY PERCENT', 'u', None, r'/(zh-hant/)?products/', 240), ('www.lulus.com.tw', 'Lulus', 'f', None, r'/(zh-hant/)?products/', 240),
+            # Shopline：/zh-hant/products/<handle>；robots.txt 有 Crawl-delay: 5（SC.urlopen 會照做），商品頁數壓在 150 內才跑得完
+            ('www.50-shop.com', '50% FIFTY PERCENT', 'u', None, r'/(zh-hant/)?products/', 150), ('www.lulus.com.tw', 'Lulus', 'f', None, r'/(zh-hant/)?products/', 150),
             # Cyberbiz：/products/<handle>
             ('www.fila.com.tw', 'FILA', 'u', None, r'/products/', 240),
             # GAP 台灣：/pdp/<id>/<sku>，JSON-LD 沒價格、用 itemprop=price 補
@@ -251,7 +262,7 @@ LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('ww
             ('www.gracegift.com.tw', 'Grace Gift', 'f', None, r'/products/\d+/\d+', 240),
             # 2026-11-07 新增（probe_tw9~11.py）
             ('www.mouggan.com', 'mouggan', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'),   # 同 PAZZO 系統
-            ('www.goopi.co', 'GOOPi', 'u', None, r'/(zh-hant/)?products/', 240),   # Shopline
+            ('www.goopi.co', 'GOOPi', 'u', None, r'/(zh-hant/)?products/', 150),   # Shopline（Crawl-delay 5）
             ('www.merrell.com.tw', 'MERRELL', 'u', None, r'/products/', 240), ('www.jansport.com.tw', 'JanSport', 'u', 'accessory', r'/products/', 200),
             ('www.saucony.com.tw', 'Saucony', 'u', None, r'/products/', 240),   # Cyberbiz
             ('lesportsac.tw', 'LeSportsac', 'f', 'accessory', r'lesportsac\.tw/products/', 200, 'tail', {'sitemaps': ['https://lesportsac.tw/sitemap.xml']}),   # Shopify
