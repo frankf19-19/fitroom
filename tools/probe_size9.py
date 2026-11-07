@@ -10,7 +10,7 @@ def raw(u):
     b = r.read(4000000)
     if b[:2] == b'\x1f\x8b': b = gzip.decompress(b)
     return b, r.headers.get_content_charset(), r.headers.get('content-type')
-with urllib.request.urlopen(API + '/api/products?brand=GOOPi&type=top&size=12', timeout=30) as r: ps = json.load(r)['products']
+with urllib.request.urlopen(urllib.request.Request(API + '/api/products?brand=GOOPi&type=top&size=12', headers={'User-Agent': 'probe'}), timeout=30) as r: ps = json.load(r)['products']
 out = []
 for p in ps[:6]:
   b, cs, ct = raw(p['buy_url'])
