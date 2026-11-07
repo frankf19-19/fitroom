@@ -885,7 +885,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.0.0';
-const BUILD = '2026-11-07-02';
+const BUILD = '2026-11-07-03';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1550,7 +1550,7 @@ function renderRack(){
   const order=['top','bottom','dress','shoes','hat','accessory','hair'];
   const list=[...rack].sort((a,b)=>order.indexOf(a.type)-order.indexOf(b.type));
   const wearing=new Set(Object.values(state.slots).map(v=>String(v.product_id||'')));
-  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${esc(thumbUrl(p.image_url,240,p.id))}" referrerpolicy="no-referrer" loading="lazy" alt="" data-orig="${esc(p.image_url)}" onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.orig}else{this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'}"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${esc((p.name||'').slice(0,10))}</span><i class="rx" data-rkx="${p.id}" aria-label="從衣架移除">✕</i></button>`).join('')}</div>`;
+  box.innerHTML=`<div class="rackhead"><b>我的衣架</b><span class="muted">點一下就換上，同類會自動替換</span></div><div class="rackrow">${list.map(p=>`<button class="rk${wearing.has(String(p.id))?' on':''}" data-rk="${p.id}"><img src="${esc(thumbUrl(p.image_url,240,p.id))}" referrerpolicy="no-referrer" decoding="async" alt="" data-orig="${esc(p.image_url)}" onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.orig}else{this.onerror=null;this.src='${CONFIG.WORKER_URL}/api/img?id=${p.id}'}"><span class="t">${TYPE_LABEL[p.type]||''}</span><span class="n">${esc((p.name||'').slice(0,10))}</span><i class="rx" data-rkx="${p.id}" aria-label="從衣架移除">✕</i></button>`).join('')}</div>`;
   box.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async e=>{ if(e.target.dataset.rkx){ e.stopPropagation(); rack=rack.filter(r=>String(r.id)!==e.target.dataset.rkx); saveRack(); return; } const p=rack.find(r=>String(r.id)===b.dataset.rk); if(!p) return; const cur=state.slots[p.type]; if(cur&&String(cur.product_id)===String(p.id)){ setSlot(p.type,null); renderRack(); return; } b.classList.add('loading'); await tryProduct(p, {stay:true}); renderRack(); });
 }
 
