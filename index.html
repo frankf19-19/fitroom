@@ -335,6 +335,21 @@
   .cgroup{display:flex;flex:none;flex-wrap:nowrap;margin:0;gap:8px}
   .fdiv{flex:none;width:1px;height:22px;background:var(--line2);margin:0 4px;align-self:center}
   .brandfilt{margin-top:-4px}.brandfilt .chip{flex:0 0 auto;font-size:12px;padding:6px 12px}
+  .chip-more{gap:4px;background:var(--bg2);border-color:transparent;color:var(--ink);font-weight:500}.chip-more svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .filtwrap{position:relative}
+  .filtwrap.ovr-r>.filt{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
+  .filtwrap.ovr-l>.filt{-webkit-mask-image:linear-gradient(90deg,transparent,#000 44px);mask-image:linear-gradient(90deg,transparent,#000 44px)}
+  .filtwrap.ovr-l.ovr-r>.filt{-webkit-mask-image:linear-gradient(90deg,transparent,#000 44px,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,transparent,#000 44px,#000 calc(100% - 44px),transparent)}
+  .filtarrow{display:none;position:absolute;top:50%;transform:translateY(-62%);width:32px;height:32px;border-radius:50%;border:1px solid var(--line2);background:#fff;box-shadow:var(--sh-s);cursor:pointer;place-items:center;z-index:2;padding:0}
+  .filtarrow svg{width:16px;height:16px;stroke:var(--ink);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .filtarrow.l{left:-6px}.filtarrow.r{right:-6px}
+  @media(hover:hover) and (min-width:900px){.filtwrap.ovr-l>.filtarrow.l,.filtwrap.ovr-r>.filtarrow.r{display:grid}}
+  .bgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .bitem{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;min-height:48px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r-m);background:#fff;font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;text-align:left}
+  .bitem em{font-style:normal;font-size:12px;color:var(--muted);flex:none}
+  .bitem.on{border-color:var(--accent);background:var(--accent-s);color:var(--accent-ink)}
+  #pickBody>.bitem{margin-bottom:0}
+  @media(min-width:900px){.bgrid{grid-template-columns:repeat(3,1fr)}}
   .pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
   @media(min-width:700px){.pgrid{grid-template-columns:repeat(4,1fr);gap:16px}}
   .pitem{position:relative;background:#fff;border-radius:var(--r-l);overflow:hidden;box-shadow:var(--sh);display:flex;flex-direction:column;transition:box-shadow var(--t),transform 120ms var(--ease)}
@@ -884,8 +899,8 @@ const CONFIG = {
   GOOGLE_WEB_CLIENT_ID: '', // App 內 Google 登入用（Google Cloud 的 Web client ID；網頁版不需要）
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
-const APP_VERSION = '6.0.0';
-const BUILD = '2026-11-07-03';
+const APP_VERSION = '6.0.1';
+const BUILD = '2026-11-07-04';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1478,10 +1493,41 @@ async function shopBrandChips(){
   const f=$('shopBrand'); if(!f) return;
   if(!shopBrands){ try{ const r=await fetch(CONFIG.WORKER_URL+'/api/brands'); shopBrands=(await r.json()).brands||[]; }catch{ shopBrands=[]; } }
   if(!shopBrands.length){ f.innerHTML=''; return; }
-  f.innerHTML=`<span class="chip ${!shopBrand?'on':''}" data-b="">所有品牌</span>`+shopBrands.map(b=>`<span class="chip ${shopBrand===b.name?'on':''}" data-b="${esc(b.name)}">${esc(b.name)}</span>`).join('');
-  f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopBrand=c.dataset.b; loadShop(true); });
+  // 只放熱門的前幾家＋目前選的；其餘收進「全部品牌」選單，品牌再多也不會被切掉
+  const TOP=window.matchMedia('(min-width:900px)').matches?10:8;
+  let show=shopBrands.slice(0,TOP);
+  if(shopBrand && !show.some(b=>b.name===shopBrand)){ const cur=shopBrands.find(b=>b.name===shopBrand); if(cur) show=[cur,...show.slice(0,TOP-1)]; }
+  const more=shopBrands.length-show.length;
+  f.innerHTML=(more>0?`<span class="chip chip-more" id="brandAll"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>${shopBrands.length} 個品牌</span>`:'')+`<span class="chip ${!shopBrand?'on':''}" data-b="">所有品牌</span>`+show.map(b=>`<span class="chip ${shopBrand===b.name?'on':''}" data-b="${esc(b.name)}">${esc(b.name)}</span>`).join('');
+  f.querySelectorAll('.chip[data-b]').forEach(c=>c.onclick=()=>{ shopBrand=c.dataset.b; loadShop(true); });
+  if($('brandAll')) $('brandAll').onclick=openBrandSheet;
+  const on=f.querySelector('.chip.on'); if(on&&shopBrand) on.scrollIntoView({block:'nearest',inline:'center'});
+  filtEdges(f);
 }
-function shopTypeChips(){ const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
+function openBrandSheet(){
+  const list=()=>{ const q=($('brandQ')&&$('brandQ').value||'').trim().toLowerCase();
+    const items=shopBrands.filter(b=>!q||b.name.toLowerCase().includes(q));
+    return items.length?items.map(b=>`<button class="bitem ${shopBrand===b.name?'on':''}" data-b="${esc(b.name)}"><span>${esc(b.name)}</span><em>${b.n} 件</em></button>`).join(''):'<div class="muted" style="padding:16px 0">找不到這個品牌</div>'; };
+  openPick('全部品牌', `<div class="search" style="margin-bottom:12px"><input type="search" id="brandQ" inputmode="search" placeholder="搜尋品牌" autocomplete="off"></div>
+    <button class="bitem ${!shopBrand?'on':''}" data-b=""><span>所有品牌</span><em>${shopBrands.reduce((a,b)=>a+b.n,0)} 件</em></button>
+    <div class="bgrid" id="brandGrid">${list()}</div>`);
+  const bind=()=>$('pickBody').querySelectorAll('.bitem').forEach(b=>b.onclick=()=>{ shopBrand=b.dataset.b; closePick(); loadShop(true); });
+  bind(); $('brandQ').addEventListener('input',()=>{ $('brandGrid').innerHTML=list(); bind(); });
+}
+// 橫向篩選列：兩側淡出提示還有內容；電腦上滑鼠滾輪可橫向捲、兩側有箭頭
+function filtEdges(f){
+  if(!f) return;
+  if(!f.dataset.edges){ f.dataset.edges='1';
+    f.addEventListener('scroll',()=>filtEdges(f),{passive:true});
+    f.addEventListener('wheel',e=>{ if(Math.abs(e.deltaY)>Math.abs(e.deltaX) && f.scrollWidth>f.clientWidth){ f.scrollLeft+=e.deltaY; e.preventDefault(); } },{passive:false});
+    const wrap=document.createElement('div'); wrap.className='filtwrap'; f.parentNode.insertBefore(wrap,f); wrap.appendChild(f);
+    ['l','r'].forEach(d=>{ const b=document.createElement('button'); b.type='button'; b.className='filtarrow '+d; b.setAttribute('aria-label',d==='l'?'往左':'往右'); b.innerHTML='<svg viewBox="0 0 24 24"><path d="'+(d==='l'?'M15 6l-6 6 6 6':'M9 6l6 6-6 6')+'"/></svg>'; b.onclick=()=>f.scrollBy({left:(d==='l'?-1:1)*f.clientWidth*0.7,behavior:'smooth'}); wrap.appendChild(b); });
+  }
+  const w=f.parentNode; const max=f.scrollWidth-f.clientWidth;
+  w.classList.toggle('ovr-l', f.scrollLeft>4); w.classList.toggle('ovr-r', f.scrollLeft<max-4);
+}
+window.addEventListener('resize',()=>document.querySelectorAll('#shopFilt,#shopBrand').forEach(filtEdges));
+function shopTypeChips(){ setTimeout(()=>filtEdges($('shopFilt')||$('shopType')),0); const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
 $('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopGender=c.dataset.g; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); loadShop(true); });
 let shopQT; const shopQ=$('shopQ');
 function syncShopClear(){ const c=$('shopQClear'); if(c) c.classList.toggle('hidden',!shopQ.value); }
