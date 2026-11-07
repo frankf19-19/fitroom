@@ -245,7 +245,7 @@ def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
     img = p['image'].strip(); img = ('https:' + img) if img.startswith('//') else ('https://' + host + img if img.startswith('/') else img)
     b = brand
     if brand == '*':   # 多品牌館（USAGI ONLINE）：品牌取 JSON-LD 的 brand
-      b = re.sub(r'(?i)\s+home(me)?$', '', (p.get('brand') or '').strip())
+      b = re.sub(r'(?i)\s+hom(m)?e$', '', (p.get('brand') or '').strip())
       b = {'GELATO PIQUE': 'gelato pique', 'LILY BROWN': 'Lily Brown'}.get(b.upper(), b)
       if not b or len(b) > 30: return None
     return {'source': 'web:' + host, 'external_id': re.sub(r'^https?://[^/]+', '', u)[:200], 'brand': b, 'name': name[:120], 'type': typ, 'gender': gender_of(name, gdef),

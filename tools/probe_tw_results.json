@@ -1,5 +1,5 @@
 {
- "_note": "2026-11-06 台灣品牌官網探測結果（probe_tw4~7.py）。verdict：added=已加進 sync_tw.py／sync_uniqlo.py；rejected=不收；followup=可再研究。",
+ "_note": "2026-11-06 台灣品牌官網探測結果（probe_tw4~7.py）。verdict：added=已加進 sync_tw.py／sync_uniqlo.py；rejected=不收；followup=可再研究。 2026-11-07 第二批（probe_tw9~13.py）見下方新增項目。",
  "GU": {
   "domain": "www.gu-global.com/tw",
   "platform": "Fast Retailing（與 UNIQLO 同套 API：d.gu-global.com/tw/p/search/products/by-category）",
@@ -111,9 +111,10 @@
   "platform": "自家（fonlego）",
   "robots": "允許",
   "data": "沒網站地圖；/men/、/women/ 首頁各 70~140 個 /product-detail/ 連結；JSON-LD 的 description 含換行、無法解析，改用 og:title/og:image/og:price",
-  "verdict": "followup",
-  "how": "LIST_SITES + OG 備援",
-  "why": "資料抓得到，但商品圖伺服器擋 Cloudflare Worker 代理（/api/img 回 502）且瀏覽器直接 fetch 需 CORS，放進試衣間會失敗；已下架，待找到可用的圖片來源再開"
+  "verdict": "added",
+  "how": "LIST_SITES + OG 備援（重新開啟）",
+  "why": null,
+  "images": "圖片主機有 CORS *；Worker 代理第一、二層仍 502，第三層經 wsrv.nl 轉抓成功（2026-11-07 probe_tw13）"
  },
  "D+AF": {
   "domain": "www.daf-shoes.com",
@@ -136,15 +137,16 @@
   "platform": "自家（ASP.NET）",
   "robots": "無 robots.txt、無網站地圖",
   "data": "商品頁 Product?SaleID= 沒有 JSON-LD／OG，名稱與價格只在 GTM dataLayer 的 JS 裡，圖片網址需另解析",
-  "verdict": "followup",
-  "why": "無結構化資料，要寫專用解析器"
+  "verdict": "added",
+  "why": null,
+  "how": "LIST_SITES；ld_product 讀 GTM dataLayer 的 view_item（名稱/價格），圖片取 photo.queenshop.com.tw/<編號>/<編號>-<色>-01.jpg；列表頁商品連結是相對網址「Product?…&SaleID=」，已用 urljoin 解析"
  },
  "Skechers": {
   "domain": "www.skechers-twn.com",
   "platform": "自家",
   "data": "分類頁商品清單由 JS 載入，頁面無商品資料、sitemap 空",
   "verdict": "rejected",
-  "why": "無可用商品資料"
+  "why": "無可用商品資料（2026-11-07 未找到 API，未重試）"
  },
  "NET": {
   "domain": "www.net-fashion.net",
@@ -189,16 +191,16 @@
   "why": "官網憑證失效"
  },
  "Dr. Martens": {
-  "domain": "www.drmartens.com.tw",
-  "data": "連線逾時",
+  "domain": "www.drmartens.com.tw / drmartens-tw.com",
+  "data": "",
   "verdict": "rejected",
-  "why": "無法連線"
+  "why": "逾時／403（重試仍失敗）"
  },
  "Champion": {
-  "domain": "www.championusa.com.tw",
-  "data": "連線逾時；champion.com.tw 是冠軍磁磚",
+  "domain": "www.championstore.com.tw",
+  "data": "",
   "verdict": "rejected",
-  "why": "無法連線"
+  "why": "首頁是 JS 殼（13KB）、無網站地圖／商品連結"
  },
  "Genquo": {
   "domain": "www.genquo.com",
@@ -217,5 +219,398 @@
   "data": "DNS 不存在；bonjour.com.tw 是法語補習班",
   "verdict": "rejected",
   "why": "找不到官網"
+ },
+ "Onitsuka Tiger": {
+  "domain": "www.onitsukatiger.com.tw",
+  "platform": "91APP（41638）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91"
+ },
+ "Lee": {
+  "domain": "www.leejeans.com.tw（lee.com.tw 憑證是自簽）",
+  "platform": "91APP（41411）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91"
+ },
+ "MLB": {
+  "domain": "www.mlb-korea.com.tw",
+  "platform": "91APP（40673）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91"
+ },
+ "à la sha": {
+  "domain": "www.alasha.com.tw",
+  "platform": "91APP（41661）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91"
+ },
+ "LACOSTE": {
+  "domain": "www.lacoste.com.tw",
+  "platform": "91APP（42134）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91"
+ },
+ "Kipling": {
+  "domain": "www.kipling.com.tw",
+  "platform": "91APP（39255）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91（只有包款）"
+ },
+ "BIG TRAIN": {
+  "domain": "www.bigtrain.com.tw",
+  "platform": "91APP（42160）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91"
+ },
+ "and ST（Adastria 台灣）": {
+  "domain": "www.dot-st.tw",
+  "platform": "91APP（36426）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91 品牌=\"*\"：品牌取分類第一層 → niko and...、GLOBAL WORK、LOWRYS FARM、JEANASIS、Heather、studio CLIP、PAGEBOY、LEPSIM、RAGEBLUE、repipi armario、LAKOLE；pick() 每品牌各自 PER 上限"
+ },
+ "STRIPE CLUB（STRIPE INTERNATIONAL 台灣）": {
+  "domain": "www.stripe-club.com.tw",
+  "platform": "91APP（13087）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPS91 品牌=\"*\"：品牌取標題尾「 - 品牌」→ earth music&ecology、Samansa Mos2、AMERICAN HOLIC、YECCA VECCA、Green Parks、Maison de FLEUR、JUJURY"
+ },
+ "USAGI ONLINE（MASH 台灣）": {
+  "domain": "www.usagi-online.com.tw",
+  "platform": "自家（與 Queen Shop 同型 ASP.NET，但有 JSON-LD）",
+  "robots": "",
+  "data": "product?saleid=… JSON-LD 完整",
+  "verdict": "added",
+  "how": "LIST_SITES 品牌=\"*\"：品牌取 JSON-LD brand → SNIDEL、gelato pique、Lily Brown、FRAY I.D、Mila Owen、emmi、CELFORD；同商品不同 colorid 去重"
+ },
+ "LeSportsac": {
+  "domain": "lesportsac.tw（www.lesportsac.com.tw 轉址）",
+  "platform": "Shopify",
+  "robots": "",
+  "data": "products.json 與網站地圖都只有 3 件商品，件數很少",
+  "verdict": "added",
+  "how": "LD_SITES（網站地圖＋JSON-LD）"
+ },
+ "Salomon": {
+  "domain": "salomon.com.tw",
+  "platform": "Shopify",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "SHOPIFY 轉接器（/products.json?limit=100）"
+ },
+ "GOOPi": {
+  "domain": "www.goopi.co",
+  "platform": "Shopline",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "LD_SITES（設計師選物，品牌記為 GOOPi）"
+ },
+ "MERRELL": {
+  "domain": "www.merrell.com.tw",
+  "platform": "Cyberbiz",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "LD_SITES"
+ },
+ "JanSport": {
+  "domain": "www.jansport.com.tw",
+  "platform": "Cyberbiz",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "LD_SITES"
+ },
+ "Saucony": {
+  "domain": "www.saucony.com.tw",
+  "platform": "Cyberbiz",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "LD_SITES"
+ },
+ "mouggan": {
+  "domain": "www.mouggan.com",
+  "platform": "自家（同 PAZZO 系統 /market/n/<id>）",
+  "robots": "",
+  "data": "",
+  "verdict": "added",
+  "how": "LD_SITES id_desc"
+ },
+ "AIR SPACE": {
+  "domain": "www.airspaceonline.com/tw/zh-hant/",
+  "platform": "自家（Nuxt）",
+  "robots": "",
+  "data": "JSON-LD 完整，TWD",
+  "verdict": "added",
+  "how": "LD_SITES，網站地圖 sitemap_TW.xml"
+ },
+ "CHARLES & KEITH": {
+  "domain": "www.charleskeith.com/tw",
+  "platform": "Salesforce Commerce Cloud",
+  "robots": "Crawl-delay: 10",
+  "data": "JSON-LD 完整、TWD；部分舊網址 410",
+  "verdict": "added",
+  "how": "LD_SITES，網站地圖 /tw/sitemap_index.xml，照 robots Crawl-delay 10 秒單線抓 75 頁"
+ },
+ "PEDRO": {
+  "domain": "www.pedroshoes.com/tw",
+  "platform": "Salesforce Commerce Cloud",
+  "robots": "Crawl-delay: 5",
+  "data": "",
+  "verdict": "added",
+  "how": "LD_SITES，Crawl-delay 5 秒；沒 JSON-LD，用 og:title/og:image + itemprop=price"
+ },
+ "Longchamp": {
+  "domain": "www.longchamp.com/tw/zh/",
+  "platform": "Salesforce Commerce Cloud",
+  "robots": "",
+  "data": "JSON-LD 完整、TWD",
+  "verdict": "added",
+  "how": "LD_SITES，網站地圖 sitemap-stmp_zh_TW_index.xml"
+ },
+ "iROO": {
+  "domain": "www.iroo.com/iroo（iroo.com.tw 轉址）",
+  "platform": "fonlego（同 plain-me）",
+  "robots": "",
+  "data": "圖片主機有 CORS *；Worker 代理需第三層 wsrv.nl",
+  "verdict": "added",
+  "how": "LIST_SITES，分類頁 → /iroo/product-detail/<id>，JSON-LD"
+ },
+ "gozo": {
+  "domain": "www.gozo.com.tw",
+  "platform": "fonlego",
+  "robots": "",
+  "data": "圖片主機 cdn-gozo.shang-yu.com 沒 CORS、擋 Worker；Worker 第三層經 wsrv.nl 轉抓後正常",
+  "verdict": "added",
+  "how": "LIST_SITES，JSON-LD"
+ },
+ "東京著衣 tokichoi": {
+  "domain": "www.tokichoi.com",
+  "data": "",
+  "verdict": "rejected",
+  "why": "首頁與 robots.txt 皆 403（WAF）"
+ },
+ "Bonbons": {
+  "domain": "bonbons.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "網站地圖與商品頁回 503（WordPress＋防火牆）"
+ },
+ "H:CONNECT": {
+  "domain": "hconnect.com.tw 等",
+  "data": "",
+  "verdict": "rejected",
+  "why": "找不到台灣官方購物網域（DNS 不存在）"
+ },
+ "Coach": {
+  "domain": "tw.coach.com / coach.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "tw.coach.com 不存在，coach.com.tw 是無關網站；coach.com 403"
+ },
+ "Kate Spade": {
+  "domain": "www.katespade.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "連線逾時"
+ },
+ "Tommy Hilfiger": {
+  "domain": "tw.tommy.com",
+  "platform": "SFCC（PVH）",
+  "data": "網站地圖 1200 件、價格在 itemprop，但靜態 HTML 沒有 JSON-LD／og:image／商品圖網址",
+  "verdict": "followup",
+  "why": "商品圖只由 JS 載入，需另找圖片來源"
+ },
+ "Calvin Klein": {
+  "domain": "www.calvinklein.com.tw",
+  "platform": "SFCC（PVH，同 Tommy）",
+  "data": "同 Tommy：無商品圖",
+  "verdict": "followup",
+  "why": "商品圖只由 JS 載入"
+ },
+ "Wrangler": {
+  "domain": "www.wrangler.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在"
+ },
+ "Superdry": {
+  "domain": "www.superdry.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "連線逾時（品牌曾撤出台灣）"
+ },
+ "ASICS": {
+  "domain": "www.asics.com/tw/zh-tw/",
+  "data": "",
+  "verdict": "rejected",
+  "why": "403（WAF）"
+ },
+ "MIZUNO": {
+  "domain": "www.mizunoshop.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "403；mizuno.com.tw 是無關網站"
+ },
+ "Nike": {
+  "domain": "www.nike.com/tw/",
+  "data": "",
+  "verdict": "rejected",
+  "why": "網站地圖沒有台灣 PDP 子地圖、商品頁是 JS 渲染；robots 擋 */p/"
+ },
+ "Kangol": {
+  "domain": "www.kangol.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在，找不到台灣官網"
+ },
+ "Arnold Palmer": {
+  "domain": "www.arnoldpalmer.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在；台灣代理 2026/5 宣布撤櫃"
+ },
+ "Hush Puppies": {
+  "domain": "www.hushpuppies.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "TLS 憑證鏈不完整，無法驗證"
+ },
+ "Clarks": {
+  "domain": "www.clarks.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "TLS 憑證鏈不完整；clarks.tw 拒絕連線"
+ },
+ "ECCO": {
+  "domain": "tw.ecco.com",
+  "data": "",
+  "verdict": "rejected",
+  "why": "Sitecore，網站地圖只有分類頁、沒有商品頁"
+ },
+ "Native Shoes": {
+  "domain": "nativeshoes.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在"
+ },
+ "TEVA": {
+  "domain": "teva.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "Magento，無網站地圖、首頁找不到商品頁連結"
+ },
+ "KEEN": {
+  "domain": "keen.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在"
+ },
+ "Lovfee": {
+  "domain": "www.lovfee.com",
+  "data": "",
+  "verdict": "rejected",
+  "why": "與 Queen Shop 同系統，但列表頁商品由 JS 載入、HTML 沒有商品連結"
+ },
+ "WSTYLE": {
+  "domain": "www.wstyle.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "自家系統，無網站地圖、首頁沒有商品連結"
+ },
+ "Mog": {
+  "domain": "mog.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在"
+ },
+ "Bellini": {
+  "domain": "www.bellini.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "TLS 主機名稱不符"
+ },
+ "Samantha Thavasa": {
+  "domain": "samantha.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "找不到台灣官方網路商店"
+ },
+ "Pandora": {
+  "domain": "tw.pandora.net",
+  "data": "",
+  "verdict": "rejected",
+  "why": "403（WAF）"
+ },
+ "Swarovski": {
+  "domain": "www.swarovski.com/zh-TW/",
+  "data": "",
+  "verdict": "rejected",
+  "why": "403（WAF）"
+ },
+ "agnès b.": {
+  "domain": "www.agnesb.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "Nuxt SPA，商品資料只在 /graphql（robots 禁止），頁面無結構化資料"
+ },
+ "GLOBAL WORK / LOWRYS FARM / niko and...": {
+  "domain": "www.dot-st.tw",
+  "verdict": "added",
+  "how": "見 and ST"
+ },
+ "earth music&ecology": {
+  "domain": "www.stripe-club.com.tw",
+  "verdict": "added",
+  "how": "見 STRIPE CLUB"
+ },
+ "SNIDEL / gelato pique": {
+  "domain": "www.usagi-online.com.tw",
+  "verdict": "added",
+  "how": "見 USAGI ONLINE"
+ },
+ "Lee（lee.com.tw）": {
+  "domain": "www.lee.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "自簽憑證；改用 www.leejeans.com.tw"
+ },
+ "Kappa": {
+  "domain": "www.kappa.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "TLS 主機名稱不符"
+ },
+ "Love, Bonito": {
+  "domain": "www.lovebonito.com",
+  "data": "",
+  "verdict": "rejected",
+  "why": "沒有台灣站（只有 INTL/HK/ID）"
+ },
+ "STAYREAL / Hanchor / Kinazo / New Era / le coq sportif / ESPRIT / DIADORA / Blue Way": {
+  "domain": "*.com.tw",
+  "data": "",
+  "verdict": "rejected",
+  "why": "DNS 不存在（猜測的網域）"
  }
 }
