@@ -39,7 +39,7 @@ def _robots_rx(p):
   return re.compile(''.join('.*' if c == '*' else re.escape(c) for c in p) + ('$' if end else ''), re.S)
 def parse_robots(text, ua=BOT_UA):
   groups, cur, in_agents, sitemaps = [], None, False, []
-  for line in (text or '').splitlines():
+  for line in (text or '').replace('\ufeff', '').splitlines():
     line = line.split('#', 1)[0].strip()
     if ':' not in line: continue
     k, v = line.split(':', 1); k = k.strip().lower(); v = v.strip()
@@ -78,11 +78,13 @@ class Robots:
     with self._hlock(key):
       if key not in self.cache:
         st, text = 0, ''
-        try:
-          with urllib.request.urlopen(urllib.request.Request(key + '/robots.txt', headers={'User-Agent': self.ua}), timeout=20) as r:
-            st, text = r.status, decode_html(r.read(500000), r.headers.get_content_charset())
-        except urllib.error.HTTPError as e: st = e.code
-        except Exception: st = 0
+        for ua in (self.ua, 'Mozilla/5.0'):   # 有些 CDN（UNIQLO）對機器人 UA 不回應：讀 robots.txt 本身改用一般 UA 重試，規則仍以 TryOnBot 套用
+          try:
+            with urllib.request.urlopen(urllib.request.Request(key + '/robots.txt', headers={'User-Agent': ua}), timeout=25) as r:
+              st, text = r.status, decode_html(r.read(500000), r.headers.get_content_charset())
+          except urllib.error.HTTPError as e: st = e.code
+          except Exception: st = 0
+          if st: break
         if st == 200: p = parse_robots(text, self.ua)
         elif 400 <= st < 500 and st != 429: p = parse_robots('', self.ua)
         else: p = {'rules': [], 'delay': 0, 'sitemaps': [], 'all': True}

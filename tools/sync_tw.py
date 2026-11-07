@@ -1,30 +1,36 @@
 #!/usr/bin/env python3
 """台灣品牌官網商品同步（測試用，無聯盟分潤）：91APP 平台品牌 + 商品頁結構化資料（JSON-LD）。
-遵守 robots.txt、放慢請求。環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY。用法：python3 tools/sync_tw.py [每家每類幾件，預設 12]
+只抓 robots.txt 允許的網址：每個請求都先經過 SC.urlopen 的 robots 守門（不允許就略過並計數），同網域間隔 ≥ 0.3 秒並遵守 Crawl-delay。環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY。用法：python3 tools/sync_tw.py [每家每類幾件，預設 12]
 """
-import json, os, re, sys, time, gzip, urllib.request, urllib.parse, urllib.robotparser, concurrent.futures as cf, html as html_mod
+import json, os, re, sys, time, gzip, urllib.request, urllib.parse, urllib.error, concurrent.futures as cf, html as html_mod
 import sizecharts as SC   # 商品尺寸表（tools/sizecharts.py）
 
-SUPABASE_URL = os.environ['SUPABASE_URL'].rstrip('/'); KEY = os.environ['SUPABASE_SERVICE_KEY']
-PER = int(sys.argv[1]) if len(sys.argv) > 1 else 12
+SUPABASE_URL = os.environ.get('SUPABASE_URL', '').rstrip('/'); KEY = os.environ.get('SUPABASE_SERVICE_KEY', '')
+PER = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 12
 UA = 'Mozilla/5.0 (compatible; TryOnBot/1.0; +https://frankf19-19.github.io/fitroom/)'
 H = {'User-Agent': UA, 'Accept-Language': 'zh-TW'}
 
-def get(u, n=4000000):
+def get(u, n=4000000, min_delay=0.3):
+  """所有對外請求都走 SC.urlopen：先查該網域 robots.txt（不允許＝回傳 -1 並計數，不送出請求），同網域間隔 ≥ max(0.3 秒, Crawl-delay)。"""
   u = urllib.parse.quote(u, safe=':/?&=%#+,;@~')
   try:
-    with urllib.request.urlopen(urllib.request.Request(u, headers=H), timeout=30) as r:
+    with SC.urlopen(urllib.request.Request(u, headers=H), timeout=30, min_delay=min_delay) as r:
       b = r.read(n)
       if b[:2] == b'\x1f\x8b':
         try: b = gzip.decompress(b)
         except Exception: pass
       return r.status, SC.decode_html(b, r.headers.get_content_charset())
+  except SC.RobotsBlocked: return -1, ''
   except urllib.error.HTTPError as e: return e.code, ''
   except Exception: return 0, ''
 
+class _RP:   # 舊介面相容：rp.can_fetch(UA, url) → 共用的 robots 守門
+  def can_fetch(self, ua, url):
+    ok = SC.ROBOTS.allowed(url)
+    if not ok: SC.ROBOTS.skip(url)
+    return ok
 def robots(host):
-  rp = urllib.robotparser.RobotFileParser(); st, t = get(f'https://{host}/robots.txt', 300000)
-  rp.parse(t.splitlines() if st == 200 else []); return rp, t
+  return _RP(), SC.ROBOTS.text(f'https://{host}/')
 
 SKIP = re.compile(r'襪|內衣|內褲|內著|胸罩|bra\b|禮盒|禮卡|口罩|浴巾|毛巾|雨傘|陽傘|保養|香氛|清潔|鞋墊|鞋帶|水壺|杯|貼紙|吊飾|鑰匙圈|童|兒童|嬰|寶寶|baby|kids|kid\'s|youth|toddler|mask|sock|gift|加購|運費|補差價|會員|兌換|贈品|福袋|試穿|預購金|玩偶|娃娃|碗|盤子|餐具|筷|擴香|蠟燭|香水|毛毯|毯子|抱枕|靠墊|收納盒|寵物|手機殼|衝浪板|紅包', re.I)
 RULES = [
@@ -121,48 +127,80 @@ def sku_sizes(d):
       if v and SIZE_TITLE.search(bits[2]) and v not in out: out.append(v)
   return out
 stats = {'blocked': 0}
-def sync91(host, brand, gdef):
-  rp, rt = robots(host)
-  m = re.search(r'Sitemap/(\d+)/Sitemap_Index', rt); shop = m and m.group(1)
-  if not shop: print(host, 'no shop id'); return
-  st, x = get(f'https://{host}/Sitemap/sitemap_ShopSalePage.xml.gz')
-  ids = sorted({int(i) for i in re.findall(r'SalePage/Index/(\d+)', x)}, reverse=True)[:int(os.environ.get('MAXIDS', '400' if brand == '*' else '240'))]
-  if not ids: print(host, 'no salepages'); return
-  def one(sid):
-    url = f'https://{host}/webapi/SalePageV2/GetSalePageV2Info/{shop}/{sid}'
-    if not rp.can_fetch(UA, f'https://{host}/SalePage/Index/{sid}'): return None
-    time.sleep(0.4)
-    s, t = get(url, 600000)
-    if s in (403, 429): stats['blocked'] += 1
-    if s != 200: return None
-    try: d = json.loads(t).get('Data') or {}
-    except Exception: return None
+# 91APP 的 /webapi/ 被各家 robots.txt 禁止 → 只用允許的網址：網站地圖（/Sitemap/…）→ 商品頁 /SalePage/Index/<id>，
+# 從頁面內嵌的 window.ServerRenderData["SalePageIndexViewModel"]（欄位與舊 API 的 Data 相同：Title、Price、ImageList、MajorList…）取資料，
+# 庫存狀態看 JSON-LD 的 offers.availability；內嵌資料解析失敗時退回 JSON-LD／Open Graph。
+VM_RX = re.compile(r'window\.ServerRenderData\["SalePageIndexViewModel"\]\s*=\s*')
+def _js_json(s):
+  s = re.sub(r"(?<!\\)((?:\\\\)*)\\'", r"\1'", s)   # JS 字串裡的 \'（例如 LEVI\'S）不是合法 JSON 跳脫
+  return json.JSONDecoder(strict=False).raw_decode(s)[0]
+def page91(h):
+  m = VM_RX.search(h or '')
+  if not m: return None
+  try: d = _js_json(h[m.end():m.end() + 1500000])
+  except Exception: return None
+  return d if isinstance(d, dict) and d.get('Id') else None
+def parse91(host, brand, gdef, sid, h):
+  """商品頁 HTML → 商品資料列（不合用回傳 None）。"""
+  url = f'https://{host}/SalePage/Index/{sid}'
+  ld = ld_product(h) or {}
+  if ld.get('oos'): return None
+  d = page91(h)
+  if d:
     if d.get('StatusDef') not in (None, 'Normal'): return None
     title = d.get('Title') or ''; cat = (d.get('CategoryLevelName') or {}).get('ShopCategory_ShowName') or d.get('CategoryName') or ''
-    typ = classify(title, cat)
-    b = brand
-    if brand == '*':
-      b = sub_brand(cat, title)
-      if not b: return None
-      title = re.sub(r'\s-\s' + re.escape(b) + r'$', '', title, flags=re.I)
-    imgs = d.get('ImageList') or []
-    price = d.get('Price') or d.get('MinPrice')
-    if not typ or not imgs or not price: return None
-    sizes = sku_sizes(d)
+    imgs = d.get('ImageList') or []; pic = (imgs[0].get('PicUrl') or '') if imgs else ''
+    price = d.get('Price') or d.get('MinPrice'); sizes = sku_sizes(d)
     desc = ' '.join(str(d.get(k) or '') for k in ('SubDescript', 'ShortDescription', 'Description'))
-    chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 https://{host}/SalePage/Index/{sid}') if desc.strip() else None
-    pic = imgs[0].get('PicUrl') or ''
-    pic = ('https:' + pic) if pic.startswith('//') else pic.replace('http://', 'https://')
-    return {'source': '91app:' + host, 'external_id': str(sid), 'brand': b, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),
-            'price': int(price), 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': f'https://{host}/SalePage/Index/{sid}', 'tags': [cat.split('>')[-1].strip(' -')[:20]] if cat else [],
-            'sizes': norm_sizes(sizes) or SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart}
+  elif ld.get('name'):
+    title = html_mod.unescape(ld['name']); cat = str(ld.get('category') or ''); pic = ld.get('image') or ''; price = ld.get('price'); sizes = []; desc = ''
+  else: return None
+  typ = classify(title, cat)
+  b = brand
+  if brand == '*':
+    b = sub_brand(cat, title)
+    if not b: return None
+    title = re.sub(r'\s-\s' + re.escape(b) + r'$', '', title, flags=re.I)
+  try: price = int(float(str(price).replace(',', '')))
+  except Exception: return None
+  if not typ or not pic or price <= 0: return None
+  chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 {url}') if desc.strip() else None
+  pic = ('https:' + pic) if pic.startswith('//') else pic.replace('http://', 'https://')
+  return {'source': '91app:' + host, 'external_id': str(sid), 'brand': b, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),
+          'price': price, 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': url, 'tags': [cat.split('>')[-1].strip(' -')[:20]] if cat else [],
+          'sizes': norm_sizes(sizes) or SC.chart_sizes(chart)[:20], 'active': True, 'featured': False, '_chart': chart}
+def ids91(host, brand):
+  """網站地圖（robots.txt 列的 Sitemap_Index → sitemap_ShopSalePage.xml.gz）裡的商品編號，新的在前。"""
+  rt = SC.ROBOTS.text(f'https://{host}/')
+  maps = [u for u in re.findall(r'(?im)^sitemap:\s*(\S+)', rt)]
+  sp = []
+  for sm in maps[:2]:
+    s, x = get(sm); sp += [l for l in re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x) if 'SalePage' in l]
+  sp = sp or [f'https://{host}/Sitemap/sitemap_ShopSalePage.xml.gz']
+  ids = set()
+  for u in dict.fromkeys(sp):
+    s, x = get(u); ids |= {int(i) for i in re.findall(r'SalePage/Index/(\d+)', x)}
+  return sorted(ids, reverse=True)[:int(os.environ.get('MAXIDS', '400' if brand == '*' else '240'))]
+def rows91(host, brand, gdef, ids=None):
+  ids = ids if ids is not None else ids91(host, brand)
+  if not ids: print(host, 'no salepages'); return [], 0
+  def one(sid):
+    url = f'https://{host}/SalePage/Index/{sid}'
+    s, h = get(url, 2500000, min_delay=0.4)
+    if s in (403, 429): stats['blocked'] += 1
+    if s != 200: return None
+    try: return parse91(host, brand, gdef, sid, h)
+    except Exception as e: print('  skip', url, repr(e)[:80]); return None
   rows = []
-  with cf.ThreadPoolExecutor(3) as ex:
+  with cf.ThreadPoolExecutor(2) as ex:
     for r in ex.map(one, ids):
       if r: rows.append(r)
+  return rows, len(ids)
+def sync91(host, brand, gdef):
+  rows, n = rows91(host, brand, gdef)
   rows, counts = pick(rows)
-  if not rows and stats['blocked']: print(host, 'blocked', stats); return   # 被擋時不要把舊商品下架
-  save('91app:' + host, rows); print(host, shop, len(ids), '->', counts, stats)
+  if not rows: print(host, 'no rows', n, stats); return   # 抓不到（被擋、robots 不允許）時不要把舊商品下架
+  save('91app:' + host, rows); print(host, n, '->', counts, stats)
 
 # ---------- 商品頁 JSON-LD（網站地圖） ----------
 def meta(html, prop):
@@ -246,11 +284,7 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail', opts=None):
   if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
 
-_ROBOTS = {}
-def robots_ok(u):
-  host = urllib.parse.urlparse(u).netloc
-  if host not in _ROBOTS: _ROBOTS[host] = robots(host)[0]
-  return _ROBOTS[host].can_fetch(UA, u)
+def robots_ok(u): return _RP().can_fetch(UA, u)
 def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
   def one(u):
     try: return one_(u)
@@ -362,20 +396,21 @@ def sync_shopify(host, brand, gdef, deftype):
   if not rows: print(host, 'no rows'); return
   save('shop:' + host, rows); print(host, '->', counts)
 
-only = os.environ.get('ONLY', '')
-for host, brand, g in SHOPS91:
-  if only and only not in host: continue
-  try: sync91(host, brand, g)
-  except Exception as e: print(host, 'FAIL', e)
-for args in LD_SITES:
-  if only and only not in args[0]: continue
-  try: sync_ld(*args)
-  except Exception as e: print(args[0], 'FAIL', e)
-for args in LIST_SITES:
-  if only and only not in args[0]: continue
-  try: sync_list(*args)
-  except Exception as e: print(args[0], 'FAIL', e)
-for args in SHOPIFY:
-  if only and only not in args[0]: continue
-  try: sync_shopify(*args)
-  except Exception as e: print(args[0], 'FAIL', e)
+if __name__ == '__main__':
+  only = os.environ.get('ONLY', '')
+  for host, brand, g in SHOPS91:
+    if only and only not in host: continue
+    try: sync91(host, brand, g)
+    except Exception as e: print(host, 'FAIL', e)
+  for args in LD_SITES:
+    if only and only not in args[0]: continue
+    try: sync_ld(*args)
+    except Exception as e: print(args[0], 'FAIL', e)
+  for args in LIST_SITES:
+    if only and only not in args[0]: continue
+    try: sync_list(*args)
+    except Exception as e: print(args[0], 'FAIL', e)
+  for args in SHOPIFY:
+    if only and only not in args[0]: continue
+    try: sync_shopify(*args)
+    except Exception as e: print(args[0], 'FAIL', e)

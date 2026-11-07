@@ -6,7 +6,7 @@
 遵守 robots.txt（含 Crawl-delay），每個網域單線、間隔 ≥ 0.4 秒。
 環境變數：SUPABASE_URL、SUPABASE_SERVICE_KEY；ONLY=只跑來源含此字串；MAX_PER_HOST（預設 400）。輸出 out/coverage.json。
 """
-import json, os, re, sys, time, urllib.request, urllib.parse, urllib.robotparser, concurrent.futures as cf, gzip
+import json, os, re, sys, time, urllib.request, urllib.parse, concurrent.futures as cf, gzip
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sizecharts as SC
 
@@ -23,12 +23,13 @@ def sb(method, path, data=None, prefer=None):
 def get(u, n=3000000):
   u = urllib.parse.quote(u, safe=':/?&=%#+,;@~')
   try:
-    with urllib.request.urlopen(urllib.request.Request(u, headers={'User-Agent': UA, 'Accept-Language': 'zh-TW'}), timeout=30) as r:
+    with SC.urlopen(urllib.request.Request(u, headers={'User-Agent': UA, 'Accept-Language': 'zh-TW'}), timeout=30, min_delay=0.4) as r:   # robots.txt 守門
       b = r.read(n)
       if b[:2] == b'\x1f\x8b':
         try: b = gzip.decompress(b)
         except Exception: pass
       return r.status, SC.decode_html(b, r.headers.get_content_charset())
+  except SC.RobotsBlocked: return -1, ''
   except urllib.error.HTTPError as e: return e.code, ''
   except Exception: return 0, ''
 
@@ -67,20 +68,16 @@ def write(p, chart):
   if not chart: result[p['id']] = None; return
   result[p['id']] = chart['kind'] if store.put(p['id'], chart) else None
 
-_ROBOTS = {}
-def robots_ok(u):
-  h = urllib.parse.urlparse(u).netloc
-  if h not in _ROBOTS:
-    rp = urllib.robotparser.RobotFileParser(); st, rt = get(f'https://{h}/robots.txt', 300000); rp.parse(rt.splitlines() if st == 200 else []); _ROBOTS[h] = rp
-  return _ROBOTS[h].can_fetch(UA, u)
+def robots_ok(u):   # 共用 robots 守門（SC.ROBOTS：最長比對、萬用字元、Crawl-delay）
+  ok = SC.ROBOTS.allowed(u)
+  if not ok: SC.ROBOTS.skip(u)
+  return ok
 def do_web(host, group):
-  rp = urllib.robotparser.RobotFileParser(); st, rt = get(f'https://{host}/robots.txt', 300000)
-  rp.parse(rt.splitlines() if st == 200 else [])
-  delay = max(0.4, float(rp.crawl_delay(UA) or 0))
+  delay = max(0.4, SC.ROBOTS.delay(f'https://{host}/'))
   n = 0
   for p in group:
     chart = None
-    if p['type'] in ('top', 'bottom', 'dress', 'shoes') and p.get('buy_url') and n < MAX_PER_HOST and rp.can_fetch(UA, p['buy_url']):
+    if p['type'] in ('top', 'bottom', 'dress', 'shoes') and p.get('buy_url') and n < MAX_PER_HOST and robots_ok(p['buy_url']):
       time.sleep(delay); n += 1
       s, h = get(p['buy_url'])
       if s == 200:

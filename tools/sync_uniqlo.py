@@ -60,7 +60,7 @@ def fetch_cat(code, n):
           "identity": [], "insideFilterCondition": [], "exclusiveCondition": [], "isCategoryExclusive": "N"}
   req = urllib.request.Request(API, data=json.dumps(body).encode(), headers={
     'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0', 'Origin': CFG['origin'], 'Referer': CFG['origin'] + '/'})
-  with urllib.request.urlopen(req, timeout=30) as r:
+  with SC.urlopen(req, timeout=30, min_delay=0.5) as r:   # robots.txt 守門（不允許就丟 SC.RobotsBlocked）
     j = json.load(r)
   return (j.get('resp') or [{}])[0].get('productList') or []
 
