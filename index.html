@@ -1878,9 +1878,10 @@ async function runPose(src){
   try{ const mk=r.segmentationMasks&&r.segmentationMasks[0]; if(mk){ mw=mk.width; mh=mk.height; mask=new Float32Array(mk.getAsFloat32Array()); } }catch{}
   try{ (r.segmentationMasks||[]).forEach(m=>m&&m.close&&m.close()); }catch{}
   if(!lm) throw Object.assign(new Error('no person'),{code:'NO_PERSON'});
-  const out={lm:lm.map(p=>({x:p.x,y:p.y,visibility:p.visibility==null?1:p.visibility})), mask, mw, mh};
+  const wl=r.worldLandmarks&&r.worldLandmarks[0];   // 公尺為單位的 3D 關節點（臀部中心為原點）：用來估身體轉了幾度
+  const out={lm:lm.map(p=>({x:p.x,y:p.y,z:p.z||0,visibility:p.visibility==null?1:p.visibility})), wl:wl?wl.map(p=>({x:p.x,y:p.y,z:p.z})):null, mask, mw, mh};
   // 除錯模式（localStorage tryon.debug=1）：把原始關節點與遮罩留給測試腳本重播
-  try{ if(window.__tryon&&mask){ const u=new Uint8Array(mask.length); for(let i=0;i<mask.length;i++) u[i]=Math.max(0,Math.min(255,Math.round(mask[i]*255))); let b=''; for(let i=0;i<u.length;i+=32768) b+=String.fromCharCode.apply(null,u.subarray(i,i+32768)); window.__tryon.lastPose={lm:out.lm, mw, mh, iw:c.width, ih:c.height, mask:btoa(b)}; } }catch{}
+  try{ if(window.__tryon&&mask){ const u=new Uint8Array(mask.length); for(let i=0;i<mask.length;i++) u[i]=Math.max(0,Math.min(255,Math.round(mask[i]*255))); let b=''; for(let i=0;i<u.length;i+=32768) b+=String.fromCharCode.apply(null,u.subarray(i,i+32768)); window.__tryon.lastPose={lm:out.lm, wl:out.wl, mw, mh, iw:c.width, ih:c.height, mask:btoa(b)}; } }catch{}
   return out;
 }
 

@@ -67,34 +67,132 @@
    }
   },
   {
-   "img": "px_8811247.jpg",
-   "src": "https://images.pexels.com/photos/8811247/pexels-photo-8811247.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 8811247",
-   "height": 165,
-   "weight": 55,
-   "g": "f",
-   "candidate": true,
-   "targets": {}
-  },
-  {
-   "img": "px_6856000.jpg",
-   "src": "https://images.pexels.com/photos/6856000/pexels-photo-6856000.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 6856000",
-   "height": 165,
-   "weight": 55,
-   "g": "f",
-   "candidate": true,
-   "targets": {}
-  },
-  {
    "img": "px_6513371.jpg",
    "src": "https://images.pexels.com/photos/6513371/pexels-photo-6513371.jpeg?auto=compress&cs=tinysrgb&w=1200",
    "credit": "Pexels 6513371",
-   "height": 165,
+   "height": 163,
+   "weight": 85,
+   "g": "f",
+   "note": "女 大尺碼、背心短褲、手拿皮尺、深色背景、腳踝信心度低",
+   "targets": {
+    "shoulder": [
+     38,
+     43
+    ],
+    "chest": [
+     104,
+     116
+    ],
+    "waist": [
+     92,
+     106
+    ],
+    "hip": [
+     112,
+     126
+    ],
+    "inseam": [
+     70,
+     77
+    ]
+   }
+  },
+  {
+   "img": "px_8811247.jpg",
+   "src": "https://images.pexels.com/photos/8811247/pexels-photo-8811247.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 8811247",
+   "height": 168,
    "weight": 55,
    "g": "f",
-   "candidate": true,
-   "targets": {}
+   "note": "女 牛仔外套襯衫＋牛仔褲、一手叉腰",
+   "targets": {
+    "shoulder": [
+     36,
+     40
+    ],
+    "chest": [
+     82,
+     92
+    ],
+    "waist": [
+     64,
+     74
+    ],
+    "hip": [
+     88,
+     97
+    ],
+    "inseam": [
+     74,
+     80
+    ]
+   }
+  },
+  {
+   "img": "px_8217535.jpg",
+   "src": "https://images.pexels.com/photos/8217535/pexels-photo-8217535.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 8217535",
+   "height": 178,
+   "weight": 70,
+   "g": "m",
+   "note": "男 白 T＋牛仔褲、正面站直",
+   "targets": {
+    "shoulder": [
+     42,
+     47
+    ],
+    "chest": [
+     88,
+     97
+    ],
+    "waist": [
+     76,
+     85
+    ],
+    "hip": [
+     90,
+     99
+    ],
+    "arm": [
+     57,
+     63
+    ],
+    "inseam": [
+     76,
+     84
+    ]
+   }
+  },
+  {
+   "img": "px_28494855.jpg",
+   "src": "https://images.pexels.com/photos/28494855/pexels-photo-28494855.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 28494855",
+   "height": 175,
+   "weight": 80,
+   "g": "m",
+   "note": "男 POLO＋牛仔褲、手插口袋、微胖",
+   "targets": {
+    "shoulder": [
+     42,
+     47
+    ],
+    "chest": [
+     96,
+     107
+    ],
+    "waist": [
+     88,
+     100
+    ],
+    "hip": [
+     97,
+     106
+    ],
+    "inseam": [
+     73,
+     80
+    ]
+   }
   },
   {
    "img": "px_12969214.jpg",
@@ -103,48 +201,42 @@
    "height": 165,
    "weight": 55,
    "g": "f",
-   "candidate": true,
-   "targets": {}
+   "note": "裁到大腿：應該被擋下（沒有全身）",
+   "targets": {},
+   "expect": "reject"
   },
   {
-   "img": "px_28494855.jpg",
-   "src": "https://images.pexels.com/photos/28494855/pexels-photo-28494855.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 28494855",
-   "height": 175,
-   "weight": 70,
-   "g": "m",
-   "candidate": true,
-   "targets": {}
+   "img": "px_7208431.jpg",
+   "src": "https://images.pexels.com/photos/7208431/pexels-photo-7208431.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 7208431",
+   "height": 163,
+   "weight": 52,
+   "g": "f",
+   "note": "候選",
+   "targets": {},
+   "candidate": true
   },
   {
-   "img": "px_8217535.jpg",
-   "src": "https://images.pexels.com/photos/8217535/pexels-photo-8217535.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 8217535",
-   "height": 175,
-   "weight": 70,
-   "g": "m",
-   "candidate": true,
-   "targets": {}
+   "img": "px_30998323.jpg",
+   "src": "https://images.pexels.com/photos/30998323/pexels-photo-30998323.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 30998323",
+   "height": 163,
+   "weight": 52,
+   "g": "f",
+   "note": "候選",
+   "targets": {},
+   "candidate": true
   },
   {
-   "img": "px_6668809.jpg",
-   "src": "https://images.pexels.com/photos/6668809/pexels-photo-6668809.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 6668809",
-   "height": 175,
-   "weight": 70,
-   "g": "m",
-   "candidate": true,
-   "targets": {}
-  },
-  {
-   "img": "px_7561443.jpg",
-   "src": "https://images.pexels.com/photos/7561443/pexels-photo-7561443.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 7561443",
-   "height": 175,
-   "weight": 70,
-   "g": "m",
-   "candidate": true,
-   "targets": {}
+   "img": "px_7505319.jpg",
+   "src": "https://images.pexels.com/photos/7505319/pexels-photo-7505319.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 7505319",
+   "height": 163,
+   "weight": 52,
+   "g": "f",
+   "note": "候選",
+   "targets": {},
+   "candidate": true
   }
  ]
 }

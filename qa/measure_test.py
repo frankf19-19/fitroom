@@ -65,6 +65,7 @@ with sync_playwright() as pw:
         except Exception as e: run['overlay_err'] = str(e)[:200]
         vals = (m or {}).get('vals') if (m or {}).get('src') == 'photo' else None
         res = {}
+        if c.get('expect') == 'reject': res['reject'] = {'got': 'rejected' if not vals else 'measured', 'target': ['rejected', ''], 'ok': 'PASS' if not vals else 'WARN'}
         for k, rg in (c.get('targets') or {}).items():
             v = (vals or {}).get(k)
             res[k] = {'got': v, 'target': rg, 'ok': ('PASS' if v is not None and rg[0] - 1 <= v <= rg[1] + 1 else 'WARN')}
@@ -75,5 +76,5 @@ with sync_playwright() as pw:
 json.dump(rep, open(f'{OUT}/report.json', 'w'), ensure_ascii=False, indent=1)
 for r in rep['runs']:
     ck = r.get('check') or {}
-    print(r['img'], r.get('status', '')[:60], ' '.join(f"{k}:{v['got']}[{v['target'][0]}-{v['target'][1]}]{'' if v['ok']=='PASS' else '!'}" for k, v in ck.items()) or r.get('vals'))
+    print(r['img'], r.get('status', '')[:40], ' '.join(f"{k}:{v['got']}[{v['target'][0]}-{v['target'][1]}]{'' if v['ok']=='PASS' else '!'}" for k, v in ck.items()), r.get('vals'))
 if rep['errors']: print('page errors:', rep['errors'][:5])
