@@ -1,0 +1,392 @@
+[
+ {
+  "brand": "GU",
+  "source": "gu",
+  "n": 179
+ },
+ {
+  "brand": "UNIQLO",
+  "source": "uniqlo",
+  "n": 153
+ },
+ {
+  "brand": "Onitsuka Tiger",
+  "source": "91app:www.onitsukatiger.com.tw",
+  "n": 62
+ },
+ {
+  "brand": "FILA",
+  "source": "web:www.fila.com.tw",
+  "n": 60
+ },
+ {
+  "brand": "VANS",
+  "source": "91app:www.vans.com.tw",
+  "n": 59
+ },
+ {
+  "brand": "The North Face",
+  "source": "91app:www.thenorthface.com.tw",
+  "n": 58
+ },
+ {
+  "brand": "Columbia",
+  "source": "91app:www.columbiasportswear.com.tw",
+  "n": 57
+ },
+ {
+  "brand": "LACOSTE",
+  "source": "91app:www.lacoste.com.tw",
+  "n": 56
+ },
+ {
+  "brand": "MEIER.Q",
+  "source": "web:www.meierq.com",
+  "n": 53
+ },
+ {
+  "brand": "adidas",
+  "source": "91app:www.adidas.com.tw",
+  "n": 52
+ },
+ {
+  "brand": "Timberland",
+  "source": "91app:www.timberland.com.tw",
+  "n": 51
+ },
+ {
+  "brand": "PUMA",
+  "source": "91app:tw.puma.com",
+  "n": 51
+ },
+ {
+  "brand": "MLB",
+  "source": "91app:www.mlb-korea.com.tw",
+  "n": 49
+ },
+ {
+  "brand": "à la sha",
+  "source": "91app:www.alasha.com.tw",
+  "n": 49
+ },
+ {
+  "brand": "OB嚴選",
+  "source": "91app:www.obdesign.com.tw",
+  "n": 48
+ },
+ {
+  "brand": "plain-me",
+  "source": "web:www.plain-me.com",
+  "n": 47
+ },
+ {
+  "brand": "Mercci22",
+  "source": "web:www.mercci22.com",
+  "n": 47
+ },
+ {
+  "brand": "mouggan",
+  "source": "web:www.mouggan.com",
+  "n": 47
+ },
+ {
+  "brand": "Under Armour",
+  "source": "91app:www.underarmour.tw",
+  "n": 45
+ },
+ {
+  "brand": "Longchamp",
+  "source": "web:www.longchamp.com",
+  "n": 45
+ },
+ {
+  "brand": "earth music&ecology",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 42
+ },
+ {
+  "brand": "AIR SPACE",
+  "source": "web:www.airspaceonline.com",
+  "n": 42
+ },
+ {
+  "brand": "PAZZO",
+  "source": "web:www.pazzo.com.tw",
+  "n": 41
+ },
+ {
+  "brand": "50% FIFTY PERCENT",
+  "source": "web:www.50-shop.com",
+  "n": 40
+ },
+ {
+  "brand": "Saucony",
+  "source": "web:www.saucony.com.tw",
+  "n": 39
+ },
+ {
+  "brand": "Queen Shop",
+  "source": "web:www.queenshop.com.tw",
+  "n": 38
+ },
+ {
+  "brand": "Lily Brown",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 38
+ },
+ {
+  "brand": "iROO",
+  "source": "web:www.iroo.com",
+  "n": 37
+ },
+ {
+  "brand": "SNIDEL",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 37
+ },
+ {
+  "brand": "GIORDANO",
+  "source": "91app:www.giordano.com.tw",
+  "n": 34
+ },
+ {
+  "brand": "GAP",
+  "source": "web:www.gap.tw",
+  "n": 34
+ },
+ {
+  "brand": "BIG TRAIN",
+  "source": "91app:www.bigtrain.com.tw",
+  "n": 34
+ },
+ {
+  "brand": "Levi's",
+  "source": "91app:www.levis.com.tw",
+  "n": 31
+ },
+ {
+  "brand": "Lulus",
+  "source": "web:www.lulus.com.tw",
+  "n": 31
+ },
+ {
+  "brand": "Samansa Mos2",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 31
+ },
+ {
+  "brand": "YECCA VECCA",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 30
+ },
+ {
+  "brand": "lativ",
+  "source": "web:www.lativ.com.tw",
+  "n": 29
+ },
+ {
+  "brand": "EDWIN",
+  "source": "91app:www.edwin.com.tw",
+  "n": 27
+ },
+ {
+  "brand": "Grace Gift",
+  "source": "web:www.gracegift.com.tw",
+  "n": 27
+ },
+ {
+  "brand": "AMERICAN HOLIC",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 27
+ },
+ {
+  "brand": "gozo",
+  "source": "web:www.gozo.com.tw",
+  "n": 27
+ },
+ {
+  "brand": "PEDRO",
+  "source": "web:www.pedroshoes.com",
+  "n": 25
+ },
+ {
+  "brand": "Roots",
+  "source": "91app:www.roots.com.tw",
+  "n": 24
+ },
+ {
+  "brand": "Lee",
+  "source": "91app:www.leejeans.com.tw",
+  "n": 24
+ },
+ {
+  "brand": "Mila Owen",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 24
+ },
+ {
+  "brand": "Salomon",
+  "source": "shop:salomon.com.tw",
+  "n": 23
+ },
+ {
+  "brand": "emmi",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 23
+ },
+ {
+  "brand": "GLOBAL WORK",
+  "source": "91app:www.dot-st.tw",
+  "n": 22
+ },
+ {
+  "brand": "Green Parks",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 22
+ },
+ {
+  "brand": "FRAY I.D",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 22
+ },
+ {
+  "brand": "CACO",
+  "source": "web:www.caco.com.tw",
+  "n": 21
+ },
+ {
+  "brand": "LAKOLE",
+  "source": "91app:www.dot-st.tw",
+  "n": 20
+ },
+ {
+  "brand": "niko and...",
+  "source": "91app:www.dot-st.tw",
+  "n": 19
+ },
+ {
+  "brand": "JEANASIS",
+  "source": "91app:www.dot-st.tw",
+  "n": 19
+ },
+ {
+  "brand": "LOWRYS FARM",
+  "source": "91app:www.dot-st.tw",
+  "n": 19
+ },
+ {
+  "brand": "CHARLES & KEITH",
+  "source": "web:www.charleskeith.com",
+  "n": 18
+ },
+ {
+  "brand": "studio CLIP",
+  "source": "91app:www.dot-st.tw",
+  "n": 16
+ },
+ {
+  "brand": "JanSport",
+  "source": "web:www.jansport.com.tw",
+  "n": 16
+ },
+ {
+  "brand": "Heather",
+  "source": "91app:www.dot-st.tw",
+  "n": 15
+ },
+ {
+  "brand": "PAGEBOY",
+  "source": "91app:www.dot-st.tw",
+  "n": 15
+ },
+ {
+  "brand": "MERRELL",
+  "source": "web:www.merrell.com.tw",
+  "n": 15
+ },
+ {
+  "brand": "gelato pique",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 15
+ },
+ {
+  "brand": "GOOPi",
+  "source": "web:www.goopi.co",
+  "n": 14
+ },
+ {
+  "brand": "Crocs",
+  "source": "web:www.crocs.com.tw",
+  "n": 12
+ },
+ {
+  "brand": "VACANZA",
+  "source": "web:www.vacanza.com.tw",
+  "n": 12
+ },
+ {
+  "brand": "D+AF",
+  "source": "web:www.daf-shoes.com",
+  "n": 12
+ },
+ {
+  "brand": "BIRKENSTOCK",
+  "source": "web:www.birkenstock.com.tw",
+  "n": 12
+ },
+ {
+  "brand": "Kipling",
+  "source": "91app:www.kipling.com.tw",
+  "n": 12
+ },
+ {
+  "brand": "Maison de FLEUR",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 12
+ },
+ {
+  "brand": "CELFORD",
+  "source": "web:www.usagi-online.com.tw",
+  "n": 12
+ },
+ {
+  "brand": "RAGEBLUE",
+  "source": "91app:www.dot-st.tw",
+  "n": 10
+ },
+ {
+  "brand": "repipi armario",
+  "source": "91app:www.dot-st.tw",
+  "n": 10
+ },
+ {
+  "brand": "LEPSIM",
+  "source": "91app:www.dot-st.tw",
+  "n": 8
+ },
+ {
+  "brand": "JUJURY",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 6
+ },
+ {
+  "brand": "index",
+  "source": "91app:www.dot-st.tw",
+  "n": 1
+ },
+ {
+  "brand": "Te chichi",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 1
+ },
+ {
+  "brand": "CRAFT STANDARD BOUTIQUE",
+  "source": "91app:www.stripe-club.com.tw",
+  "n": 1
+ },
+ {
+  "brand": "LeSportsac",
+  "source": "web:lesportsac.tw",
+  "n": 1
+ }
+]
