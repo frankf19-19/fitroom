@@ -142,7 +142,7 @@ def page91(h):
   return d if isinstance(d, dict) and d.get('Id') else None
 def addl91(host, shop, sid):
   """商品詳細描述（尺寸表多半在這裡）：/webapi/SalePageV2/GetSalePageAdditionalInfo 是各家 robots.txt 明確 Allow 的路徑（其他 /webapi/ 都禁止），仍經過 robots 守門。"""
-  s, t = get(f'https://{host}/webapi/SalePageV2/GetSalePageAdditionalInfo/{shop}/{sid}', 1500000, min_delay=0.4)
+  s, t = get(f'https://{host}/webapi/SalePageV2/GetSalePageAdditionalInfo/{shop}/{sid}', 1500000, min_delay=0.7)
   if s != 200: return ''
   try: return str(((json.loads(t).get('Data') or {}).get('MoreInfo') or {}).get('SaleProductDesc_Content') or '')
   except Exception: return ''
@@ -197,8 +197,8 @@ def rows91(host, brand, gdef, ids=None):
   if not ids: print(host, 'no salepages'); return [], 0
   def one(sid):
     url = f'https://{host}/SalePage/Index/{sid}'
-    s, h = get(url, 2500000, min_delay=0.4)
-    if s in (403, 429): stats['blocked'] += 1
+    s, h = get(url, 2500000, min_delay=0.7)
+    if s in (403, 429): stats['blocked'] += 1; time.sleep(8)   # 被限流就退後（STRIPE CLUB 0.4 秒間隔時 403 很多）
     if s != 200: return None
     try: return parse91(host, brand, gdef, sid, h, more=True)
     except Exception as e: print('  skip', url, repr(e)[:80]); return None
