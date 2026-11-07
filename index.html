@@ -1878,7 +1878,10 @@ async function runPose(src){
   try{ const mk=r.segmentationMasks&&r.segmentationMasks[0]; if(mk){ mw=mk.width; mh=mk.height; mask=new Float32Array(mk.getAsFloat32Array()); } }catch{}
   try{ (r.segmentationMasks||[]).forEach(m=>m&&m.close&&m.close()); }catch{}
   if(!lm) throw Object.assign(new Error('no person'),{code:'NO_PERSON'});
-  return {lm:lm.map(p=>({x:p.x,y:p.y,visibility:p.visibility==null?1:p.visibility})), mask, mw, mh};
+  const out={lm:lm.map(p=>({x:p.x,y:p.y,visibility:p.visibility==null?1:p.visibility})), mask, mw, mh};
+  // 除錯模式（localStorage tryon.debug=1）：把原始關節點與遮罩留給測試腳本重播
+  try{ if(window.__tryon&&mask){ const u=new Uint8Array(mask.length); for(let i=0;i<mask.length;i++) u[i]=Math.max(0,Math.min(255,Math.round(mask[i]*255))); let b=''; for(let i=0;i<u.length;i+=32768) b+=String.fromCharCode.apply(null,u.subarray(i,i+32768)); window.__tryon.lastPose={lm:out.lm, mw, mh, iw:c.width, ih:c.height, mask:btoa(b)}; } }catch{}
+  return out;
 }
 
 /* ---- 純數學（window.__tryon.fit 可單元測試） ---- */
@@ -1927,14 +1930,15 @@ function poseGeometry(p){
   const avgY=(a,b)=>(P(a).y+P(b).y)/2;
   return {mw,mh,top,foot,bodyPx,shY,hipJ,T,cx,shPx,hipPx,rows,kneeY:avgY(25,26),ankleY:avgY(27,28),wrists:[P(15),P(16)],feet:[P(31),P(32)],P};
 }
-const mErr=(code,msg)=>Object.assign(new Error(msg),{code});
+const mErr=(code,msg)=>{ mDbg({err:code+': '+msg}); return Object.assign(new Error(msg),{code}); };
+function mDbg(o){ try{ if(window.__tryon) window.__tryon.lastMeasure=Object.assign(window.__tryon.lastMeasure||{},o); }catch{} }
 // 體重推估的常見範圍（只當成合理性檢查）
 function regressCirc(H,bmi,g){ return g==='m' ? {chest:H*0.545*(1+(bmi-22)*0.02), waist:H*(0.45+(bmi-22)*0.014), hip:H*(0.555+(bmi-22)*0.011)} : {chest:H*0.53*(1+(bmi-21)*0.022), waist:H*(0.415+(bmi-21)*0.013), hip:H*(0.565+(bmi-21)*0.013)}; }
 // fp/sp：runPose 的結果；o：{height, weight, gender, loose, llm:{bust,waist,hip}}
 function measureFromPose(fp, sp, o){
   const H=+o.height; if(!(H>=100&&H<=230)) throw mErr('NO_HEIGHT','請先填身高');
   const g=poseGeometry(fp); if(!g) throw mErr('NO_PERSON','照片裡找不到清楚的人像，請換一張正面、全身入鏡的照片。');
-  const P=g.P, vis=i=>P(i).v;
+  const P=g.P, vis=i=>P(i).v; mDbg({mw:g.mw,mh:g.mh,top:g.top,foot:g.foot,cx:g.cx,rows:g.rows});
   if(vis(0)<0.6||vis(27)<0.6||vis(28)<0.6||!g.bodyPx||g.bodyPx<g.T*2.4) throw mErr('NOT_FULL','沒有拍到完整的全身：頭頂到腳底都要在畫面裡（腳不要被裁掉），請重拍一張。');
   if(!fp.mask) throw mErr('NO_MASK','這張照片抓不到身體輪廓，換一張背景乾淨、光線均勻的照片試試。');
   if(g.shPx/g.T<0.42||g.hipPx/g.shPx<0.4||g.hipPx/g.shPx>1.1) throw mErr('NOT_FRONT','看起來是側身或轉了角度：量身要用正面照，請面對鏡頭站直再拍一張。');
@@ -1977,6 +1981,7 @@ function measureFromPose(fp, sp, o){
   const drops={waist:r1((g.rows.waist.y-g.shY)*cm), hip:r1((g.rows.hip.y-g.shY)*cm), crotch:r1((g.hipJ+0.2*g.T-g.shY)*cm), knee:r1((g.kneeY-g.shY)*cm)};
   const nr=q=>q?{y:q.y/g.mh,l:q.l/g.mw,r:q.r/g.mw}:null;
   const geo={ar:g.mw/g.mh, top:g.top/g.mh, foot:g.foot/g.mh, rows:{shoulder:g.rows.shoulder?nr(g.rows.shoulder):{y:g.shY/g.mh,l:(g.cx-g.shPx*0.56)/g.mw,r:(g.cx+g.shPx*0.56)/g.mw}, chest:nr(g.rows.chest), waist:nr(g.rows.waist), hip:nr(g.rows.hip)}};
+  mDbg({cm, values:vals, W});
   return {v:1, at:new Date().toISOString(), gender:o.gender||'f', side, loose:!!o.loose, vals, unc, manual:{}, meta, drops, flags, geo, src:'photo'};
 }
 

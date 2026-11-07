@@ -1,0 +1,150 @@
+{
+ "cases": [
+  {
+   "img": "real_m.jpg",
+   "height": 178,
+   "weight": 72,
+   "g": "m",
+   "note": "男 3/4 側身、寬版 T 恤、赤腳",
+   "targets": {
+    "shoulder": [
+     40,
+     46
+    ],
+    "chest": [
+     92,
+     98
+    ],
+    "waist": [
+     78,
+     84
+    ],
+    "hip": [
+     94,
+     100
+    ],
+    "arm": [
+     57,
+     62
+    ],
+    "inseam": [
+     77,
+     83
+    ],
+    "foot": [
+     26,
+     27.5
+    ]
+   }
+  },
+  {
+   "img": "real_f.jpg",
+   "height": 168,
+   "weight": 52,
+   "g": "f",
+   "note": "女 連身衣、踮腳尖、雙腿交叉、身體微轉",
+   "targets": {
+    "shoulder": [
+     35,
+     39
+    ],
+    "chest": [
+     80,
+     85
+    ],
+    "waist": [
+     60,
+     66
+    ],
+    "hip": [
+     86,
+     91
+    ],
+    "inseam": [
+     74,
+     79
+    ]
+   }
+  },
+  {
+   "img": "px_8811247.jpg",
+   "src": "https://images.pexels.com/photos/8811247/pexels-photo-8811247.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 8811247",
+   "height": 165,
+   "weight": 55,
+   "g": "f",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_6856000.jpg",
+   "src": "https://images.pexels.com/photos/6856000/pexels-photo-6856000.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 6856000",
+   "height": 165,
+   "weight": 55,
+   "g": "f",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_6513371.jpg",
+   "src": "https://images.pexels.com/photos/6513371/pexels-photo-6513371.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 6513371",
+   "height": 165,
+   "weight": 55,
+   "g": "f",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_12969214.jpg",
+   "src": "https://images.pexels.com/photos/12969214/pexels-photo-12969214.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 12969214",
+   "height": 165,
+   "weight": 55,
+   "g": "f",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_28494855.jpg",
+   "src": "https://images.pexels.com/photos/28494855/pexels-photo-28494855.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 28494855",
+   "height": 175,
+   "weight": 70,
+   "g": "m",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_8217535.jpg",
+   "src": "https://images.pexels.com/photos/8217535/pexels-photo-8217535.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 8217535",
+   "height": 175,
+   "weight": 70,
+   "g": "m",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_6668809.jpg",
+   "src": "https://images.pexels.com/photos/6668809/pexels-photo-6668809.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 6668809",
+   "height": 175,
+   "weight": 70,
+   "g": "m",
+   "candidate": true,
+   "targets": {}
+  },
+  {
+   "img": "px_7561443.jpg",
+   "src": "https://images.pexels.com/photos/7561443/pexels-photo-7561443.jpeg?auto=compress&cs=tinysrgb&w=1200",
+   "credit": "Pexels 7561443",
+   "height": 175,
+   "weight": 70,
+   "g": "m",
+   "candidate": true,
+   "targets": {}
+  }
+ ]
+}
