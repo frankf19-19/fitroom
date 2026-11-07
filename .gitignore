@@ -9,3 +9,4 @@ app/ios/App/build/
 app/ios/App/Pods/
 app/ios/App/App.xcworkspace/xcuserdata/
 app/ios/DerivedData/
+__pycache__/
