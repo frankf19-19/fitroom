@@ -3,10 +3,12 @@ on:
   workflow_dispatch:
     inputs:
       per_cat: { description: '每個分類幾件', default: '12', required: false }
+      shops: { description: '只跑這些台灣商店（逗號分隔，例如 queenshop,iroo；空白＝全部）', default: '', required: false }
   schedule:
     - cron: '17 20 * * *'   # 每天台灣時間 04:17 更新價格與下架
 jobs:
   sync:
+    if: ${{ !inputs.shops }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -31,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 台灣品牌（每家一台機器）
+        if: ${{ !inputs.shops || contains(format(',{0},', inputs.shops), format(',{0},', matrix.shop)) }}
         env:
           SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

@@ -159,7 +159,8 @@ def ld_product(html):
       if isinstance(it, dict) and 'Product' in str(it.get('@type')):
         off = it.get('offers') or {}
         if isinstance(off, list): off = off[0] if off else {}
-        img = it.get('image'); img = img[0] if isinstance(img, list) else (img.get('url') if isinstance(img, dict) else img)
+        img = it.get('image'); img = (img[0] if img else None) if isinstance(img, list) else (img.get('url') if isinstance(img, dict) else img)
+        if isinstance(img, dict): img = img.get('url') or img.get('contentUrl')
         avail = str(off.get('availability') or '')
         br = it.get('brand'); br = (br.get('name') if isinstance(br, dict) else br) or ''
         return {'name': it.get('name'), 'image': img, 'price': off.get('price') or off.get('lowPrice') or fallback_price, 'oos': 'OutOfStock' in avail, 'category': it.get('category') or '', 'brand': str(br)}
@@ -194,6 +195,7 @@ LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('ww
             ('www.goopi.co', 'GOOPi', 'u', None, r'/(zh-hant/)?products/', 240),   # Shopline
             ('www.merrell.com.tw', 'MERRELL', 'u', None, r'/products/', 240), ('www.jansport.com.tw', 'JanSport', 'u', 'accessory', r'/products/', 200),
             ('www.saucony.com.tw', 'Saucony', 'u', None, r'/products/', 240),   # Cyberbiz
+            ('lesportsac.tw', 'LeSportsac', 'f', 'accessory', r'lesportsac\.tw/products/', 200, 'tail', {'sitemaps': ['https://lesportsac.tw/sitemap.xml']}),   # Shopify
             ('www.airspaceonline.com', 'AIR SPACE', 'f', None, r'/tw/zh-hant/product/', 240, 'tail', {'sitemaps': ['https://www.airspaceonline.com/sitemap_TW.xml']}),
             # Salesforce Commerce Cloud 台灣站：robots 有 Crawl-delay（C&K 10 秒、PEDRO 5 秒）就照著慢慢抓
             ('www.charleskeith.com', 'CHARLES & KEITH', 'f', None, r'charleskeith\.com/tw/[^/]+\.html$', 75, 'tail', {'sitemaps': ['https://www.charleskeith.com/tw/sitemap_index.xml'], 'delay': 10}),
@@ -225,6 +227,9 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail', opts=None):
 
 def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
   def one(u):
+    try: return one_(u)
+    except Exception as e: print('  skip', u[:100], repr(e)[:80]); return None
+  def one_(u):
     if not rp.can_fetch(UA, u): return None
     time.sleep(delay)
     s, h = get(u, 2000000)
@@ -269,7 +274,7 @@ LIST_SITES = [
   ('www.caco.com.tw', 'CACO', 'u', None, [f'https://www.caco.com.tw/productlist/{c}?page={pg}' for c in ('51401', '14304', '14338', '143021', '142021', '14332') for pg in (1, 2)], None, r'/product/[A-Z0-9]+/\d+$', 0, 160),
   # Queen Shop（ASP.NET，無 JSON-LD）：資料取自 GTM dataLayer 的 view_item（ld_product 的備援）
   ('www.queenshop.com.tw', 'Queen Shop', 'f', None, ['https://www.queenshop.com.tw/'] + [f'https://www.queenshop.com.tw/zh-TW/QueenShop/ProductList?item1={c}' for c in ('00', '01', '02', '03', '20')],
-   r'QueenShop/ProductList\?item1=\d+&item2=\w+$', r'QueenShop/Product\?SaleID=\w+$', 16, 220),
+   r'QueenShop/ProductList\?item1=\d+(&item2=\w+)?(&item3=\w+)?$', r'QueenShop/Product\?SaleID=\w+$', 30, 220),
   # USAGI ONLINE（MASH 台灣：SNIDEL、gelato pique、FRAY I.D、Mila Owen、lily brown…）：品牌取 JSON-LD 的 brand
   ('www.usagi-online.com.tw', '*', 'f', None, ['https://www.usagi-online.com.tw/', 'https://www.usagi-online.com.tw/productlist?other=newarrival'],
    r'productlist\?item1=\d+&item2=\w+$', r'product\?saleid=\w+$', 14, 300),
@@ -295,7 +300,7 @@ def sync_list(host, brand, gdef, deftype, seeds, list_pat, detail_pat, max_lists
   save('web:' + host, rows); print(host, len(urls), '->', counts)
 
 # ---------- Shopify：/products.json ----------
-SHOPIFY = [('lesportsac.tw', 'LeSportsac', 'f', 'accessory'), ('salomon.com.tw', 'Salomon', 'u', None)]
+SHOPIFY = [('salomon.com.tw', 'Salomon', 'u', None)]   # LeSportsac 的 products.json 只回 3 件，改走網站地圖＋JSON-LD（LD_SITES）
 def sync_shopify(host, brand, gdef, deftype):
   rp, _ = robots(host); rows = []
   for page in (1, 2, 3):
