@@ -1,0 +1,15 @@
+name: 量身實測（真瀏覽器，不花 AI 費用）
+on: { workflow_dispatch: {} }
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q playwright && python3 -m playwright install --with-deps chrome
+      - run: python3 qa/measure_test.py
+      - if: always()
+        run: |
+          cd qa-live && git init -q && git checkout -q -b qa-measure && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m m
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-measure
