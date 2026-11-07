@@ -150,7 +150,7 @@ def sync91(host, brand, gdef):
     if not typ or not imgs or not price: return None
     sizes = sku_sizes(d)
     desc = ' '.join(str(d.get(k) or '') for k in ('SubDescript', 'ShortDescription', 'Description'))
-    chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 https://{host}/SalePage/Index/{sid}') if '<table' in desc else None
+    chart = SC.pick_chart(desc, typ, title, f'商品頁尺寸表 https://{host}/SalePage/Index/{sid}') if desc.strip() else None
     pic = imgs[0].get('PicUrl') or ''
     pic = ('https:' + pic) if pic.startswith('//') else pic.replace('http://', 'https://')
     return {'source': '91app:' + host, 'external_id': str(sid), 'brand': b, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),

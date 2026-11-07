@@ -157,6 +157,25 @@ def parse_tables(page_html, typ=None):
   if all(x in SIZE_ORDER for x in sizes): sizes = {x: sizes[x] for x in SIZE_ORDER if x in sizes}
   return sizes
 
+TEXT_LINE = re.compile(r'^\s*(XXS|XS|S|M|L|XL|XXL|[2-4]XL|F|FREE|\d{1,2}\s*號?)\s*(?:[/／:：|｜]|號\s)\s*(.+)$', re.I)
+def parse_text(page_html, typ=None):
+  """描述文字裡的尺寸表：「M / 肩寬44、胸寬57、衣長75、袖長61」每個尺碼一行。"""
+  t = re.sub(r'(?i)<br\s*/?>|</p>|</li>|</div>|\\n', '\n', page_html or '')
+  t = html_mod.unescape(re.sub(r'<[^>]+>', ' ', t))
+  raw = {}
+  for line in t.split('\n'):
+    m = TEXT_LINE.match(line)
+    if not m: continue
+    sz = norm_size(m.group(1))
+    pairs = re.findall(r'([\u4e00-\u9fff()（）]{1,6})\s*[:：]?\s*(\d{1,3}(?:\.\d+)?)\s*(?:cm|公分)?', m.group(2), re.I)
+    d = {}
+    for lbl, v in pairs:
+      key, flat = label_key(lbl)
+      if key: d.setdefault(key, (float(v), flat))
+    if len(d) >= 2: raw[sz] = d
+  if not raw: return None
+  return _finalize(raw, typ)
+
 def garment_chart(sizes, source, fit_type=None):
   return {'unit': 'cm', 'kind': 'garment', 'fit_type': fit_type, 'sizes': sizes, 'source': source, 'updated': now()}
 
@@ -391,7 +410,7 @@ def fr_garment_chart(brand, code, typ, name):
 def pick_chart(page_html, typ, name, brand_source):
   """商品頁 HTML → 商品實測尺寸表（沒有就 None）。"""
   if typ not in ('top', 'bottom', 'dress', 'shoes'): return None
-  sizes = parse_tables(page_html, typ)
+  sizes = parse_tables(page_html, typ) or parse_text(page_html, typ)
   if not sizes: return None
   if typ == 'shoes' and not any('foot' in d for d in sizes.values()): return None
   if typ in ('top', 'dress') and not any(('chest' in d or 'length' in d or 'shoulder' in d) for d in sizes.values()): return None
@@ -444,4 +463,8 @@ if __name__ == '__main__':
   assert body_chart(['23腰', '35腰'], 'bottom', 'f')['sizes']['35腰'] == {'waist': 88.9}
   assert body_chart(['30X32', 'A／M2＂'], 'bottom', 'm')['sizes'] == {'30X32': {'waist': 76.2, 'inseam': 81.3}, 'A／M2＂': {'waist': 78, 'hip': 94}}
   assert decode_html('尺寸'.encode('cp950'), None) == '尺寸' and decode_html('<meta charset="iso-8859-1">尺寸'.encode()) .endswith('尺寸')
+  txt = '<p>尺寸：cm</p><p>M / 肩寬44、胸寬57、衣長75、袖長61</p><p>L / 肩寬46、胸寬59、衣長77、袖長62</p><p>※商品尺寸皆為手工測量</p>'
+  assert parse_text(txt, 'top') == {'M': {'shoulder': 44, 'chest': 114, 'length': 75, 'sleeve': 61}, 'L': {'shoulder': 46, 'chest': 118, 'length': 77, 'sleeve': 62}}, parse_text(txt, 'top')
+  assert pick_chart(txt, 'top', 'x', 'src')['sizes']['L']['chest'] == 118
+  assert parse_text('<li>※尺寸： 長約204cm、寬約104cm</li>', 'top') is None
   print('sizecharts self-test ok')
