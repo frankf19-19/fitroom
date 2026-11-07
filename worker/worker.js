@@ -1,5 +1,5 @@
 /**
- * 試穿吧 TryOn — 後端 Worker  v1.5.0
+ * 試穿吧 TryOn — 後端 Worker
  * 部署到 Cloudflare Workers（建議 Workers Paid 方案：單次請求 CPU 上限 30 秒；免費方案 10ms 處理大圖會逾時）。
  * 所有金鑰、額度、扣點、金流都在這裡，前端只拿結果。
  *
@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.12.0';
+const VERSION = '2.13.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -29,21 +29,121 @@ const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 // 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
 const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-2/edit', 'https://queue.fal.run/fal-ai/nano-banana-pro/edit'];
 const ITEM_LABEL = { top: 'TOP or OUTERWEAR (upper body garment)', bottom: 'BOTTOM (trousers / skirt / shorts)', dress: 'ONE-PIECE (dress / jumpsuit)', shoes: 'SHOES', hat: 'HAT', accessory: 'ACCESSORY (bag / jewelry / glasses / watch)', hair: 'HAIRSTYLE reference' };
-// opts.captions：與 steps 對齊的文字規格（看圖模型產生，可為 null）；opts.fixNotes：上一次品質檢查不通過的原因
+/* ---- 尺寸合身度：前端算好每個部位緊/鬆幾公分，這裡轉成看得見的畫面描述 ---- */
+const FIT_ZONES = ['chest', 'shoulder', 'waist', 'hip', 'length', 'sleeve', 'inseam', 'thigh'];
+const FIT_VERDICTS = ['tight', 'snug', 'fit', 'loose', 'short', 'long'];
+const BODY_KEYS = { height_cm: [80, 230], weight_kg: [20, 250], chest_cm: [40, 200], waist_cm: [30, 200], hip_cm: [40, 200], shoulder_cm: [20, 80], inseam_cm: [30, 120] };
+const cleanStr = (v, n = 300) => typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim().slice(0, n) : '';
+// items[i].fit 驗證：格式不對就當作沒給（不擋請求）
+function cleanFit(f) {
+  if (!f || typeof f !== 'object' || Array.isArray(f)) return null;
+  const size = cleanStr(f.size, 20);
+  const zones = (Array.isArray(f.zones) ? f.zones : []).slice(0, 10).map(z => {
+    if (!z || typeof z !== 'object') return null;
+    const zone = String(z.zone || '').toLowerCase(), verdict = String(z.verdict || '').toLowerCase();
+    if (!FIT_ZONES.includes(zone) || !FIT_VERDICTS.includes(verdict)) return null;
+    let d = Number(z.delta_cm); d = Number.isFinite(d) ? Math.max(-60, Math.min(60, Math.round(d * 10) / 10)) : null;
+    return { zone, delta_cm: d, verdict };
+  }).filter(Boolean);
+  const summary_en = cleanStr(f.summary_en, 300);
+  if (!size && !zones.length && !summary_en) return null;
+  return { size: size || null, zones, summary_en: summary_en || null };
+}
+function cleanBody(b) {
+  if (!b || typeof b !== 'object' || Array.isArray(b)) return null;
+  const out = {};
+  for (const [k, [lo, hi]] of Object.entries(BODY_KEYS)) { const n = Number(b[k]); if (b[k] != null && b[k] !== '' && Number.isFinite(n) && n >= lo && n <= hi) out[k] = Math.round(n * 10) / 10; }
+  return Object.keys(out).length ? out : null;
+}
+function bodyLine(body) {
+  if (!body) return '';
+  const main = [body.height_cm ? body.height_cm + ' cm tall' : '', body.weight_kg ? body.weight_kg + ' kg' : ''].filter(Boolean).join(', ');
+  const m = [['chest', body.chest_cm], ['waist', body.waist_cm], ['hip', body.hip_cm], ['shoulder width', body.shoulder_cm], ['inseam', body.inseam_cm]].filter(x => x[1]).map(x => `${x[0]} ${x[1]} cm`).join(', ');
+  if (!main && !m) return '';
+  return 'The customer is ' + (main || 'of the build shown') + (m ? ` (body measurements: ${m})` : '') + '. Use these real measurements to judge how each garment fits and where hems and cuffs end.';
+}
+// 一個部位 → 具體畫面描述（緊：布料被撐開、橫向拉扯皺褶；鬆：多餘布料、垂直垂墜皺褶；短/長：下擺袖口落在身體哪裡）
+function fitPhrases(fit, type = 'top') {
+  if (!fit || !Array.isArray(fit.zones)) return [];
+  const bottom = type === 'bottom';
+  return fit.zones.map(z => {
+    const a = z.delta_cm == null ? null : Math.abs(z.delta_cm);
+    const by = a == null || a < 1 ? '' : ` by about ${Math.round(a)} cm`;
+    const amt = a == null || a < 1 ? 'slightly ' : (a >= 6 ? 'clearly ' : '');
+    const cm = a == null || a < 1 ? 'slightly' : `about ${Math.round(a)} cm`;
+    const v = z.verdict;
+    if (v === 'fit') return {
+      chest: 'chest fits cleanly (smooth fabric with a little ease, no pulling, no excess)', shoulder: 'shoulder seams sit right on the shoulder point',
+      waist: bottom ? 'waistband sits flat and closed at the natural waist with no gaping or digging in' : 'waist area hangs smoothly with normal ease', hip: 'fabric skims the hips smoothly',
+      thigh: 'legs skim the thighs with normal ease', length: bottom ? 'trouser hem ends at the intended spot (just touching the top of the shoe)' : 'hem ends where it is designed to end on this body',
+      sleeve: 'sleeves end at the wrist bone', inseam: 'trouser hem ends at the ankle with a clean break'
+    }[z.zone];
+    if (v === 'tight' || v === 'snug') {
+      const t = v === 'tight';
+      return {
+        chest: t ? `chest is ${amt}tight${by} (fabric stretched and pulling across the chest with horizontal tension wrinkles, buttons/closure straining, fabric clinging to the torso)` : 'chest is snug (close to the body with light tension, no excess fabric)',
+        shoulder: t ? `shoulders are ${amt}narrow${by} (shoulder seams sit inside the shoulder point, sleeve heads pull and fabric strains across the upper back)` : 'shoulder seams sit just inside the shoulder point (close, structured fit)',
+        waist: bottom ? (t ? `waistband is ${amt}tight${by} (waistband digs in, fabric pulls with horizontal strain lines, closure under tension)` : 'waistband is snug (sits firmly at the waist, no gap)') : (t ? `waist is ${amt}tight${by} (fabric clings to the midsection with horizontal pull lines)` : 'waist is close-fitting (follows the body at the midsection)'),
+        hip: t ? `hips are ${amt}tight${by} (fabric stretched over the hips and seat with horizontal pull lines, pockets pulled open)` : 'hips are snug (fabric follows the hip line closely)',
+        thigh: t ? `thighs are ${amt}tight${by} (fabric clings to the thighs with horizontal strain wrinkles)` : 'thighs are snug (legs follow the thigh closely)',
+        sleeve: t ? `sleeves are ${amt}tight${by} (sleeves cling to the upper arms with pulling at the elbow)` : 'sleeves are close-fitting on the arms',
+        length: t ? `garment is ${amt}too short in the body${by}` : 'length is on the short side', inseam: t ? `trousers pull up${by}` : 'trousers sit slightly high'
+      }[z.zone];
+    }
+    if (v === 'loose') return {
+      chest: `chest is ${amt}loose${by} (extra fabric, soft vertical drape folds, the garment stands away from the torso)`,
+      shoulder: `shoulder seams sit ${cm} past the shoulder point (dropped shoulder, seams hanging down onto the upper arm)`,
+      waist: bottom ? `waistband is ${amt}loose${by} (waistband gapes at the back, fabric bunches and gathers, trousers sit lower on the hips)` : `waist is ${amt}loose${by} (boxy, fabric hangs straight down from the chest with vertical folds)`,
+      hip: `hips are ${amt}loose${by} (fabric hangs straight off the hips with extra room and soft folds)`,
+      thigh: `thighs are ${amt}loose${by} (roomy legs, fabric drapes with vertical folds instead of touching the thigh)`,
+      sleeve: `sleeves are ${amt}roomy${by} (wide sleeves with extra fabric and soft folds)`,
+      length: `garment is ${amt}long${by}`, inseam: `trousers are ${amt}long${by}`
+    }[z.zone];
+    if (v === 'short') return {
+      length: bottom ? `trouser hem ends ${cm} higher than intended (above the ankle bone, ankle exposed)` : (type === 'dress' ? `hem ends ${cm} higher on the leg than on the product model` : `hem ends ${cm} higher than intended (ends higher on the torso, toward the waist; may expose the waistband when the arms lift)`),
+      sleeve: `sleeves end ${cm} above the wrist bone (wrist exposed)`, inseam: `trouser hem ends ${cm} above the ankle bone (ankle exposed, cropped look)`,
+      chest: `the top is short across the chest${by}`, shoulder: `shoulders are narrow${by}`, waist: `waist sits high${by}`, hip: `the garment ends above the hips${by}`, thigh: `legs ride up on the thigh${by}`
+    }[z.zone];
+    if (v === 'long') return {
+      length: bottom ? `trousers are ${cm} too long (hem stacks and puddles in folds over the shoes)` : (type === 'dress' ? `hem ends ${cm} lower on the leg than on the product model` : `hem ends ${cm} lower than intended (extends past the hips, covering more of the seat)`),
+      sleeve: `sleeves extend ${cm} past the wrist bone (covering part of the hand, fabric bunching at the cuff)`, inseam: `trousers are ${cm} too long (fabric stacks in folds at the ankle and over the shoes)`,
+      chest: `the top is long across the chest${by}`, shoulder: `shoulder seams drop${by}`, waist: `waist sits low${by}`, hip: `the garment extends below the hips${by}`, thigh: `legs hang long${by}`
+    }[z.zone];
+    return null;
+  }).filter(Boolean);
+}
+// 一件商品的合身度提示句（給生成模型）
+function fitLine(fit, type, n) {
+  if (!fit) return '';
+  const ph = fitPhrases(fit, type);
+  if (!fit.size && !ph.length && !fit.summary_en) return '';
+  return `Product ${n} is size ${fit.size || 'as selected'}.` + (ph.length ? ' Render its real fit on this body: ' + ph.join('; ') + '.' : '') + (fit.summary_en ? ' Fit summary: ' + fit.summary_en : '');
+}
+// 快取鍵：不同尺寸絕不共用結果（沒有尺寸資訊時維持舊鍵）
+function fitSig(items) {
+  const sizes = (items || []).map(it => (it && it.fit && it.fit.size) ? `${it.type}:${it.fit.size}` : '');
+  if (!sizes.some(Boolean)) return '';
+  let h = 0x811c9dc5; for (const ch of sizes.join('|')) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0; }
+  return '-s' + h.toString(16).padStart(8, '0');
+}
+// opts.captions：與 steps 對齊的文字規格（看圖模型產生，可為 null）；opts.fixNotes：上一次品質檢查不通過的原因；opts.body：使用者身體尺寸
 function outfitPrompt(steps, hints, faceHint, opts = {}) {
   const captions = Array.isArray(opts.captions) ? opts.captions : [];
-  const lines = [], specs = []; let k = 2;
+  const lines = [], specs = [], fits = []; let k = 2;
   const refs = steps.map((st, i) => {
     if (!st.image_url) return null;
     const n = k++;
     lines.push(`Image ${n} is a product photo of the ${ITEM_LABEL[st.type]} to put on the customer.`);
     const cap = captions[i] && captions[i].description ? String(captions[i].description).slice(0, 600) : '';
     if (cap) specs.push(`Product ${n - 1} specification (Image ${n}): ${cap}`);
+    const fl = st.type !== 'hair' ? fitLine(st.fit, st.type, n - 1) : '';
+    if (fl) fits.push(fl);
     return n;
   });
+  const body = bodyLine(opts.body);
   const hairText = steps.find(st => st.type === 'hair' && !st.image_url && st.text);
   const types = new Set(steps.map(s => s.type));
-  const hasHeight = /\b1\d{2}\s?cm\b|\bheight\b|\btall\b|\d\s?(ft|feet)\b/i.test(String(hints || ''));
+  const hasHeight = /\b1\d{2}\s?cm\b|\bheight\b|\btall\b|\d\s?(ft|feet)\b/i.test(String(hints || '') + ' ' + body);
   const fix = opts.fixNotes ? String(opts.fixNotes).slice(0, 900) : '';
   return [
     'Virtual try-on photo edit for a fashion e-commerce app.',
@@ -52,7 +152,7 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
     hairText ? `Also change the customer's hairstyle to: ${hairText.text}.` : '',
     'Produce a photo of the SAME customer from Image 1 now wearing exactly these products.',
     'GARMENT FIDELITY IS THE TOP PRIORITY. Copy each product exactly as it appears in its product photo:',
-    '- identical silhouette, cut and proportions (wide or balloon-leg trousers must stay wide/balloon-shaped, oversized stays oversized, cropped stays cropped), the same length relative to the body, rise and fit;',
+    '- identical silhouette, cut and proportions (wide or balloon-leg trousers must stay wide/balloon-shaped, oversized stays oversized, cropped stays cropped), the same length relative to the body, rise and fit' + (fits.length ? ' (except where the SIZE AND FIT notes below say this size sits differently on this body)' : '') + ';',
     '- identical color, fabric, texture, quilting and stitching, pattern, prints, logos, buttons, zippers, pockets, collar/hood and hem details;',
     '- worn the same way as in the product photo (jacket open or closed, sleeves, tucked or untucked). A hood stays DOWN behind the neck unless it is worn up in the product photo. Do not add hats, scarves or extra layers that were not provided.',
     'From each product photo use ONLY that product. Ignore the model wearing it, any other clothes they wear, the background and any text overlays.',
@@ -61,6 +161,8 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
     'IDENTITY AND SCENE MUST NOT CHANGE: same face, facial expression, ' + (types.has('hair') ? '' : 'hairstyle, ') + 'skin tone, body shape and proportions, pose, hands and anything held in the hands (for example a phone), background, mirror, lighting, camera angle and framing.',
     'Render each product at the correct physical scale for this person (sleeve, hem and trouser length end where they would on this body).' + (hasHeight ? " Use the customer's height given in the body notes to judge where hems and sleeves end." : ''),
     'Realistic fit and drape on this body with natural folds and shadows. Photorealistic. No text, no watermark. Keep the same aspect ratio and framing as Image 1.',
+    body,
+    fits.length ? 'SIZE AND FIT (the customer chose a specific size; the photo must visibly show how that size really fits this body):\n' + fits.join('\n') + '\nThe size only changes how the garment sits on the body (tension, wrinkles, drape, where seams, hems and cuffs land); it never changes the garment design, color, fabric, pattern or details. Do not "correct" a tight or loose fit into a perfect fit.' : '',
     hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : '',
     fix ? 'PREVIOUS ATTEMPT WAS REJECTED FOR: ' + fix + '. Fix these specifically.' : ''
   ].filter(Boolean).join('\n');
@@ -68,11 +170,11 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
 /* ---- 品質：單品文字規格（送出前）與結果品質檢查（送出後） ---- */
 const QA_MODELS = ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini'];
 const QA_TIMEOUT_MS = 12000;
-const QA_MIN_ITEM = 7, QA_MIN_IDENTITY = 7, QA_MIN_FRAMING = 6;
+const QA_MIN_ITEM = 7, QA_MIN_IDENTITY = 7, QA_MIN_FRAMING = 6, QA_MIN_FIT = 5;
 // 有圖的單品（純文字髮型略過）：回傳 [{ i: item_steps 索引, n: 單品編號(1 起), type, url }]
 function captionTargets(steps) {
   const out = []; let n = 1;
-  (steps || []).forEach((st, i) => { if (st.image_url) out.push({ i, n: n++, type: st.type, url: st.image_url }); });
+  (steps || []).forEach((st, i) => { if (st.image_url) out.push({ i, n: n++, type: st.type, url: st.image_url, fit: st.fit || null }); });
   return out;
 }
 function captionPrompt(targets) {
@@ -94,15 +196,20 @@ function parseCaptions(json, steps) {
   });
   return out.some(Boolean) ? out : null;
 }
+// 有沒有「看得出來」的合身度要求（有部位資料才算；只有尺寸名稱不評 fit_match）
+const hasFitZones = fit => !!(fit && Array.isArray(fit.zones) && fit.zones.length);
 function qaPrompt(targets, captions) {
   const specs = targets.map(t => { const c = captions && captions[t.i]; return `product ${t.n} (${ITEM_LABEL[t.type] || t.type}) = image ${t.n + 2}` + (c && c.description ? ': ' + c.description : ''); });
+  const fitT = targets.filter(t => hasFitZones(t.fit));
+  const fitSpec = fitT.map(t => `product ${t.n} is size ${t.fit.size || '?'} and should visibly show: ${fitPhrases(t.fit, t.type).join('; ')}`);
   return [
     'You are a strict QA inspector for a virtual try-on service. Image 1 is the GENERATED result. Image 2 is the ORIGINAL customer photo. The remaining images are the product photos: ' + specs.join('; ') + '.',
     'Score the result. identity (0-10): is the person in image 1 the same person as image 2 (face, expression, skin tone, hair unless a hairstyle product was given, body shape, pose, hands and held objects, background, lighting)? 10 = identical.',
     'For each product, match (0-10): does the garment worn in image 1 reproduce that product photo exactly (silhouette/cut, length on the body, color, fabric, pattern/logo/print, details, how it is worn)? 10 = exact copy. In "issue" state concretely what differs (e.g. "trousers are slim instead of wide-leg", "logo missing on chest"), or "" if nothing.',
+    fitT.length ? 'EXPECTED SIZE FIT: ' + fitSpec.join('. ') + '. For each of these products also score fit_match (0-10): does the garment in image 1 visibly show this fit (tension and strain wrinkles where tight, extra fabric and drape where loose, hems and cuffs ending where stated)? A result that renders a clearly tight or loose size as a neutral regular fit gets fit_match 4 or lower. Mention a fit problem in "issue". For products without an expected fit, set fit_match to null.' : '',
     'framing (0-10): same crop, aspect ratio and camera angle as image 2. artifacts: list visible defects (extra limbs, warped hands, text, duplicated garments, floating items) or [].',
-    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}, identity < ${QA_MIN_IDENTITY} or framing < ${QA_MIN_FRAMING}; otherwise "pass".`,
-    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,"issue":"..."}],"framing":0-10,"artifacts":["..."],"verdict":"pass"|"retry"}'
+    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY} or framing < ${QA_MIN_FRAMING}; otherwise "pass".`,
+    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"verdict":"pass"|"retry"}'
   ].join('\n');
 }
 const clamp10 = v => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : null; };
@@ -112,20 +219,28 @@ function normalizeQa(json, targets) {
   const rawItems = Array.isArray(q.items) ? q.items : [];
   const items = targets.map((t, k) => {
     const hit = rawItems.find(x => x && Number(x.n) === t.n) || rawItems[k] || {};
-    return { n: t.n, type: t.type, match: clamp10(hit.match), issue: typeof hit.issue === 'string' ? hit.issue.trim().slice(0, 200) : '' };
+    const o = { n: t.n, type: t.type, match: clamp10(hit.match), issue: typeof hit.issue === 'string' ? hit.issue.trim().slice(0, 200) : '' };
+    if (hasFitZones(t.fit)) o.fit_match = hit.fit_match == null ? null : clamp10(hit.fit_match);
+    return o;
   });
   const identity = clamp10(q.identity), framing = clamp10(q.framing);
   const artifacts = Array.isArray(q.artifacts) ? q.artifacts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 120)).slice(0, 6) : [];
-  const bad = items.some(it => it.match != null && it.match < QA_MIN_ITEM) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING);
+  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING);
   const verdict = bad || String(q.verdict).toLowerCase() === 'retry' ? 'retry' : 'pass';
   return { identity, items, framing, artifacts, verdict, at: Date.now() };
 }
 // 由檢查結果組成「上次被退回的原因」（放進重做的提示詞）
-function qaCorrections(qa) {
+// targets（可省略）：帶入各商品的合身度，讓重做提示詞寫出「應該看到的合身樣子」
+function qaCorrections(qa, targets) {
   const out = [];
   for (const it of (qa.items || [])) {
-    if (it.match != null && it.match < QA_MIN_ITEM) out.push(`product ${it.n} (${ITEM_LABEL[it.type] || it.type}) does not match its product photo` + (it.issue ? ': ' + it.issue : ''));
-    else if (it.issue) out.push(`product ${it.n}: ${it.issue}`);
+    const badItem = it.match != null && it.match < QA_MIN_ITEM, badFit = it.fit_match != null && it.fit_match < QA_MIN_FIT;
+    if (badItem) out.push(`product ${it.n} (${ITEM_LABEL[it.type] || it.type}) does not match its product photo` + (it.issue ? ': ' + it.issue : ''));
+    else if (it.issue && !badFit) out.push(`product ${it.n}: ${it.issue}`);
+    if (badFit) {
+      const t = (targets || []).find(x => x.n === it.n), f = t && t.fit;
+      out.push(`product ${it.n} does not show the real fit of the chosen size` + (f && f.size ? ' ' + f.size : '') + (f ? ' — it must visibly show: ' + fitPhrases(f, it.type).join('; ') : '') + (it.issue && !badItem ? ' (' + it.issue + ')' : ''));
+    }
   }
   if (qa.identity != null && qa.identity < QA_MIN_IDENTITY) out.push("the customer's identity changed (face, body, pose, background or lighting differ from Image 1) — keep the person in Image 1 identical");
   if (qa.framing != null && qa.framing < QA_MIN_FRAMING) out.push('the framing / crop / aspect ratio differs from Image 1 — keep the exact same framing');
@@ -235,6 +350,7 @@ export default {
       if (p === '/api/analyze' && m === 'POST') return await handleAnalyze(request, env, cors, ctx);
       if (p === '/api/products' && m === 'GET') return await handleProducts(request, env, cors, url);
       if (p === '/api/brands' && m === 'GET') return await handleBrands(env, cors);
+      if (p === '/api/sizechart' && m === 'GET') return await handleSizechart(env, cors, url);
       if (p === '/api/img' && m === 'GET') return await handleImgProxy(request, env, cors, url);
       if (p === '/api/product-click' && m === 'POST') return await handleProductClick(request, env, cors);
       if (p === '/api/admin/products/import' && m === 'POST') return await handleProductImport(request, env, cors);
@@ -254,7 +370,7 @@ export default {
   }
 };
 // 離線測試用（worker/test_quality.mjs）：只有在測試旗標開啟時才掛出內部函式
-if (globalThis.__TRYON_TEST__) globalThis.__tryonTest = { outfitPrompt, captionTargets, captionPrompt, parseCaptions, qaPrompt, normalizeQa, qaCorrections, visionJson, handleTryonStatus, OUTFIT_ENGINES, VERSION };
+if (globalThis.__TRYON_TEST__) globalThis.__tryonTest = { outfitPrompt, fitPhrases, fitLine, fitSig, cleanFit, cleanBody, bodyLine, handleTryon, handleSizechart, captionTargets, captionPrompt, parseCaptions, qaPrompt, normalizeQa, qaCorrections, visionJson, handleTryonStatus, OUTFIT_ENGINES, VERSION };
 
 /* ---------------- 共用 ---------------- */
 function corsHeaders(request, env) {
@@ -470,6 +586,10 @@ async function handleTryon(request, env, cors, ctx) {
     if (it.type !== 'hair' && !isDataImage(it.image)) return json({ error: '每個品項都需要圖片' }, 400, cors);
   }
   const types = items.map(i => i.type);
+  // 尺寸合身度（選填）：每件的 fit、整體的 body；格式不對就忽略
+  for (const it of items) it.fit = it.type === 'hair' ? null : cleanFit(it.fit);
+  const fitBody = cleanBody(body.body);
+  const fsig = fitSig(items);
 
   // 清理卡住的「進行中」（Worker 中途被終止時）：標記失敗並退點
   try { await sweepStale(env, user.id); } catch { /* ignore */ }
@@ -478,14 +598,14 @@ async function handleTryon(request, env, cors, ctx) {
   if (recent.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors);
 
   // 同一張照片＋同樣單品組合 7 天內做過 → 直接用舊結果（秒出、不扣點）
-  const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + (wantViews ? '-v' : '') + '-' + variants : null;
+  const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + (wantViews ? '-v' : '') + '-' + variants : null;
   if (ckey && body.async === true && !body.nocache) {
     const hit = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.ok&job->>key=eq.${ckey}&created_at=gte.${encodeURIComponent(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,views&order=created_at.desc&limit=1`).catch(() => []);
     const r = hit[0] && hit[0].views && hit[0].views.result;
     if (r) { const used = await freeUsedToday(env, user.id).catch(() => 0); const pr = await getProfile(env, user).catch(() => null); return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
   }
   // ---- 預先合成（使用者還在挑尺寸時就先跑；按下「開始」才扣點）----
-  const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + '-' + variants : null;
+  const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + '-' + variants : null;
   if (bkey && stepMode) {
     const pfRows = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views,variants,cost,free_used&order=created_at.desc`).catch(() => []);
     for (const g of pfRows) {
@@ -612,11 +732,12 @@ async function handleTryon(request, env, cors, ctx) {
       // 照片與單品圖同時上傳（省幾秒）
       const [personUrl, ...steps] = await Promise.all([putImage(env, `${base}/person`, person), ...sorted.map(async (it, k) => {
         const st = { type: it.type };
+        if (it.fit) st.fit = it.fit;
         if (CLOTHING[it.type]) { st.category = CLOTHING[it.type]; st.photo_type = it.photo_type || null; st.image_url = await putImage(env, `${base}/item${k}`, it.image); }
         else { if (isDataImage(it.image)) st.image_url = await putImage(env, `${base}/item${k}`, it.image); if (it.text) st.text = String(it.text).slice(0, 200); }
         return st;
       })]);
-      const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: intId(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null }));
+      const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: intId(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null, fit: it.fit || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
@@ -624,7 +745,7 @@ async function handleTryon(request, env, cors, ctx) {
         // 整套引擎：付費（非預先合成）的工作多一個 qa 步驟（結果品質檢查，不過關自動重做一次）
         steps: useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, ...(prefetch ? [] : [{ type: 'qa' }])] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
-        want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint,
+        want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
       await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { job: await sealJob(env, jobState) });
     } catch (e) {
@@ -701,7 +822,8 @@ async function finishJob(env, userId, g, job, cond = '') {
   const viewUrls = job.views || {};
   const prof = await getProfile(env, { id: userId }).catch(() => null);
   const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error || null, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
-  if (job.qa) result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) };
+  result.fit = (job.meta || []).map(x => x.fit || null);
+  if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
   const row = { status: 'ok', cost: job.pay, free_used: job.free, error: job.views_error || null, job: await sealJob(env, job) };
   if (job.prefetch) { row.image_url = null; row.views = { enc: await encStr(env, JSON.stringify({ view_urls: viewUrls, result })) }; }   // 未付款：結果網址加密，認領後才寫出
@@ -778,7 +900,7 @@ async function handleTryonStatus(request, env, cors, url) {
   try { job = await openJob(env, g.job); } catch { job = null; }
   if (!job) { const r = await stopJob(env, user.id, g, null, '合成資料異常（已退回點數），請再試一次', g.job.v == null ? '&job->>v=is.null' : `&job->>v=eq.${g.job.v}`); return jout(r || { status: 'running' }, 200, cors); }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? job.steps[ch.i].type : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); const p = { done, total: tot + 1, current: cur }; if (cur === 'outfit' && job.fix_notes) p.fixing = true; if (job.retries) p.retries = job.retries; return p; };
-  const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
+  const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], fit: (job.meta || []).map(x => x.fit || null), engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
   const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : undefined }, 200, cors);
   // 取得鎖（避免兩個輪詢同時推進）
   if ((job.lock_until || 0) > Date.now()) return running();
@@ -813,7 +935,7 @@ async function handleTryonStatus(request, env, cors, url) {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length && canStart(); guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
-          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint, { captions: job.captions, fixNotes: job.fix_notes }), job.hires !== false, job.aspect); return; }
+          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint, { captions: job.captions, fixNotes: job.fix_notes, body: job.body }), job.hires !== false, job.aspect); return; }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
@@ -842,7 +964,7 @@ async function handleTryonStatus(request, env, cors, url) {
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
           if (qa.verdict === 'retry' && (job.retries || 0) < 1) {
             job.retries = (job.retries || 0) + 1;
-            job.fix_notes = qaCorrections(qa) || 'the result did not match the product photos closely enough';
+            job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];
             if (ost && (ost.engine || 0) === 0 && OUTFIT_ENGINES.length > 1) ost.engine = 1;
@@ -1202,6 +1324,19 @@ async function handleBrands(env, cors) {
   const c = {}; for (const r of rows) if (r.brand) c[r.brand] = (c[r.brand] || 0) + 1;
   const brands = Object.entries(c).filter(([, n]) => n >= 3).sort((a, b) => b[1] - a[1]).map(([name, n]) => ({ name, n }));
   return json({ brands }, 200, { ...cors, 'Cache-Control': 'public, max-age=600' });
+}
+// 商品尺寸表：tools/sync_*.py 寫在 Supabase Storage（公開 sizecharts 桶；建桶失敗時放在 results/sizecharts/）
+const SIZECHART_PATHS = ['sizecharts/', 'results/sizecharts/'];
+async function handleSizechart(env, cors, url) {
+  const id = intId(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
+  for (const pre of SIZECHART_PATHS) {
+    const r = await fetchT(`${env.SUPABASE_URL}/storage/v1/object/public/${pre}${id}.json`, { cf: { cacheTtl: 3600, cacheEverything: true } }, '尺寸表', 10000).catch(() => null);
+    if (!r || !r.ok) continue;
+    let d; try { d = await r.json(); } catch { continue; }
+    if (!d || typeof d !== 'object' || !d.sizes || typeof d.sizes !== 'object') continue;
+    return json(d, 200, { ...cors, 'Cache-Control': 'public, max-age=86400' });
+  }
+  return json({ error: '這件商品沒有尺寸表' }, 404, { ...cors, 'Cache-Control': 'public, max-age=600' });
 }
 async function handleProductClick(request, env, cors) {
   let body; try { body = await request.json(); } catch { return json({ ok: false }, 400, cors); }
