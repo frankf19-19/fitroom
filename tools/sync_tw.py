@@ -25,14 +25,14 @@ def robots(host):
   rp = urllib.robotparser.RobotFileParser(); st, t = get(f'https://{host}/robots.txt', 300000)
   rp.parse(t.splitlines() if st == 200 else []); return rp, t
 
-SKIP = re.compile(r'襪|內衣|內褲|內著|胸罩|bra\b|禮盒|禮卡|口罩|浴巾|毛巾|雨傘|陽傘|保養|香氛|清潔|鞋墊|鞋帶|水壺|杯|貼紙|吊飾|鑰匙圈|童|兒童|嬰|寶寶|baby|kids|kid\'s|youth|toddler|mask|sock|gift|加購|運費|補差價|會員|兌換|贈品|福袋|試穿|預購金', re.I)
+SKIP = re.compile(r'襪|內衣|內褲|內著|胸罩|bra\b|禮盒|禮卡|口罩|浴巾|毛巾|雨傘|陽傘|保養|香氛|清潔|鞋墊|鞋帶|水壺|杯|貼紙|吊飾|鑰匙圈|童|兒童|嬰|寶寶|baby|kids|kid\'s|youth|toddler|mask|sock|gift|加購|運費|補差價|會員|兌換|贈品|福袋|試穿|預購金|玩偶|娃娃|碗|盤子|餐具|筷|擴香|蠟燭|香水|毛毯|毯子|抱枕|靠墊|收納盒|寵物|手機殼|衝浪板|紅包', re.I)
 RULES = [
-  ('shoes', r'鞋|靴|拖|涼鞋|sneaker|shoe|slip-on|sandal|boot|clog|克駱格|洞洞|old skool|sk8|authentic|knu skool'),
+  ('shoes', r'鞋|靴(?!型)|拖(?!特)|涼鞋|sneaker|shoe|slip-on|sandal|boot(?!cut)|clog|克駱格|洞洞|old skool|sk8|authentic|knu skool|loafer|mule\b|樂福|穆勒|瑪莉珍|mexico 66|gel-|\bheels?\b'),
   ('dress', r'洋裝|連身|吊帶裙|罩衫裙|jumpsuit|dress'),
+  ('hat', r'(?<![連附拆])帽(?![Tt外上])|\bcap\b|beanie|bucket hat|毛帽|棒球帽|漁夫帽'),
   ('top', r'上衣|T恤|tee|t-shirt|襯衫|外套|夾克|毛衣|針織|背心|帽T|帽t|大學T|大學t|POLO|polo|衛衣|罩衫|西裝|大衣|羽絨|風衣|開襟|小可愛|衫|jacket|shirt|hoodie|sweater|coat|top\b|crew|fleece|cardigan|vest'),
   ('bottom', r'褲|裙|jean|pants|shorts|skirt|jogger|chino|legging'),
-  ('hat', r'(?<!連)帽(?![Tt外上])|\bcap\b|beanie|bucket hat|毛帽|棒球帽|漁夫帽'),
-  ('accessory', r'(?<![口麵])包|(?<![口麵])袋|錢夾|皮夾|項鍊|耳環|耳骨|手環|手鍊|戒指|手錶|墨鏡|眼鏡|皮帶|腰帶|圍巾|髮夾|髮圈|necklace|earring|bracelet|ring\b|bag|wallet|belt|scarf|watch|sunglass'),
+  ('accessory', r'(?<![口麵])包|(?<![口麵])袋|錢夾|皮夾|卡夾|零錢|項鍊|項鏈|墜飾|耳環|耳夾|耳針|耳骨|手環|手鍊|手鐲|戒指|胸針|手錶|腕錶|墨鏡|眼鏡|皮帶|腰帶|圍巾|披肩|絲巾|髮夾|髮圈|髮箍|髮帶|髮飾|necklace|earring|bracelet|\bring\b|bag|tote|backpack|crossbody|clutch|pouch|wallet|belt|scarf|watch|sunglass|bangle|pendant|charm'),
 ]
 def classify(*texts, default=None):
   t = ' '.join(x or '' for x in texts)
@@ -76,21 +76,34 @@ def save(src, rows):
 def pick(rows):
   counts, out = {}, []
   for r in rows:
-    if counts.get(r['type'], 0) >= PER: continue
-    counts[r['type']] = counts.get(r['type'], 0) + 1; out.append(r)
-  return out, counts
+    k = (r['brand'], r['type'])   # 多品牌館（and ST、STRIPE CLUB、USAGI ONLINE）每個品牌各自算上限
+    if counts.get(k, 0) >= PER: continue
+    counts[k] = counts.get(k, 0) + 1; out.append(r)
+  return out, {(f'{b}/{t}' if multi(out) else t): n for (b, t), n in counts.items()}
+def multi(rows): return len({r['brand'] for r in rows}) > 1
 
 # ---------- 91APP ----------
 SHOPS91 = [('www.obdesign.com.tw', 'OB嚴選', 'f'), ('www.giordano.com.tw', 'GIORDANO', 'u'), ('www.vans.com.tw', 'VANS', 'u'), ('www.adidas.com.tw', 'adidas', 'u'),
            ('www.roots.com.tw', 'Roots', 'u'), ('www.edwin.com.tw', 'EDWIN', 'u'), ('www.timberland.com.tw', 'Timberland', 'u'), ("www.levis.com.tw", "Levi's", 'u'),
-           ('tw.puma.com', 'PUMA', 'u'), ('www.thenorthface.com.tw', 'The North Face', 'u'), ('www.underarmour.tw', 'Under Armour', 'u'), ('www.columbiasportswear.com.tw', 'Columbia', 'u')]
+           ('tw.puma.com', 'PUMA', 'u'), ('www.thenorthface.com.tw', 'The North Face', 'u'), ('www.underarmour.tw', 'Under Armour', 'u'), ('www.columbiasportswear.com.tw', 'Columbia', 'u'),
+           ('www.onitsukatiger.com.tw', 'Onitsuka Tiger', 'u'), ('www.leejeans.com.tw', 'Lee', 'u'), ('www.mlb-korea.com.tw', 'MLB', 'u'), ('www.alasha.com.tw', 'à la sha', 'f'),
+           ('www.lacoste.com.tw', 'LACOSTE', 'u'), ('www.kipling.com.tw', 'Kipling', 'f'), ('www.bigtrain.com.tw', 'BIG TRAIN', 'u'),
+           # 多品牌館：品牌名取分類第一層（and ST＝niko and...／GLOBAL WORK／LOWRYS FARM…；STRIPE CLUB＝earth music&ecology／Samansa Mos2…）
+           ('www.dot-st.tw', '*', 'f'), ('www.stripe-club.com.tw', '*', 'f')]
+BRAND_FIX = {'EARTH MUSIC & ECOLOGY': 'earth music&ecology', 'EARTH MUSIC&ECOLOGY': 'earth music&ecology', 'NIKO AND ...': 'niko and...', 'NIKO AND...': 'niko and...'}
+def sub_brand(cat, title):
+  m = re.search(r'\s-\s([A-Za-z][\w&.\' ]{1,30})$', title or '')   # STRIPE CLUB：「…(編號) - Samansa Mos2」
+  b = m.group(1) if m else re.split(r'\s*>\s*', cat or '')[0]
+  b = re.sub(r'[^\w&.\' +\-]', '', b).strip()
+  if not b or re.search(r'[\u4e00-\u9fff]', b) or len(b) > 30 or re.search(r'(?i)^(new|sale|outlet|top|best|all|men|women|ladies|kids)$', b): return None
+  return BRAND_FIX.get(b.upper(), b)
 stats = {'blocked': 0}
 def sync91(host, brand, gdef):
   rp, rt = robots(host)
   m = re.search(r'Sitemap/(\d+)/Sitemap_Index', rt); shop = m and m.group(1)
   if not shop: print(host, 'no shop id'); return
   st, x = get(f'https://{host}/Sitemap/sitemap_ShopSalePage.xml.gz')
-  ids = sorted({int(i) for i in re.findall(r'SalePage/Index/(\d+)', x)}, reverse=True)[:int(os.environ.get('MAXIDS', '240'))]
+  ids = sorted({int(i) for i in re.findall(r'SalePage/Index/(\d+)', x)}, reverse=True)[:int(os.environ.get('MAXIDS', '400' if brand == '*' else '240'))]
   if not ids: print(host, 'no salepages'); return
   def one(sid):
     url = f'https://{host}/webapi/SalePageV2/GetSalePageV2Info/{shop}/{sid}'
@@ -104,6 +117,11 @@ def sync91(host, brand, gdef):
     if d.get('StatusDef') not in (None, 'Normal'): return None
     title = d.get('Title') or ''; cat = (d.get('CategoryLevelName') or {}).get('ShopCategory_ShowName') or d.get('CategoryName') or ''
     typ = classify(title, cat)
+    b = brand
+    if brand == '*':
+      b = sub_brand(cat, title)
+      if not b: return None
+      title = re.sub(r'\s-\s' + re.escape(b) + r'$', '', title, flags=re.I)
     imgs = d.get('ImageList') or []
     price = d.get('Price') or d.get('MinPrice')
     if not typ or not imgs or not price: return None
@@ -114,7 +132,7 @@ def sync91(host, brand, gdef):
         if p in ('尺寸', '尺碼', 'SIZE', 'Size', '腰圍', '鞋碼') and j + 1 < len(parts): sizes.append(parts[j + 1])
     pic = imgs[0].get('PicUrl') or ''
     pic = ('https:' + pic) if pic.startswith('//') else pic.replace('http://', 'https://')
-    return {'source': '91app:' + host, 'external_id': str(sid), 'brand': brand, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),
+    return {'source': '91app:' + host, 'external_id': str(sid), 'brand': b, 'name': title[:120], 'type': typ, 'gender': gender_of(title + ' ' + cat, gdef),
             'price': int(price), 'currency': 'TWD', 'image_url': pic.split('?')[0], 'buy_url': f'https://{host}/SalePage/Index/{sid}', 'tags': [cat.split('>')[-1].strip(' -')[:20]] if cat else [],
             'sizes': norm_sizes(sizes), 'active': True, 'featured': False}
   rows = []
@@ -143,8 +161,17 @@ def ld_product(html):
         if isinstance(off, list): off = off[0] if off else {}
         img = it.get('image'); img = img[0] if isinstance(img, list) else (img.get('url') if isinstance(img, dict) else img)
         avail = str(off.get('availability') or '')
-        return {'name': it.get('name'), 'image': img, 'price': off.get('price') or off.get('lowPrice') or fallback_price, 'oos': 'OutOfStock' in avail, 'category': it.get('category') or ''}
-  # JSON-LD 壞掉或沒有時（plain-me、D+AF）退回 Open Graph
+        br = it.get('brand'); br = (br.get('name') if isinstance(br, dict) else br) or ''
+        return {'name': it.get('name'), 'image': img, 'price': off.get('price') or off.get('lowPrice') or fallback_price, 'oos': 'OutOfStock' in avail, 'category': it.get('category') or '', 'brand': str(br)}
+  # Queen Shop／Lovfee（同一套 ASP.NET）：沒有 JSON-LD／OG，名稱與價格在 GTM dataLayer 的 view_item，圖片是 photo.<網域>/<編號>/<編號>-<色>-01.jpg
+  m = re.search(r'dataLayer\.push\((\{"event":"view_item".*?\})\);', html)
+  if m:
+    try:
+      it = json.loads(m.group(1))['ecommerce']['items'][0]; iid = str(it.get('item_id') or '')
+      ims = [u for u in re.findall(r'(https?://[^"\'\s>]+?\.(?:jpe?g|png|webp))', html, re.I) if iid and iid in u and 'ColorIcon' not in u]
+      if ims and it.get('price'): return {'name': it.get('item_name'), 'image': ims[0], 'price': it['price'], 'oos': False, 'category': str(it.get('item_brand') or '') + ' ' + str(it.get('item_category') or '')}
+    except Exception: pass
+  # JSON-LD 壞掉或沒有時（plain-me、D+AF、PEDRO）退回 Open Graph
   t, im = meta(html, 'og:title'), meta(html, 'og:image')
   if t and im and fallback_price:
     t = re.split(r'\s*[│|｜]\s*', t)[0].strip()
@@ -161,10 +188,21 @@ LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('ww
             # GAP 台灣：/pdp/<id>/<sku>，JSON-LD 沒價格、用 itemprop=price 補
             ('www.gap.tw', 'GAP', 'u', None, r'/pdp/', 240),
             # Grace Gift：robots 的 Sitemap 指到 /sitemap/index → /sitemap/shoe/0、/sitemap/bag/0
-            ('www.gracegift.com.tw', 'Grace Gift', 'f', None, r'/products/\d+/\d+', 240)]
-def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail'):
+            ('www.gracegift.com.tw', 'Grace Gift', 'f', None, r'/products/\d+/\d+', 240),
+            # 2026-11-07 新增（probe_tw9~11.py）
+            ('www.mouggan.com', 'mouggan', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'),   # 同 PAZZO 系統
+            ('www.goopi.co', 'GOOPi', 'u', None, r'/(zh-hant/)?products/', 240),   # Shopline
+            ('www.merrell.com.tw', 'MERRELL', 'u', None, r'/products/', 240), ('www.jansport.com.tw', 'JanSport', 'u', 'accessory', r'/products/', 200),
+            ('www.saucony.com.tw', 'Saucony', 'u', None, r'/products/', 240),   # Cyberbiz
+            ('www.airspaceonline.com', 'AIR SPACE', 'f', None, r'/tw/zh-hant/product/', 240, 'tail', {'sitemaps': ['https://www.airspaceonline.com/sitemap_TW.xml']}),
+            # Salesforce Commerce Cloud 台灣站：robots 有 Crawl-delay（C&K 10 秒、PEDRO 5 秒）就照著慢慢抓
+            ('www.charleskeith.com', 'CHARLES & KEITH', 'f', None, r'charleskeith\.com/tw/[^/]+\.html$', 75, 'tail', {'sitemaps': ['https://www.charleskeith.com/tw/sitemap_index.xml'], 'delay': 10}),
+            ('www.pedroshoes.com', 'PEDRO', 'u', None, r'pedroshoes\.com/tw/[^/]+\.html$', 130, 'tail', {'sitemaps': ['https://www.pedroshoes.com/tw/sitemap_index.xml'], 'delay': 5}),
+            ('www.longchamp.com', 'Longchamp', 'f', None, r'longchamp\.com/tw/zh/products/', 200, 'tail', {'sitemaps': ['https://www.longchamp.com/tw/zh/sitemap-stmp_zh_TW_index.xml']})]
+def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail', opts=None):
+  opts = opts or {}
   rp, rt = robots(host)
-  maps = re.findall(r'(?im)^sitemap:\s*(\S+)', rt) or [f'https://{host}/sitemap.xml']
+  maps = opts.get('sitemaps') or re.findall(r'(?im)^sitemap:\s*(\S+)', rt) or [f'https://{host}/sitemap.xml']
   urls = []
   for sm in maps[:4]:
     s, x = get(sm); locs = re.findall(r'<loc>\s*([^<\s]+)\s*</loc>', x)
@@ -181,14 +219,14 @@ def sync_ld(host, brand, gdef, deftype, pat, maxn, order='tail'):
   if order == 'id_desc':   # 網站地圖沒排序時，用網址裡的商品編號由大到小（新品優先）
     urls = sorted(uniq, key=lambda u: int((re.findall(r'\d+', u) or ['0'])[-1]), reverse=True)[:maxn]
   else: urls = uniq[-maxn:][::-1]
-  rows, counts = pick(fetch_rows(host, brand, gdef, deftype, urls, rp))
+  rows, counts = pick(fetch_rows(host, brand, gdef, deftype, urls, rp, opts.get('delay', 0.3)))
   if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
 
-def fetch_rows(host, brand, gdef, deftype, urls, rp):
+def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
   def one(u):
     if not rp.can_fetch(UA, u): return None
-    time.sleep(0.3)
+    time.sleep(delay)
     s, h = get(u, 2000000)
     if s != 200: return None
     p = ld_product(h)
@@ -199,11 +237,15 @@ def fetch_rows(host, brand, gdef, deftype, urls, rp):
     try: price = int(float(str(p['price']).replace(',', '')))
     except Exception: return None
     if price <= 0: return None
-    img = p['image']; img = ('https:' + img) if img.startswith('//') else img
-    return {'source': 'web:' + host, 'external_id': re.sub(r'^https?://[^/]+', '', u)[:200], 'brand': brand, 'name': name[:120], 'type': typ, 'gender': gender_of(name, gdef),
+    img = p['image'].strip(); img = ('https:' + img) if img.startswith('//') else ('https://' + host + img if img.startswith('/') else img)
+    b = brand
+    if brand == '*':   # 多品牌館（USAGI ONLINE）：品牌取 JSON-LD 的 brand
+      b = re.sub(r'(?i)\s+home$', '', (p.get('brand') or '').strip())
+      if not b or len(b) > 30: return None
+    return {'source': 'web:' + host, 'external_id': re.sub(r'^https?://[^/]+', '', u)[:200], 'brand': b, 'name': name[:120], 'type': typ, 'gender': gender_of(name, gdef),
             'price': price, 'currency': 'TWD', 'image_url': img, 'buy_url': u, 'tags': [], 'sizes': [], 'active': True, 'featured': False}
   rows = []
-  with cf.ThreadPoolExecutor(4) as ex:
+  with cf.ThreadPoolExecutor(1 if delay >= 2 else 4) as ex:   # 有 Crawl-delay 的網站單線慢慢抓
     for r in ex.map(one, urls):
       if r: rows.append(r)
   return rows
@@ -221,10 +263,19 @@ def links_in(html, base):
 # (網域, 品牌, 預設性別, 預設類別, 起始頁, 分類頁網址樣式（None=起始頁就是分類頁）, 商品頁網址樣式, 最多看幾個分類頁, 最多看幾個商品頁)
 LIST_SITES = [
   ('www.birkenstock.com.tw', 'BIRKENSTOCK', 'u', 'shoes', ['https://www.birkenstock.com.tw/'], r'/product_(?:category|store)\?', r'/product_detail\?product_sn=\d+&color_sn=\d+$', 14, 200),
-  # plain-me 的商品圖擋 Cloudflare Worker 代理（直接載入可以、/api/img 502），放進試衣間會失敗，先不收：
-  # ('www.plain-me.com', 'plain-me', 'u', None, ['https://www.plain-me.com/men/', 'https://www.plain-me.com/women/', 'https://www.plain-me.com/men/product-tags/新品', 'https://www.plain-me.com/women/product-tags/新品'], None, r'/(?:men|women)/product-detail/[\w\-]+$', 0, 240),
+  # plain-me：商品圖曾擋 Worker 代理（502）；Worker 已改成被擋時用瀏覽器 UA＋Referer 重試，2026-11-07 重新開啟（圖片仍失敗就再下架）
+  ('www.plain-me.com', 'plain-me', 'u', None, ['https://www.plain-me.com/men/', 'https://www.plain-me.com/women/', 'https://www.plain-me.com/men/product-tags/新品', 'https://www.plain-me.com/women/product-tags/新品'], None, r'/(?:men|women)/product-detail/[\w\-]+$', 0, 240),
   ('www.daf-shoes.com', 'D+AF', 'f', 'shoes', ['https://www.daf-shoes.com/'], r'/product/list/\d+$', r'/product/show/\d+/\d+/?$', 10, 200),
   ('www.caco.com.tw', 'CACO', 'u', None, [f'https://www.caco.com.tw/productlist/{c}?page={pg}' for c in ('51401', '14304', '14338', '143021', '142021', '14332') for pg in (1, 2)], None, r'/product/[A-Z0-9]+/\d+$', 0, 160),
+  # Queen Shop（ASP.NET，無 JSON-LD）：資料取自 GTM dataLayer 的 view_item（ld_product 的備援）
+  ('www.queenshop.com.tw', 'Queen Shop', 'f', None, ['https://www.queenshop.com.tw/'] + [f'https://www.queenshop.com.tw/zh-TW/QueenShop/ProductList?item1={c}' for c in ('00', '01', '02', '03', '20')],
+   r'QueenShop/ProductList\?item1=\d+&item2=\w+$', r'QueenShop/Product\?SaleID=\w+$', 16, 220),
+  # USAGI ONLINE（MASH 台灣：SNIDEL、gelato pique、FRAY I.D、Mila Owen、lily brown…）：品牌取 JSON-LD 的 brand
+  ('www.usagi-online.com.tw', '*', 'f', None, ['https://www.usagi-online.com.tw/', 'https://www.usagi-online.com.tw/productlist?other=newarrival'],
+   r'productlist\?item1=\d+&item2=\w+$', r'product\?saleid=\w+$', 14, 300),
+  # iROO、gozo：fonlego 系統（同 plain-me），商品頁有 JSON-LD
+  ('www.iroo.com', 'iROO', 'f', None, [f'https://www.iroo.com/iroo/products/allproduct/{c}' for c in ('newarrival', 'tops', 'dresses', 'pants', 'skirts', 'outer', 'accessories')], None, r'/iroo/product-detail/\w+$', 0, 200),
+  ('www.gozo.com.tw', 'gozo', 'f', None, ['https://www.gozo.com.tw/'], r'gozo\.com\.tw/gozo/products/[\w\-/]+$', r'/gozo/product-detail/\w+$', 8, 200),
 ]
 def sync_list(host, brand, gdef, deftype, seeds, list_pat, detail_pat, max_lists, maxn):
   rp, _ = robots(host); base = 'https://' + host
@@ -237,10 +288,39 @@ def sync_list(host, brand, gdef, deftype, seeds, list_pat, detail_pat, max_lists
   if list_pat:
     lists = [l for l in dict.fromkeys(found) if re.search(list_pat, l) and host in l][:max_lists]
     for l in lists: found += crawl(l)
+  found = [re.sub(r'&colorid=\w+$', '', l) for l in found]   # USAGI ONLINE 同商品不同色只留一個
   urls = [l for l in dict.fromkeys(found) if re.search(detail_pat, l) and host in l][:maxn]
   rows, counts = pick(fetch_rows(host, brand, gdef, deftype, urls, rp))
   if not rows: print(host, 'no rows', len(urls)); return
   save('web:' + host, rows); print(host, len(urls), '->', counts)
+
+# ---------- Shopify：/products.json ----------
+SHOPIFY = [('lesportsac.tw', 'LeSportsac', 'f', 'accessory'), ('salomon.com.tw', 'Salomon', 'u', None)]
+def sync_shopify(host, brand, gdef, deftype):
+  rp, _ = robots(host); rows = []
+  for page in (1, 2, 3):
+    time.sleep(0.5); st, t = get(f'https://{host}/products.json?limit=100&page={page}', 12000000)
+    try: ps = json.loads(t)['products']
+    except Exception: print(host, 'bad json', st); break
+    for p in ps:
+      u = f"https://{host}/products/{p['handle']}"
+      if not rp.can_fetch(UA, u): continue
+      vs = [v for v in p.get('variants') or [] if v.get('available', True)]
+      ims = p.get('images') or []
+      if not vs or not ims: continue
+      tags = p.get('tags') or []; tags = tags if isinstance(tags, list) else tags.split(',')
+      typ = classify(p['title'], (p.get('product_type') or '') + ' ' + ' '.join(tags), default=deftype)
+      if not typ: continue
+      try: price = int(float(vs[0]['price']))
+      except Exception: continue
+      if price <= 0: continue
+      sizes = [v.get('option2') or v.get('option1') for v in vs if re.fullmatch(r'(?i)(XXS|XS|S|M|L|XL|XXL|2XL|3XL|\d{2}(\.5)?)', str(v.get('option2') or v.get('option1') or ''))]
+      rows.append({'source': 'shop:' + host, 'external_id': str(p['id']), 'brand': brand, 'name': p['title'][:120], 'type': typ, 'gender': gender_of(p['title'] + ' ' + ' '.join(tags), gdef),
+                   'price': price, 'currency': 'TWD', 'image_url': ims[0]['src'].split('?')[0], 'buy_url': u, 'tags': [], 'sizes': norm_sizes(sizes), 'active': True, 'featured': False})
+    if len(ps) < 100: break
+  rows, counts = pick(rows)
+  if not rows: print(host, 'no rows'); return
+  save('shop:' + host, rows); print(host, '->', counts)
 
 only = os.environ.get('ONLY', '')
 for host, brand, g in SHOPS91:
@@ -254,4 +334,8 @@ for args in LD_SITES:
 for args in LIST_SITES:
   if only and only not in args[0]: continue
   try: sync_list(*args)
+  except Exception as e: print(args[0], 'FAIL', e)
+for args in SHOPIFY:
+  if only and only not in args[0]: continue
+  try: sync_shopify(*args)
   except Exception as e: print(args[0], 'FAIL', e)

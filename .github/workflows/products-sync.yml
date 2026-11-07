@@ -20,12 +20,14 @@ jobs:
           BRAND=gu python3 tools/sync_uniqlo.py "${{ inputs.per_cat || '12' }}"
   tw:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 12
       matrix:
-        shop: [obdesign, giordano, vans, adidas, roots, edwin, timberland, levis, puma, thenorthface, underarmour, columbia, lativ, crocs, vacanza, pazzo, meierq, mercci22, 50-shop, lulus, fila, gap, gracegift, birkenstock, daf-shoes, caco]
+        shop: [obdesign, giordano, vans, adidas, roots, edwin, timberland, levis, puma, thenorthface, underarmour, columbia, lativ, crocs, vacanza, pazzo, meierq, mercci22, 50-shop, lulus, fila, gap, gracegift, birkenstock, daf-shoes, caco,
+                onitsukatiger, leejeans, mlb-korea, alasha, lacoste, kipling, bigtrain, dot-st, stripe-club, lesportsac, salomon, mouggan, goopi, merrell, jansport, saucony,
+                airspaceonline, charleskeith, pedroshoes, longchamp, plain-me, queenshop, usagi-online, iroo, gozo]
     steps:
       - uses: actions/checkout@v4
       - name: 台灣品牌（每家一台機器）
