@@ -1252,10 +1252,13 @@ async function handleImgProxy(request, env, cors, url) {
   const id = intId(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
   const rows = await sb(env, `/rest/v1/products?id=eq.${id}&active=eq.true&select=image_url`);
   if (!rows.length) return json({ error: '找不到商品' }, 404, cors);
-  let r = await fetchT(rows[0].image_url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TryOnBot/1.0)' } }, '商品圖', 20000);
+  let r = await fetchT(rows[0].image_url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TryOnBot/1.0)' } }, '商品圖', 20000).catch(() => ({ ok: false }));
   if (!r.ok) {   // 有些官網（例如 plain-me）擋機器人 UA，改用一般瀏覽器 UA＋來源官網 Referer 再試一次
     let origin = ''; try { origin = new URL(rows[0].image_url).origin + '/'; } catch {}
-    r = await fetchT(rows[0].image_url, { headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1', 'Accept': 'image/*,*/*;q=0.8', 'Referer': origin } }, '商品圖', 20000);
+    r = await fetchT(rows[0].image_url, { headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1', 'Accept': 'image/*,*/*;q=0.8', 'Referer': origin } }, '商品圖', 20000).catch(() => ({ ok: false }));
+  }
+  if (!r.ok) {   // 有些圖床（fonlego 系統的 gozo 等）擋 Cloudflare Worker 的連線：改經 wsrv.nl 圖片服務轉抓（前端縮圖本來就用它）
+    r = await fetchT('https://wsrv.nl/?url=' + encodeURIComponent(rows[0].image_url) + '&output=jpg&q=90', { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; TryOnBot/1.0)' } }, '商品圖', 20000).catch(() => ({ ok: false }));
   }
   if (!r.ok) return json({ error: '商品圖載入失敗' }, 502, cors);
   const ct = (r.headers.get('Content-Type') || 'image/jpeg').split(';')[0];

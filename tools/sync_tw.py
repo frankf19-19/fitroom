@@ -257,13 +257,15 @@ def fetch_rows(host, brand, gdef, deftype, urls, rp, delay=0.3):
   return rows
 
 # ---------- 沒有網站地圖的官網：從首頁／分類頁找商品頁 ----------
-def links_in(html, base):
+def links_in(html, base, page=None):
   out = []
   for m in re.findall(r'(?:href|data-href|data-url)=["\']([^"\'#]+)', html):
-    m = m.replace('&amp;', '&')
+    m = m.replace('&amp;', '&').strip()
     if m.startswith('//'): m = 'https:' + m
     elif m.startswith('/'): m = base + m
+    elif page and re.match(r'^[A-Za-z][\w\-]*\?', m): m = urllib.parse.urljoin(page, m)   # Queen Shop 的「Product?…&SaleID=」相對網址
     elif not m.startswith('http'): continue
+    m = re.sub(r'(QueenShop/Product)\?.*?(SaleID=\w+).*$', r'\1?\2', m)   # 同商品不同分類參數只留一個
     out.append(m)
   return list(dict.fromkeys(out))
 # (網域, 品牌, 預設性別, 預設類別, 起始頁, 分類頁網址樣式（None=起始頁就是分類頁）, 商品頁網址樣式, 最多看幾個分類頁, 最多看幾個商品頁)
@@ -275,7 +277,7 @@ LIST_SITES = [
   ('www.caco.com.tw', 'CACO', 'u', None, [f'https://www.caco.com.tw/productlist/{c}?page={pg}' for c in ('51401', '14304', '14338', '143021', '142021', '14332') for pg in (1, 2)], None, r'/product/[A-Z0-9]+/\d+$', 0, 160),
   # Queen Shop（ASP.NET，無 JSON-LD）：資料取自 GTM dataLayer 的 view_item（ld_product 的備援）
   ('www.queenshop.com.tw', 'Queen Shop', 'f', None, ['https://www.queenshop.com.tw/'] + [f'https://www.queenshop.com.tw/zh-TW/QueenShop/ProductList?item1={c}' for c in ('00', '01', '02', '03', '20')],
-   r'QueenShop/ProductList\?item1=\d+(&item2=\w+)?(&item3=\w+)?$', r'QueenShop/Product\?SaleID=\w+$', 30, 220),
+   r'QueenShop/ProductList\?item1=\d+(&item2=\w+)?(&item3=\w+)?$', r'QueenShop/Product\?SaleID=\w+$', 12, 220),
   # USAGI ONLINE（MASH 台灣：SNIDEL、gelato pique、FRAY I.D、Mila Owen、lily brown…）：品牌取 JSON-LD 的 brand
   ('www.usagi-online.com.tw', '*', 'f', None, ['https://www.usagi-online.com.tw/', 'https://www.usagi-online.com.tw/productlist?other=newarrival'],
    r'productlist\?item1=\d+&item2=\w+$', r'product\?saleid=\w+$', 14, 300),
@@ -288,7 +290,7 @@ def sync_list(host, brand, gdef, deftype, seeds, list_pat, detail_pat, max_lists
   def crawl(u):
     if not rp.can_fetch(UA, u): return []
     time.sleep(0.4); s, h = get(u, 2000000)
-    return links_in(h, base) if s == 200 else []
+    return links_in(h, base, u) if s == 200 else []
   found = []
   for u in seeds: found += crawl(u)
   if list_pat:
