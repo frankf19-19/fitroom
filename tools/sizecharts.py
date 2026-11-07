@@ -14,8 +14,10 @@ KEYS = ('chest', 'shoulder', 'length', 'sleeve', 'waist', 'hip', 'inseam', 'thig
 
 def decode_html(b, charset=None):
   """依 HTTP 標頭或 <meta charset> 解碼（Queen Shop 尺寸表小頁是 Big5）。"""
+  try: return b.decode('utf-8')        # 絕大多數網站是 UTF-8；先試，避免被錯誤的 meta 宣告帶歪
+  except UnicodeDecodeError: pass
   cs = (charset or '').lower()
-  if not cs:
+  if not cs or cs.replace('-', '') == 'utf8':
     m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', b[:3000], re.I)
     cs = m.group(1).decode().lower() if m else 'utf-8'
   if cs in ('big5', 'big-5', 'cp950', 'x-big5'): cs = 'cp950'
@@ -190,9 +192,10 @@ def _clean_label(raw):
   t = re.sub(r';.*$', '', str(raw or ''))            # 91APP「34;-1」
   t = split_color_size(t) or t
   t = re.sub(r'^[A-Z][／/]', '', t.strip())          # adidas「A／M」（亞洲版）
+  t = re.sub(r'^(XXS|XS|S|M|L|XL|XXL|[2-4]XL)\d?[＂"]?$', r'\1', t)   # adidas「A／M2＂」（褲長版本）
   m = re.search(r'亞規\s*([A-Z0-9]+)', t)            # The North Face「美規S（亞規M）」
   if m: t = m.group(1)
-  t = re.sub(r'(?i)^(\d{2})\s*(inch|吋|腰)$', r'\1', t)   # 「28inch」「28腰」＝腰圍英吋
+  t = re.sub(r'(?i)^(\d{2})\s*(inch|吋|腰)$', r'\1腰', t)   # 「28inch」「28腰」＝腰圍英吋（統一成「28腰」）
   t = re.sub(r'\s*[－\-~～]\s*M$', '', t, flags=re.I) if re.match(r'(?i)^F\s*[－\-~～]', t) else t   # 「F－M」
   return t
 def _numeric_scheme(nums, typ, g, brand):
@@ -258,8 +261,11 @@ def body_chart(sizes, typ, gender, brand=''):
     scheme = _numeric_scheme(nums, typ, g, brand) if len(nums) == len(labels) else None
     for raw, s2 in labels:
       d = None
-      m = re.fullmatch(r'(\d{2})腰(\d{2})褲長', s2) or re.fullmatch(r'(\d{2})[／/∕](\d{2})', s2)   # Levi's「32腰34褲長」、PUMA「30∕32」＝腰圍／內長（吋）
+      m = re.fullmatch(r'(\d{2})腰(\d{2})褲長', s2) or re.fullmatch(r'(\d{2})[／/∕X×](\d{2})', s2)   # Levi's「32腰34褲長」、PUMA「30∕32」、VANS「30X32」＝腰圍／內長（吋）
+      mw = re.fullmatch(r'(\d{2})腰', s2); mc = re.fullmatch(r'(\d{2,3})CM', s2)
       if m: d = {'waist': round(int(m.group(1)) * 2.54, 1), 'inseam': round(int(m.group(2)) * 2.54, 1)}
+      elif mw: d = {'waist': round(int(mw.group(1)) * 2.54, 1)}
+      elif mc and 50 <= int(mc.group(1)) <= 130: d = {'waist': float(mc.group(1))}   # UNIQLO「76cm」＝腰圍公分
       else:
         a = {'LL': 'XL', '2L': 'XL', '3L': 'XXL', '4L': '3XL', 'FREE': 'F'}.get(s2, s2)   # 日系 2L/3L 碼
         if scheme in SCHEME_TO_ALPHA: a = SCHEME_TO_ALPHA[scheme].get(int(float(s2)), a)
@@ -429,9 +435,13 @@ if __name__ == '__main__':
   assert body_chart(['34;-1', '36;-1'], 'dress', 'f')['sizes']['36;-1']['chest'] == 80
   assert body_chart(['4', '6', '8'], 'bottom', 'f')['sizes']['8'] == {'waist': 66, 'hip': 92}
   assert body_chart(['F－M'], 'dress', 'f')['sizes']['F－M']['chest'] == 84
-  assert body_chart(['A／M', '美規S（亞規M）', '15灰M', '28inch'], 'top', 'f')['sizes'].keys() == {'A／M', '美規S（亞規M）', '15灰M'}
+  assert body_chart(['A／M', '美規S（亞規M）', '15灰M', '28inch'], 'top', 'f')['sizes'].keys() == {'A／M', '美規S（亞規M）', '15灰M', '28inch'}
   assert body_chart(['28腰', '30腰'], 'bottom', 'm')['sizes']['28腰'] == {'waist': 71.1}
   assert body_chart(['30∕32'], 'bottom', 'm')['sizes']['30∕32'] == {'waist': 76.2, 'inseam': 81.3}
   assert body_chart(['8/9.5'], 'shoes', 'm')['sizes']['8/9.5'] == {'foot': 26}
   assert split_color_size('08象牙X人字紋F') == 'F' and split_color_size('M') is None
+  assert body_chart(['21inch', '76cm'], 'dress', 'f')['sizes'] == {'21inch': {'waist': 53.3}, '76cm': {'waist': 76.0}}
+  assert body_chart(['23腰', '35腰'], 'bottom', 'f')['sizes']['35腰'] == {'waist': 88.9}
+  assert body_chart(['30X32', 'A／M2＂'], 'bottom', 'm')['sizes'] == {'30X32': {'waist': 76.2, 'inseam': 81.3}, 'A／M2＂': {'waist': 78, 'hip': 94}}
+  assert decode_html('尺寸'.encode('cp950'), None) == '尺寸' and decode_html('<meta charset="iso-8859-1">尺寸'.encode()) .endswith('尺寸')
   print('sizecharts self-test ok')
