@@ -209,34 +209,63 @@
    "img": "px_7208431.jpg",
    "src": "https://images.pexels.com/photos/7208431/pexels-photo-7208431.jpeg?auto=compress&cs=tinysrgb&w=1200",
    "credit": "Pexels 7208431",
-   "height": 163,
-   "weight": 52,
+   "height": 160,
+   "weight": 48,
    "g": "f",
-   "note": "候選",
-   "targets": {},
-   "candidate": true
+   "note": "女 雙手抱頭、破洞牛仔吊帶褲、厚底鞋",
+   "targets": {
+    "shoulder": [
+     34,
+     38
+    ],
+    "chest": [
+     78,
+     86
+    ],
+    "waist": [
+     60,
+     70
+    ],
+    "hip": [
+     84,
+     93
+    ],
+    "inseam": [
+     69,
+     76
+    ]
+   }
   },
   {
    "img": "px_30998323.jpg",
    "src": "https://images.pexels.com/photos/30998323/pexels-photo-30998323.jpeg?auto=compress&cs=tinysrgb&w=1200",
    "credit": "Pexels 30998323",
-   "height": 163,
+   "height": 168,
    "weight": 52,
    "g": "f",
-   "note": "候選",
-   "targets": {},
-   "candidate": true
-  },
-  {
-   "img": "px_7505319.jpg",
-   "src": "https://images.pexels.com/photos/7505319/pexels-photo-7505319.jpeg?auto=compress&cs=tinysrgb&w=1200",
-   "credit": "Pexels 7505319",
-   "height": 163,
-   "weight": 52,
-   "g": "f",
-   "note": "候選",
-   "targets": {},
-   "candidate": true
+   "note": "女 黑背心＋緊身褲、高跟鞋、身體微轉",
+   "targets": {
+    "shoulder": [
+     35,
+     39
+    ],
+    "chest": [
+     80,
+     87
+    ],
+    "waist": [
+     60,
+     67
+    ],
+    "hip": [
+     85,
+     92
+    ],
+    "inseam": [
+     74,
+     80
+    ]
+   }
   }
  ]
 }

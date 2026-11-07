@@ -1902,58 +1902,137 @@ function rowRun(mask,mw,mh,y,cx){
   if(!at(x0)){ let f=-1; const lim=Math.max(4,Math.round(mw*0.02)); for(let d=1;d<=lim;d++){ if(x0-d>=0&&at(x0-d)){f=x0-d;break;} if(x0+d<mw&&at(x0+d)){f=x0+d;break;} } if(f<0) return null; x0=f; }
   let l=x0,r=x0; while(l>0&&at(l-1)) l--; while(r<mw-1&&at(r+1)) r++; return {l, r:r+1};
 }
+// 第 y 列所有人形像素區段 [[l,r),…]（相隔 ≤2px 的小縫視為雜訊、併起來）
+function rowSegs(mask,mw,mh,y){
+  y=Math.round(y); const out=[]; if(!mask||y<0||y>=mh) return out; let s=-1;
+  for(let x=0;x<=mw;x++){ const on=x<mw&&mask[y*mw+x]>0.5; if(on&&s<0) s=x; else if(!on&&s>=0){ const pv=out[out.length-1]; if(pv&&s-pv[1]<=2) pv[1]=x; else out.push([s,x]); s=-1; } }
+  return out;
+}
+// 遮罩裡的破洞（深色衣服、陰影常被判成背景）補起來：從畫面四邊連得到的背景才是真的背景
+function fillHoles(mask,mw,mh){
+  const n=mw*mh, bg=new Uint8Array(n), q=new Int32Array(n); let h=0,t=0;
+  const push=i=>{ if(!bg[i]&&mask[i]<=0.5){ bg[i]=1; q[t++]=i; } };
+  for(let x=0;x<mw;x++){ push(x); push((mh-1)*mw+x); } for(let y=0;y<mh;y++){ push(y*mw); push(y*mw+mw-1); }
+  while(h<t){ const i=q[h++], x=i%mw; if(x>0) push(i-1); if(x<mw-1) push(i+1); if(i>=mw) push(i-mw); if(i<n-mw) push(i+mw); }
+  const out=new Float32Array(n); for(let i=0;i<n;i++) out[i]=bg[i]?mask[i]:1; return out;
+}
+// 水平線 y 與「線段 A→B、半徑 r 的膠囊」相交的 x 範圍（手臂、手掌的估計範圍）
+function capsuleX(A,B,r,y){ let lo=Infinity,hi=-Infinity; for(let i=0;i<=24;i++){ const t=i/24, x=A.x+(B.x-A.x)*t, yy=A.y+(B.y-A.y)*t, dy=Math.abs(yy-y); if(dy<=r){ const dx=Math.sqrt(r*r-dy*dy); lo=Math.min(lo,x-dx); hi=Math.max(hi,x+dx); } } return hi>lo?[lo,hi]:null; }
 // 由關節點＋遮罩找出肩／胸／腰／臀的水平線與輪廓寬度（像素）
 function poseGeometry(p){
-  const {lm,mask,mw,mh}=p||{}; if(!lm||lm.length<33) return null;
+  const {lm,mw,mh}=p||{}; if(!lm||lm.length<33) return null; const mask=p.mask?fillHoles(p.mask,mw,mh):null;
   const P=i=>({x:lm[i].x*mw,y:lm[i].y*mh,v:lm[i].visibility==null?1:lm[i].visibility});
   const ls=P(11),rs=P(12),lh=P(23),rh=P(24),nose=P(0);
   const shY=(ls.y+rs.y)/2, hipJ=(lh.y+rh.y)/2, T=hipJ-shY; if(!(T>4)) return null;
-  const cx=(ls.x+rs.x+lh.x+rh.x)/4, shPx=Math.hypot(ls.x-rs.x,ls.y-rs.y), hipPx=Math.hypot(lh.x-rh.x,lh.y-rh.y);
-  const feet=[27,28,29,30,31,32].map(P).filter(q=>q.v>0.3); let foot=feet.length?Math.max(...feet.map(q=>q.y)):null;
+  const shX=(ls.x+rs.x)/2, hipX=(lh.x+rh.x)/2, cx=(shX+hipX)/2, shPx=Math.hypot(ls.x-rs.x,ls.y-rs.y), hipPx=Math.hypot(lh.x-rh.x,lh.y-rh.y);
+  const avgY=(a,b)=>(P(a).y+P(b).y)/2; const kneeY=avgY(25,26);
+  const midX=y=>shX+(hipX-shX)*Math.max(-0.3,Math.min(1.4,(y-shY)/T));   // 身體中線（肩中點→臀中點）
+  const at=(x,y)=>{ x=Math.round(x); y=Math.round(y); return !!mask&&x>=0&&x<mw&&y>=0&&y<mh&&mask[y*mw+x]>0.5; };
+  const near=(q,rad)=>{ for(let dy=-rad;dy<=rad;dy+=2) for(let dx=-rad;dx<=rad;dx+=2) if(at(q.x+dx,q.y+dy)) return true; return false; };
+  // 頭頂：遮罩最上緣（含頭髮）
   let top=null;
   if(mask){ const hw=Math.max(6,shPx*0.6); top=maskTopY(mask,mw,mh,Math.round(nose.x-hw),Math.round(nose.x+hw),Math.round(nose.y)); }
   if(top==null) top=nose.y-(shY-nose.y)*0.75;
-  if(mask&&foot!=null){ const xs=feet.map(q=>q.x), pad=Math.max(6,(foot-top)*0.06); const b=maskBottomY(mask,mw,mh,Math.round(Math.min(...xs)-pad),Math.round(Math.max(...xs)+pad),Math.round(foot),Math.round(foot+(foot-top)*0.04)); if(b!=null) foot=Math.max(foot,b+1); }
-  const bodyPx=foot!=null?foot-top:null;
-  const armHalf=(bodyPx||T*3.4)*0.028;
-  const chains=[[11,13,15,19],[12,14,16,20]].map(c=>c.map(P));
-  const armXAt=(ch,y)=>{ for(let i=0;i<ch.length-1;i++){ const a=ch[i],b=ch[i+1]; if(a.v<0.3||b.v<0.3) continue; const lo=Math.min(a.y,b.y),hi=Math.max(a.y,b.y); if(y>=lo&&y<=hi&&hi-lo>0.5) return a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y); } return null; };
-  // 手臂貼著身體時，輪廓會連在一起：在手臂內緣切開（手放在身體前面就不切）
-  const torsoAt=(y,cut=true)=>{ const run=rowRun(mask,mw,mh,y,cx); if(!run) return null; let {l,r}=run;
-    if(cut) for(const ch of chains){ const ax=armXAt(ch,y); if(ax==null||Math.abs(ax-cx)<shPx*0.3) continue; if(ax>l&&ax<r){ if(ax<cx) l=Math.max(l,ax+armHalf); else r=Math.min(r,ax-armHalf); } }
-    return r>l?{y:Math.round(y),l,r}:null; };
+  // 地面：腳跟著地點。遮罩最下緣是「腳尖」──腳朝鏡頭伸出，從上往下拍時會比腳跟低 5–10%，拿來當身高會把比例尺算小。
+  // MediaPipe 的腳跟點在腳跟後下緣、離地約 2 cm（身高的 1.4%）；看不清楚就用腳踝（離地約身高的 4.2%）。
+  const side=[[27,29,31],[28,30,32]].map(ix=>ix.map(P));
+  const inFrame=q=>q.y<=mh*0.998&&q.y>=0;
+  const heels=side.map(s=>s[1]).filter(q=>inFrame(q)&&(q.v>=0.5||(q.v>=0.2&&near(q,4))));
+  const ankles=side.map(s=>s[0]).filter(q=>inFrame(q)&&(q.v>=0.5||(q.v>=0.2&&near(q,4))));
+  let floor=null, floorSrc='';
+  if(heels.length){ const hy=heels.reduce((a,q)=>a+q.y,0)/heels.length; floor=hy+(hy-top)*0.014; floorSrc='heel'; }
+  else if(ankles.length){ const ay=ankles.reduce((a,q)=>a+q.y,0)/ankles.length; floor=ay+(ay-top)*0.044; floorSrc='ankle'; }
+  let maskBottom=null;
+  if(mask){ const fx=side.flat().filter(q=>q.v>0.2).map(q=>q.x); if(fx.length){ const pad=Math.max(6,T*0.25), fy=Math.max(...side.flat().map(q=>q.y)); maskBottom=maskBottomY(mask,mw,mh,Math.round(Math.min(...fx)-pad),Math.round(Math.max(...fx)+pad),Math.round(Math.min(fy,mh-1)-T*0.3),mh-1); } }
+  if(floor!=null&&maskBottom!=null) floor=Math.min(floor,maskBottom+1);
+  if(floor==null&&maskBottom!=null){ floor=maskBottom+1; floorSrc='mask'; }
+  const foot=floor, bodyPx=foot!=null?foot-top:null; const B=bodyPx||T*3.4;
+  // 手臂與手掌的膠囊（上臂、前臂、手掌），用來把貼著身體的手從輪廓裡切掉
+  const caps=[[11,13,15,17,19,21],[12,14,16,18,20,22]].map(c=>{ const [s,e,w,...h]=c.map(P); const out=[];
+    if(s.v>0.3&&e.v>0.3) out.push([s,e,B*0.027]);
+    if(e.v>0.3&&w.v>0.3) out.push([e,w,B*0.021]);
+    const hp=h.filter(q=>q.v>0.2); if(w.v>0.3&&hp.length){ const kx=hp.reduce((a,q)=>a+q.x,0)/hp.length, ky=hp.reduce((a,q)=>a+q.y,0)/hp.length; out.push([w,{x:w.x+(kx-w.x)*1.9,y:w.y+(ky-w.y)*1.9},B*0.025]); }
+    return out; });
+  // 每隻手在第 y 列的 [左, 右, 粗細]
+  const armsAt=y=>caps.map(cs=>{ let lo=Infinity,hi=-Infinity,wd=0; for(const [a,b,r] of cs){ const q=capsuleX(a,b,r,y); if(q){ lo=Math.min(lo,q[0]); hi=Math.max(hi,q[1]); wd=Math.max(wd,2*r); } } return hi>lo?[lo,hi,wd]:null; }).filter(Boolean);
+  // 某一列的軀幹區段：取包含身體中線的那一段，貼在邊緣的手臂／手掌切掉（手放在身體前面就不切）
+  const torsoAt=(y,cut=true)=>{
+    const segs=rowSegs(mask,mw,mh,y); if(!segs.length) return null; const xc=midX(y);
+    let sg=segs.find(s=>s[0]<=xc&&xc<s[1]); if(!sg){ const tol=T*0.04; sg=segs.find(s=>s[0]-tol<=xc&&xc<s[1]+tol); } if(!sg) return null;
+    let l=sg[0], r=sg[1], cutL=false, cutR=false;
+    // 手臂構成輪廓邊緣時（邊緣落在手臂估計範圍內或外側一點點）：從邊緣往內切掉約一隻手臂的粗細（關節點常落在手臂內側，不拿它當切點）；
+    // 邊緣在手臂外側更遠（寬袖子、寬衣服垂在手臂外）：切到手臂內緣；手臂在軀幹中間（手放在身體前面）：不切。
+    if(cut) for(const [al,ar,wd] of armsAt(y)){ const am=(al+ar)/2;
+      if(am<xc){ const gap=al-l; if(ar<=l) continue; if(gap<=wd*0.45&&l<=am){ l=Math.min(Math.max(l+wd*0.85,ar-wd*0.3),xc-T*0.12); cutL=true; } else if(gap>wd*0.45&&gap<wd*1.6){ l=Math.min(ar,xc-T*0.12); cutL=true; } }
+      else { const gap=r-ar; if(al>=r) continue; if(gap<=wd*0.45&&r>=am){ r=Math.max(Math.min(r-wd*0.85,al+wd*0.3),xc+T*0.12); cutR=true; } else if(gap>wd*0.45&&gap<wd*1.6){ r=Math.max(al,xc+T*0.12); cutR=true; } } }
+    return r-l>T*0.2?{y:Math.round(y),l,r,cutL,cutR,segs}:null; };
+  // 胯下：臀點往膝蓋 15% 處（遮罩上兩腿分開的位置通常比胯下低，大腿內側相貼時更明顯，不拿來用）
+  const crotchY=hipJ+0.15*(kneeY-hipJ), crotchSrc='lm';
   const rows={};
   if(mask){
-    rows.shoulder=torsoAt(shY+0.04*T,false); rows.chest=torsoAt(shY+0.33*T);
-    let best=null; for(let y=shY+0.55*T;y<=shY+0.85*T;y+=1){ const q=torsoAt(y); if(q&&(!best||q.r-q.l<best.r-best.l)) best=q; } rows.waist=best;
-    best=null; for(let y=hipJ-0.05*T;y<=hipJ+0.15*T;y+=1){ const q=torsoAt(y); if(q&&(!best||q.r-q.l>best.r-best.l)) best=q; } rows.hip=best;
+    // 肩：肩點下方一點的輪廓（含三角肌），只當參考
+    rows.shoulder=torsoAt(shY+0.06*T,false);
+    // 胸：肩線下 0.28–0.38T 取中位數（手臂已切掉）
+    const band=(a,b,step=1)=>{ const out=[]; for(let y=shY+a*T;y<=shY+b*T;y+=step){ const q=torsoAt(y); if(q) out.push(q); } return out; };
+    const ch=band(0.28,0.38).sort((a,b)=>(a.r-a.l)-(b.r-b.l)); rows.chest=ch.length?ch[Math.floor(ch.length/2)]:null;
+    // 腰：肩線下 0.5T 到臀點上 0.1T 之間最窄（兩邊都被手臂切的列不採用，除非沒有別的）
+    const wb=band(0.5,0.9); const wc=wb.filter(q=>!(q.cutL&&q.cutR)); rows.waist=(wc.length?wc:wb).reduce((m,q)=>!m||q.r-q.l<m.r-m.l?q:m,null);
+    // 臀：臀點上 0.1T 到胯下之間最寬；一旦軀幹分成兩條腿就停
+    let best=null, bestClean=null; for(let y=hipJ-0.02*T;y<=Math.min(crotchY,hipJ+0.35*T);y+=1){ const q=torsoAt(y); if(!q){ if(y>hipJ) break; continue; } const w=q.r-q.l; if(!best||w>best.r-best.l) best=q; if(!q.cutL&&!q.cutR&&(!bestClean||w>bestClean.r-bestClean.l)) bestClean=q; }
+    rows.hip=bestClean&&best&&(bestClean.r-bestClean.l)>(best.r-best.l)*0.9?bestClean:best;
   }
-  const avgY=(a,b)=>(P(a).y+P(b).y)/2;
-  return {mw,mh,top,foot,bodyPx,shY,hipJ,T,cx,shPx,hipPx,rows,kneeY:avgY(25,26),ankleY:avgY(27,28),wrists:[P(15),P(16)],feet:[P(31),P(32)],P};
+  return {mw,mh,top,foot,floorSrc,maskBottom,bodyPx,shY,hipJ,T,cx,shPx,hipPx,rows,kneeY,crotchY,crotchSrc,ankleY:avgY(27,28),wrists:[P(15),P(16)],feet:[P(31),P(32)],P,near,inFrame};
 }
 const mErr=(code,msg)=>{ mDbg({err:code+': '+msg}); return Object.assign(new Error(msg),{code}); };
 function mDbg(o){ try{ if(window.__tryon) window.__tryon.lastMeasure=Object.assign(window.__tryon.lastMeasure||{},o); }catch{} }
 // 體重推估的常見範圍（只當成合理性檢查）
 function regressCirc(H,bmi,g){ return g==='m' ? {chest:H*0.545*(1+(bmi-22)*0.02), waist:H*(0.45+(bmi-22)*0.014), hip:H*(0.555+(bmi-22)*0.011)} : {chest:H*0.53*(1+(bmi-21)*0.022), waist:H*(0.415+(bmi-21)*0.013), hip:H*(0.565+(bmi-21)*0.013)}; }
+// 身體左右轉了幾度：用 3D 世界座標的肩線、臀線方向平均（正面照也會有 8–15° 的雜訊，先扣掉再放大，實測轉身角度比模型給的大）
+function bodyYaw(wl){
+  if(!wl||wl.length<33) return {sh:0,hip:0,mid:0}; const a=(i,j)=>Math.atan2(wl[i].z-wl[j].z, wl[i].x-wl[j].x);
+  const fold=t=>{ t=Math.abs(t); return t>Math.PI/2?Math.PI-t:t; }, adj=d=>Math.max(0,Math.min(50,(d-8)*1.3));
+  const sh=fold(a(11,12))*180/Math.PI, hip=fold(a(23,24))*180/Math.PI;
+  return {sh:adj(sh), hip:adj(hip), mid:Math.min(35,adj((sh+hip)/2))};
+}
 // fp/sp：runPose 的結果；o：{height, weight, gender, loose, llm:{bust,waist,hip}}
 function measureFromPose(fp, sp, o){
   const H=+o.height; if(!(H>=100&&H<=230)) throw mErr('NO_HEIGHT','請先填身高');
   const g=poseGeometry(fp); if(!g) throw mErr('NO_PERSON','照片裡找不到清楚的人像，請換一張正面、全身入鏡的照片。');
-  const P=g.P, vis=i=>P(i).v; mDbg({mw:g.mw,mh:g.mh,top:g.top,foot:g.foot,cx:g.cx,rows:g.rows});
-  if(vis(0)<0.6||vis(27)<0.6||vis(28)<0.6||!g.bodyPx||g.bodyPx<g.T*2.4) throw mErr('NOT_FULL','沒有拍到完整的全身：頭頂到腳底都要在畫面裡（腳不要被裁掉），請重拍一張。');
+  const P=g.P, vis=i=>P(i).v;
+  mDbg({mw:g.mw,mh:g.mh,top:g.top,foot:g.foot,floorSrc:g.floorSrc,maskBottom:g.maskBottom,cx:g.cx,crotchY:g.crotchY,crotchSrc:g.crotchSrc,rows:g.rows});
+  // 全身檢查：頭要在畫面裡；每隻腳的腳踝／腳跟／腳尖至少一點在畫面內，且清楚（≥0.5）或落在人形輪廓上（≥0.2）。
+  // 雙腿交叉時其中一腳被擋住也可以，只要另一腳清楚。
+  const footOk=ix=>ix.some(i=>{ const q=P(i); return g.inFrame(q)&&(q.v>=0.5||(q.v>=0.2&&g.near(q,4))); });
+  const fl=footOk([27,29,31]), fr=footOk([28,30,32]);
+  const feetCut=g.maskBottom!=null&&g.maskBottom>=g.mh-2&&![31,32].some(i=>vis(i)>=0.5&&P(i).y<g.mh*0.99);
+  mDbg({check:{nose:vis(0),fl,fr,feetCut,bodyT:g.bodyPx/g.T}});
+  if(vis(0)<0.5||!(fl||fr)||(!(fl&&fr)&&Math.max(vis(27),vis(28))<0.5)||feetCut||!g.bodyPx||g.bodyPx<g.T*2.4) throw mErr('NOT_FULL','沒有拍到完整的全身：頭頂到腳底都要在畫面裡（腳不要被裁掉），請重拍一張。');
   if(!fp.mask) throw mErr('NO_MASK','這張照片抓不到身體輪廓，換一張背景乾淨、光線均勻的照片試試。');
-  if(g.shPx/g.T<0.42||g.hipPx/g.shPx<0.4||g.hipPx/g.shPx>1.1) throw mErr('NOT_FRONT','看起來是側身或轉了角度：量身要用正面照，請面對鏡頭站直再拍一張。');
+  if(g.shPx/g.T<0.3||g.hipPx/g.shPx<0.3||g.hipPx/g.shPx>1.2) throw mErr('NOT_FRONT','看起來是側身或轉了角度：量身要用正面照，請面對鏡頭站直再拍一張。');
   if(!g.rows.chest||!g.rows.waist||!g.rows.hip) throw mErr('NO_MASK','抓不到胸、腰、臀的輪廓：請穿貼身一點的衣服、雙手微微離開身體，再拍一張。');
   const cm=cmPerPx(g.top,g.foot,H); const flags=[];
-  const wOf=k=>(g.rows[k].r-g.rows[k].l)*cm;
-  // 肩寬：關節點距離 ×1.12（關節中心→肩峰）與肩線輪廓 ×0.90（扣三角肌）取平均
-  const shLm=g.shPx*1.12*cm; let shoulder=shLm; if(g.rows.shoulder){ const sil=wOf('shoulder')*0.9; if(Math.abs(sil-shLm)/shLm<0.2) shoulder=(sil+shLm)/2; }
+  const Y=bodyYaw(fp.wl), yaw=Y.mid, rad=d=>d*Math.PI/180; if(yaw>=20) flags.push('turned');
+  const yawOf={chest:Y.mid, waist:Y.mid, hip:Y.mid};   // 肩線、臀線各自的角度雜訊太大，用平均
+  const bmi=o.weight?o.weight/((H/100)**2):null;
+  // 轉身時正面看到的寬度＝寬×cos＋厚×sin（橢圓投影），反推真正的寬
+  const unturn=(w,k,d)=>w/Math.sqrt(Math.cos(rad(d))**2+(k*Math.sin(rad(d)))**2);
+  // 寬度校正 0.95：全身照的相機通常在胸腰高度，軀幹比頭頂、腳底離鏡頭近，看起來比用身高換算的比例尺大約 5%（再加上衣服厚度）
+  const WCAL=0.95, wOf=k=>(g.rows[k].r-g.rows[k].l)*cm*WCAL;
+  // 肩寬：MediaPipe 的肩點在肩關節中心（肩峰內側約 3–4 cm），關節點距離（扣掉轉身）× 1.22 ≈ 肩峰到肩峰再加一點三角肌，接近衣服的肩寬
+  const shLm=g.shPx/Math.cos(rad(Y.mid))*1.22*cm*WCAL; let shoulder=shLm;
+  if(g.rows.shoulder&&yaw<15){ const sil=wOf('shoulder')*0.92; if(Math.abs(sil-shLm)/shLm<0.12) shoulder=shLm*0.6+sil*0.4; }
+  // 轉身時肩點距離很難還原（肩膀也常跟著前後傾），轉越多越往身高比例（男 0.245H、女 0.225H）靠
+  const shQ=1-(yaw>=10?0.5*Math.min(1,(yaw-10)/25):0); if(shQ<1) shoulder=shoulder*shQ+H*(o.gender==='m'?0.245:0.225)*(1-shQ);
   const W={chest:wOf('chest'),waist:wOf('waist'),hip:wOf('hip')};
   const seg=(a,b)=>Math.hypot(P(a).x-P(b).x,P(a).y-P(b).y);
   const arms=[[11,13,15],[12,14,16]].filter(c=>c.every(i=>vis(i)>0.5)).map(c=>(seg(c[0],c[1])+seg(c[1],c[2]))*cm+2);   // +2：肩關節中心到肩峰
-  const arm=arms.length?arms.reduce((a,b)=>a+b)/arms.length:null;
-  const inseam=(seg(23,27)+seg(24,28))/2*cm*0.92, leg=(g.foot-g.hipJ)*cm, torso=g.T*cm;
-  const bmi=o.weight?o.weight/((H/100)**2):null;
+  let arm=arms.length?arms.reduce((a,b)=>a+b)/arms.length:null;   // 兩隻平均（轉身時靠近鏡頭的那隻看起來比較長）
+  // 手肘彎曲、手伸向鏡頭時照片上的手臂會變短：超出常見比例（身高的 29–38%）就當成量不到，改用身高比例估
+  let armEst=false; if(arm!=null&&(arm<H*0.29||arm>H*0.38)){ arm=H*0.33; armEst=true; flags.push('arm_est'); }
+  // 內長：胯下到地面再少 2 cm。單張正面照的胯下位置受拍攝角度（由上往下拍腿會變短）和臀點位置影響，
+  // 所以和身高比例（男 0.455、女 0.46）以 6:4 合併，誤差標 ±3.5
+  const inseamPhoto=(g.foot-g.crotchY)*cm-2, inseam=inseamPhoto*0.6+H*(o.gender==='m'?0.455:0.46)*0.4;
+  const leg=(g.foot-g.hipJ)*cm, torso=g.T*cm;
   // 側面照：同一個身高比例的那一列量厚度
   let depth={}, side=false, gs=null, cmS=null;
   if(sp){ gs=poseGeometry(sp);
@@ -1965,24 +2044,32 @@ function measureFromPose(fp, sp, o){
         if(best!=null){ const d=best*cmS, rr=d/W[k]; if(rr>=0.45&&rr<=1.1) depth[k]=d; else flags.push('side_'+k); } } } }
   const FACT={chest:1.03,waist:1.0,hip:1.02};   // 胸廓與臀部比橢圓稍方
   const vals={height:H, weight:o.weight||null, shoulder:r1(shoulder), arm:arm?r1(arm):null, leg:r1(leg), inseam:r1(inseam), torso:r1(torso)};
-  const unc={height:0, weight:0, shoulder:1.5, arm:2, leg:2, inseam:2, torso:2}; const meta={};
-  const reg=bmi?regressCirc(H,bmi,o.gender):null; const outl=[];
+  const turnU=yaw>=20?1:0;
+  const unc={height:0, weight:0, shoulder:2+turnU+(shQ<0.8?1:0), arm:armEst?4:2.5, leg:2.5, inseam:3.5, torso:2}; const meta={yaw:Math.round(yaw), inseamPhoto:r1(inseamPhoto)};
+  const reg=bmi?regressCirc(H,bmi,o.gender):null; const outl=[], est=[]; const raw={};
   for(const k of ['chest','waist','hip']){
-    const fromSide=depth[k]!=null; const D=fromSide?depth[k]:W[k]*depthRatio(k,bmi||21);
-    let c=ellipseCirc(W[k],D)*FACT[k]; if(o.loose) c-=2;
+    const fromSide=depth[k]!=null; const kr=depthRatio(k,bmi||21);
+    const Wf=fromSide?W[k]:unturn(W[k],kr,yawOf[k]); const D=fromSide?depth[k]:Wf*kr;
+    let c=ellipseCirc(Wf,D)*FACT[k]; if(o.loose) c-=2; raw[k]=r1(c);
     const llm=o.llm&&+o.llm[k==='chest'?'bust':k]; if(llm>40&&llm<200) c=c*0.75+llm*0.25;
-    let u=fromSide?2:4;
-    if(reg&&Math.abs(c-reg[k])/reg[k]>0.12){ c=c*0.7+reg[k]*0.3; u+=2; outl.push(k); }
-    vals[k]=r1(c); unc[k]=u; meta[k]={w:r1(W[k]),d:r1(D),side:fromSide};
+    let u=(fromSide?2:4)+turnU;
+    // 量測品質：轉身越多、輪廓被手臂切掉的邊越多，照片量到的越不可靠，就越往身高體重推估靠（誤差也標大一點）
+    const row=g.rows[k]; const q=fromSide?1:Math.max(0.3,1-(yaw>=10?0.5*Math.min(1,(yaw-10)/25):0)-(row.cutL?0.2:0)-(row.cutR?0.2:0));
+    if(reg&&Math.abs(c-reg[k])/reg[k]>0.25){ c=reg[k]; u=8; est.push(k); }   // 差太多＝這張照片量不到這個部位（姿勢、衣服、手擋住），直接用推估，誤差 ±8
+    else { if(reg&&q<1){ c=c*q+reg[k]*(1-q); u+=Math.round((1-q)*3); }
+      if(reg&&Math.abs(c-reg[k])/reg[k]>0.12){ c=c*0.7+reg[k]*0.3; u+=2; outl.push(k); } }
+    meta[k+'_q']=r1(q);
+    vals[k]=r1(c); unc[k]=u; meta[k]={w:r1(Wf),d:r1(D),side:fromSide};
   }
   if(outl.length) flags.push('outlier:'+outl.join(','));
+  if(est.length) flags.push('est:'+est.join(','));
   // 腳長：側面照量腳跟到腳尖，否則用身高比例估
-  let foot=null; if(gs){ const fl=[[29,31],[30,32]].filter(c=>gs.P(c[0]).v>0.5&&gs.P(c[1]).v>0.5).map(c=>Math.abs(gs.P(c[0]).x-gs.P(c[1]).x)*cmS*1.04); if(fl.length){ const f=Math.max(...fl); if(f/H>0.13&&f/H<0.17) foot=f; } }
+  let foot=null; if(gs){ const fl2=[[29,31],[30,32]].filter(c=>gs.P(c[0]).v>0.5&&gs.P(c[1]).v>0.5).map(c=>Math.abs(gs.P(c[0]).x-gs.P(c[1]).x)*cmS*1.04); if(fl2.length){ const f=Math.max(...fl2); if(f/H>0.13&&f/H<0.17) foot=f; } }
   vals.foot=r1(foot||H*(o.gender==='m'?0.153:0.151)); unc.foot=foot?0.7:1.5; meta.foot={est:!foot};
-  const drops={waist:r1((g.rows.waist.y-g.shY)*cm), hip:r1((g.rows.hip.y-g.shY)*cm), crotch:r1((g.hipJ+0.2*g.T-g.shY)*cm), knee:r1((g.kneeY-g.shY)*cm)};
+  const drops={waist:r1((g.rows.waist.y-g.shY)*cm), hip:r1((g.rows.hip.y-g.shY)*cm), crotch:r1((g.crotchY-g.shY)*cm), knee:r1((g.kneeY-g.shY)*cm)};
   const nr=q=>q?{y:q.y/g.mh,l:q.l/g.mw,r:q.r/g.mw}:null;
   const geo={ar:g.mw/g.mh, top:g.top/g.mh, foot:g.foot/g.mh, rows:{shoulder:g.rows.shoulder?nr(g.rows.shoulder):{y:g.shY/g.mh,l:(g.cx-g.shPx*0.56)/g.mw,r:(g.cx+g.shPx*0.56)/g.mw}, chest:nr(g.rows.chest), waist:nr(g.rows.waist), hip:nr(g.rows.hip)}};
-  mDbg({cm, values:vals, W});
+  mDbg({cm, yaw:Y, values:vals, W, raw, reg});
   return {v:1, at:new Date().toISOString(), gender:o.gender||'f', side, loose:!!o.loose, vals, unc, manual:{}, meta, drops, flags, geo, src:'photo'};
 }
 
@@ -2201,7 +2288,7 @@ function renderMeasureCard(){
   const box=$('measureCard'); if(!box) return; const M=loadMeasure(); if(!M){ box.innerHTML=''; return; }
   const rows=MKEYS.map(([k,lb,u])=>{ const v=mval(M,k), man=M.manual&&M.manual[k]!=null, un=(M.unc||{})[k];
     return `<div class="mrow" role="button" tabindex="0" data-k="${k}" aria-label="修改${lb}"><span class="mk">${lb}</span><span class="mu">${man?'<em class="mfix">已手動修正</em>':(v!=null&&un?'±'+un+' '+u:(k==='foot'&&M.meta&&M.meta.foot&&M.meta.foot.est&&v!=null?'依身高估':''))}</span><span class="mv">${v!=null?fmtM(v,k)+'<small>'+u+'</small>':'<i>點這裡填</i>'}</span></div>`; }).join('');
-  const fl=(M.flags||[]).map(f=>f==='side_bad'?'側面照抓不到完整的側身，這次只用正面照估算（圍度誤差較大）。':/^side_/.test(f)?'側面照有一處輪廓不清楚，那個部位改用正面照推估。':/^outlier:/.test(f)?((ks=>ks.length?`${ks.map(k=>({chest:'胸圍',waist:'腰圍',hip:'臀圍'})[k]).join('、')}和身高體重推估的差很多，已往常見範圍修正，建議用皮尺量一次。`:'')(f.slice(8).split(',').filter(k=>!(M.manual&&M.manual[k]!=null)))):'').filter(Boolean);
+  const fl=(M.flags||[]).map(f=>f==='side_bad'?'側面照抓不到完整的側身，這次只用正面照估算（圍度誤差較大）。':/^side_/.test(f)?'側面照有一處輪廓不清楚，那個部位改用正面照推估。':f==='turned'?'照片裡身體有轉一個角度，已用 3D 姿勢估計修正；正對鏡頭再拍一張會更準。':/^est:/.test(f)?((ks=>ks.length?`${ks.map(k=>({chest:'胸圍',waist:'腰圍',hip:'臀圍'})[k]).join('、')}在這張照片被手臂或姿勢擋住、量不準，先用身高體重推估（誤差較大），建議用皮尺量一次。`:'')(f.slice(4).split(',').filter(k=>!(M.manual&&M.manual[k]!=null)))):/^outlier:/.test(f)?((ks=>ks.length?`${ks.map(k=>({chest:'胸圍',waist:'腰圍',hip:'臀圍'})[k]).join('、')}和身高體重推估的差很多，已往常見範圍修正，建議用皮尺量一次。`:'')(f.slice(8).split(',').filter(k=>!(M.manual&&M.manual[k]!=null)))):'').filter(Boolean);
   const how=M.src==='photo'?(M.side?'正面＋側面照量測':'正面照量測（加側面照會更準）')+(M.loose?'・已扣寬鬆衣服 2 cm':''):'手動填寫';
   box.innerHTML=`<div class="mres"><div class="mfig">${measureFigure(M)}</div><div class="mlist2">${rows}</div></div>${fl.length?`<div class="mflag">${fl.map(esc).join('<br>')}</div>`:''}<div class="mnote">照片量測是估計值，誤差約 ±2–4 公分；拿皮尺量過的數字可以直接改。</div><div class="mmeta muted">${how}${M.at?' · '+new Date(M.at).toLocaleDateString('zh-TW'):''} · 已同步到「尺寸建議」</div>`;
   box.querySelectorAll('.mrow').forEach(r=>{ r.onclick=()=>editMeasure(r); r.onkeydown=e=>{ if((e.key==='Enter'||e.key===' ')&&e.target===r){ e.preventDefault(); editMeasure(r); } }; });
