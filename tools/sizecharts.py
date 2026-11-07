@@ -6,7 +6,7 @@ sync_uniqlo.py、sync_tw.py、backfill_sizecharts.py 共用。
 garment：chest/waist/hip/thigh 為「整圈」公分（平量寬 ×2）；length＝衣長／褲長／裙長；shoulder、sleeve、inseam 為直線長度；鞋子用 foot（公分）。
 body：該尺碼適合的身體尺寸（胸圍、腰圍、臀圍、肩寬；鞋子為腳長）。
 """
-import json, os, re, html as html_mod, urllib.request, urllib.error
+import json, os, re, html as html_mod, urllib.request, urllib.error, urllib.parse
 from datetime import datetime, timezone
 
 SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
@@ -27,6 +27,101 @@ def decode_html(b, charset=None):
     except UnicodeDecodeError: return b.decode('cp950', 'replace')
 
 def now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+# ---------- robots.txt 守門（sync_tw.py／sync_uniqlo.py／尺寸表程式所有對外抓取都經過這裡） ----------
+# Google／RFC 9309 規則：選最符合 TryOnBot 的群組（沒有就 *）、最長比對優先、同長時 Allow 優先、支援 * 與 $；
+# robots.txt 4xx＝全部允許，5xx／連不上＝全部不抓（保守）。Crawl-delay 與最小間隔以「每個網域」計，多執行緒也一樣。
+import threading, time as _time, atexit, sys as _sys
+BOT_UA = 'Mozilla/5.0 (compatible; TryOnBot/1.0; +https://frankf19-19.github.io/fitroom/)'
+class RobotsBlocked(Exception): pass
+def _robots_rx(p):
+  end = p.endswith('$'); p = p[:-1] if end else p
+  return re.compile(''.join('.*' if c == '*' else re.escape(c) for c in p) + ('$' if end else ''), re.S)
+def parse_robots(text, ua=BOT_UA):
+  groups, cur, in_agents, sitemaps = [], None, False, []
+  for line in (text or '').splitlines():
+    line = line.split('#', 1)[0].strip()
+    if ':' not in line: continue
+    k, v = line.split(':', 1); k = k.strip().lower(); v = v.strip()
+    if k in ('user-agent', 'useragent'):
+      if not (cur and in_agents): cur = {'agents': [], 'rules': [], 'delay': None}; groups.append(cur)
+      cur['agents'].append(v.lower()); in_agents = True
+    elif k == 'sitemap': sitemaps.append(v)
+    elif cur is not None and k in ('allow', 'disallow'):
+      in_agents = False
+      if v: cur['rules'].append((k == 'allow', urllib.parse.unquote(v), _robots_rx(urllib.parse.unquote(v))))
+    elif cur is not None and k == 'crawl-delay':
+      in_agents = False
+      try: cur['delay'] = float(v)
+      except ValueError: pass
+  ual = ua.lower()
+  mine = [g for g in groups if any(a != '*' and a and a in ual for a in g['agents'])] or [g for g in groups if '*' in g['agents']]
+  rules = [r for g in mine for r in g['rules']]; delays = [g['delay'] for g in mine if g['delay']]
+  return {'rules': rules, 'delay': max(delays) if delays else 0, 'sitemaps': sitemaps, 'all': False}
+def robots_allows(parsed, url):
+  if parsed.get('all'): return False   # robots.txt 讀不到（5xx／連線失敗）
+  u = urllib.parse.urlsplit(url); path = urllib.parse.unquote((u.path or '/') + ('?' + u.query if u.query else ''))
+  if path == '/robots.txt': return True
+  best = None   # (長度, 是否 allow)
+  for allow, pat, rx in parsed['rules']:
+    if rx.match(path):
+      k = (len(pat), allow)
+      if best is None or k > best: best = k
+  return True if best is None else best[1]
+class Robots:
+  def __init__(self, ua=BOT_UA):
+    self.ua = ua; self.cache = {}; self.skipped = {}; self.last = {}; self.lock = threading.Lock(); self.hlocks = {}
+  def _hlock(self, key):
+    with self.lock: return self.hlocks.setdefault(key, threading.Lock())
+  def get(self, url):
+    u = urllib.parse.urlsplit(url); key = (u.scheme or 'https') + '://' + u.netloc.lower()
+    with self._hlock(key):
+      if key not in self.cache:
+        st, text = 0, ''
+        try:
+          with urllib.request.urlopen(urllib.request.Request(key + '/robots.txt', headers={'User-Agent': self.ua}), timeout=20) as r:
+            st, text = r.status, decode_html(r.read(500000), r.headers.get_content_charset())
+        except urllib.error.HTTPError as e: st = e.code
+        except Exception: st = 0
+        if st == 200: p = parse_robots(text, self.ua)
+        elif 400 <= st < 500 and st != 429: p = parse_robots('', self.ua)
+        else: p = {'rules': [], 'delay': 0, 'sitemaps': [], 'all': True}
+        p['status'] = st; p['text'] = text; self.cache[key] = p
+        self.last.setdefault(key, 0.0)
+      return key, self.cache[key]
+  def allowed(self, url, ua=None): return robots_allows(self.get(url)[1], url)
+  def text(self, url): return self.get(url)[1].get('text', '')
+  def delay(self, url): return self.get(url)[1].get('delay', 0)
+  def skip(self, url):
+    h = urllib.parse.urlsplit(url).netloc
+    with self.lock: self.skipped[h] = self.skipped.get(h, 0) + 1
+  def wait(self, url, min_delay=0.3):
+    """同一網域兩次請求之間至少間隔 max(min_delay, Crawl-delay) 秒（多執行緒共用）。"""
+    key, p = self.get(url); gap = max(min_delay, p.get('delay') or 0)
+    with self._hlock(key + '#t'):
+      d = self.last.get(key, 0.0) + gap - _time.monotonic()
+      if d > 0: _time.sleep(d)
+      self.last[key] = _time.monotonic()
+  def report(self):
+    if not self.skipped: return
+    msg = 'robots.txt 不允許、已略過：' + ', '.join(f'{h} {n}' for h, n in sorted(self.skipped.items()))
+    print(msg)
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+      try: open(os.environ['GITHUB_STEP_SUMMARY'], 'a').write(msg + '\n')
+      except Exception: pass
+ROBOTS = Robots()
+atexit.register(ROBOTS.report)
+class _RobotsRedirect(urllib.request.HTTPRedirectHandler):
+  def redirect_request(self, req, fp, code, msg, headers, newurl):
+    if not ROBOTS.allowed(newurl): ROBOTS.skip(newurl); raise RobotsBlocked(newurl)
+    return super().redirect_request(req, fp, code, msg, headers, newurl)
+_OPENER = urllib.request.build_opener(_RobotsRedirect)
+def urlopen(req, timeout=30, min_delay=0.3):
+  """取代 urllib.request.urlopen：先查該網域 robots.txt（不允許就丟 RobotsBlocked 並計數），再依 Crawl-delay 節流；轉址目的地也檢查。"""
+  url = req.full_url if isinstance(req, urllib.request.Request) else req
+  if not ROBOTS.allowed(url): ROBOTS.skip(url); raise RobotsBlocked(url)
+  ROBOTS.wait(url, min_delay)
+  return _OPENER.open(req, timeout=timeout)
 
 # ---------- 尺碼名稱 ----------
 def norm_size(s):
@@ -383,7 +478,7 @@ def _fr_req(url, origin, data=None):
   h = {'User-Agent': 'Mozilla/5.0', 'Accept-Language': 'zh-TW', 'Origin': origin, 'Referer': origin + '/tw/'}
   req = urllib.request.Request(url, data=json.dumps(data).encode() if data is not None else None, headers=h, method='POST' if data is not None else 'GET')
   if data is not None: req.add_header('Content-Type', 'application/json')
-  with urllib.request.urlopen(req, timeout=30) as r: return r.read().decode('utf-8', 'replace')
+  with urlopen(req, timeout=30) as r: return r.read().decode('utf-8', 'replace')   # 經過 robots.txt 守門
 def fr_size_lists(brand, codes):
   """POST /product/spu/size-list（官網前端用的 API）：{商品代碼: ['XS','S',…]}，一次 40 筆。"""
   web, d, origin = FR_SITE[brand]; out = {}
@@ -467,4 +562,10 @@ if __name__ == '__main__':
   assert parse_text(txt, 'top') == {'M': {'shoulder': 44, 'chest': 114, 'length': 75, 'sleeve': 61}, 'L': {'shoulder': 46, 'chest': 118, 'length': 77, 'sleeve': 62}}, parse_text(txt, 'top')
   assert pick_chart(txt, 'top', 'x', 'src')['sizes']['L']['chest'] == 118
   assert parse_text('<li>※尺寸： 長約204cm、寬約104cm</li>', 'top') is None
+  rb = parse_robots('User-agent: *\nDisallow: /webapi/\nDisallow: /*?q=\nAllow: /SalePage/\nDisallow: /Sale\nCrawl-delay: 2\n\nUser-agent: BadBot\nDisallow: /\nSitemap: https://x/s.xml')
+  assert not robots_allows(rb, 'https://x/webapi/SalePageV2/GetSalePageV2Info/1/2') and robots_allows(rb, 'https://x/SalePage/Index/5')
+  assert not robots_allows(rb, 'https://x/Sales') and not robots_allows(rb, 'https://x/search?q=1') and robots_allows(rb, 'https://x/') and rb['delay'] == 2 and rb['sitemaps'] == ['https://x/s.xml']
+  rb = parse_robots('User-agent: TryOnBot\nDisallow: /a$\nUser-agent: *\nDisallow: /')
+  assert robots_allows(rb, 'https://x/b') and not robots_allows(rb, 'https://x/a') and robots_allows(rb, 'https://x/ab')
+  assert robots_allows(parse_robots('User-agent: *\nDisallow: /p\nAllow: /p'), 'https://x/p')
   print('sizecharts self-test ok')
