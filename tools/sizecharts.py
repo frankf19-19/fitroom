@@ -12,6 +12,18 @@ from datetime import datetime, timezone
 SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
 KEYS = ('chest', 'shoulder', 'length', 'sleeve', 'waist', 'hip', 'inseam', 'thigh', 'foot')
 
+def decode_html(b, charset=None):
+  """依 HTTP 標頭或 <meta charset> 解碼（Queen Shop 尺寸表小頁是 Big5）。"""
+  cs = (charset or '').lower()
+  if not cs:
+    m = re.search(rb'<meta[^>]+charset=["\']?([\w-]+)', b[:3000], re.I)
+    cs = m.group(1).decode().lower() if m else 'utf-8'
+  if cs in ('big5', 'big-5', 'cp950', 'x-big5'): cs = 'cp950'
+  try: return b.decode(cs)
+  except (LookupError, UnicodeDecodeError):
+    try: return b.decode('utf-8')
+    except UnicodeDecodeError: return b.decode('cp950', 'replace')
+
 def now(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 # ---------- 尺碼名稱 ----------

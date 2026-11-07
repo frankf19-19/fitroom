@@ -18,7 +18,7 @@ def get(u, n=4000000):
       if b[:2] == b'\x1f\x8b':
         try: b = gzip.decompress(b)
         except Exception: pass
-      return r.status, b.decode('utf-8', 'replace')
+      return r.status, SC.decode_html(b, r.headers.get_content_charset())
   except urllib.error.HTTPError as e: return e.code, ''
   except Exception: return 0, ''
 
