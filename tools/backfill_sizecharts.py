@@ -123,6 +123,13 @@ lines = ['| 品牌 | 上架 | 商品實測表 | % | 身體尺寸表 | 無 |', '|
 for b, c in rows: lines.append(f"| {b} | {c['active']} | {c['garment']} | {100 * c['garment'] / max(1, c['active']):.0f}% | {c['body']} | {c['none']} |")
 lines.append(f"| **合計** | {tot['active']} | {tot['garment']} | {100 * tot['garment'] / max(1, tot['active']):.1f}% | {tot['body']} | {tot['none']} |")
 md = '\n'.join(lines); print(md)
+# 有尺碼卻沒對上任何尺寸表的商品（改進 body_chart 用）
+miss = {}
+for p in products:
+  if not result.get(p['id']) and p.get('sizes') and p['type'] in ('top', 'bottom', 'dress', 'shoes'):
+    m = miss.setdefault(p.get('brand') or '?', [])
+    if len(m) < 3: m.append(p['type'] + ':' + '|'.join(p['sizes'][:8]))
+for b, m in miss.items(): print('unmapped sizes', b, m)
 os.makedirs('out', exist_ok=True)
 json.dump({'storage': store.ensure(), 'total': tot, 'brands': cov, 'at': SC.now()}, open('out/coverage.json', 'w'), ensure_ascii=False, indent=1)
 open('out/coverage.md', 'w').write(md + '\n')
