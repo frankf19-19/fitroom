@@ -660,6 +660,9 @@
     .iv-acts .ghost{grid-column:1/-1}
     .iv-acts .btn{min-height:44px}
   }
+  .shopnote{display:block;font-size:12px;color:var(--muted);margin-top:4px}.shopnote a{color:var(--muted);margin-left:6px}
+  .ivsrc{font-size:12px;color:var(--muted);margin:2px 0 10px}.ivsrc a{color:var(--muted)}
+  footer .footnote{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -816,7 +819,7 @@
   <!-- ===== 商店 ===== -->
   <section class="view" id="view-shop">
     <h1 class="ptitle" style="font-size:24px;margin:0 0 6px">商店</h1>
-    <div class="muted" style="margin-bottom:14px">挑一件直接放進試衣間試穿，喜歡再點購買到品牌官網下單。</div>
+    <div class="muted" style="margin-bottom:14px">挑一件直接放進試衣間試穿，喜歡再點購買到品牌官網下單。<span class="shopnote">商品圖片與資訊取自各品牌官網，版權屬品牌所有。<a href="#" data-doc="copyright">版權說明</a></span></div>
     <div class="shopbar">
       <div class="search"><input type="text" id="shopQ" placeholder="搜尋品牌或商品" inputmode="search" enterkeyhint="search" autocomplete="off"><button class="sclear hidden" id="shopQClear" aria-label="清除搜尋">✕</button></div>
     </div>
@@ -904,6 +907,7 @@
       <button class="li" data-doc="tips"><span>怎麼拍效果最好</span><em></em></button>
       <button class="li" data-doc="privacy"><span>隱私權政策</span><em></em></button>
       <button class="li" data-doc="terms"><span>服務條款</span><em></em></button>
+      <button class="li" data-doc="copyright"><span>版權與移除申請</span><em></em></button>
       <a class="li" href="mailto:frankccc199@gmail.com?subject=試穿吧%20TryOn"><span>聯絡客服</span><em></em></a>
     </div>
     <div class="mlist hidden" id="meOut"><button class="li danger" id="meLogout"><span>登出</span></button></div>
@@ -956,7 +960,7 @@
   <div class="chips" id="cropType"><span class="chip on" data-v="auto">自動判斷</span><span class="chip" data-v="flat-lay">平拍商品照</span><span class="chip" data-v="model">模特兒穿著照</span></div></div>
   <button class="btn primary block" id="cropOk">確定</button>
 </div></div>
-<footer>試穿吧 TryOn · v<span id="ver"></span> · 合成結果為 AI 生成示意，實際商品以賣場為準<br><a href="#" data-doc="privacy">隱私權政策</a>·<a href="#" data-doc="terms">服務條款</a>·<a href="#" data-doc="tips">拍照指引</a></footer>
+<footer>試穿吧 TryOn · v<span id="ver"></span> · 合成結果為 AI 生成示意，實際商品以賣場為準<br><a href="#" data-doc="privacy">隱私權政策</a>·<a href="#" data-doc="terms">服務條款</a>·<a href="#" data-doc="tips">拍照指引</a>·<a href="#" data-doc="copyright">版權與移除申請</a><br><span class="footnote">商品圖片與資訊版權屬各品牌所有，本站與品牌無合作關係（另有標示者除外）。</span></footer>
 
 <script>
 function __tryonBoot(){
@@ -971,7 +975,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-07-05';
+const BUILD = '2026-11-07-06';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1757,8 +1761,9 @@ function openItemView(it, mode){
       <div class="iv-info"><div class="muted" style="font-size:12px;letter-spacing:2px">${TYPE_LABEL[p.type]||''}${p.brand?' · '+esc(p.brand):''}${p.featured?' · 精選':''}</div><div style="font-size:15px;margin:4px 0 4px;line-height:1.5">${esc(p.name)}</div>${price?`<div class="iv-price">${price}</div>`:''}
       ${useFit?'<div id="ivFit"></div>':sizes.length?`<div class="muted" style="font-size:12px;letter-spacing:1px">尺寸</div><div class="iv-sizes">${sizes.map(s=>`<span class="pill gray">${esc(s)}</span>`).join('')}</div>`:''}
       ${hint?`<div class="muted" style="font-size:12px;line-height:1.6;margin-top:6px">${hint}</div>`:''}
-      <div class="iv-acts"><button class="btn primary" id="ivTry">試穿</button><button class="btn rackbtn${on?' on':''}" id="ivRack" aria-pressed="${on}">${on?'✓ 衣架':'＋衣架'}</button>${p.buy_url?'<button class="btn" id="ivBuy">購買</button>':''}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
+      <div class="ivsrc">圖片與資訊來源：${esc(p.brand||"品牌")} 官網 · <a href="#" class="ivsrc-l">版權說明</a></div><div class="iv-acts"><button class="btn primary" id="ivTry">試穿</button><button class="btn rackbtn${on?' on':''}" id="ivRack" aria-pressed="${on}">${on?'✓ 衣架':'＋衣架'}</button>${p.buy_url?'<button class="btn" id="ivBuy">購買</button>':''}<button class="btn ghost" id="ivClose">關閉</button></div></div></div>`;
     ov.classList.add('on');
+    ov.querySelectorAll('.ivsrc-l').forEach(a=>a.onclick=e=>{ e.preventDefault(); close(); openDoc('copyright'); });
     if(useFit) mountFitUI($('ivFit'), {type:p.type, product_id:p.id, brand:p.brand, pgender:p.gender, sizes:p.sizes||[]}, 'shop');
     $('ivClose').onclick=close;
     $('ivTry').onclick=()=>{ close(); tryProduct(p); };
@@ -2780,10 +2785,11 @@ const DOCS={
     <li>你保證上傳的照片為本人或已取得當事人同意，且不上傳未成年人、他人或侵權圖片。</li>
     <li>每個品項合成一次扣 1 點；合成失敗自動退點。已購買的點數不可轉讓、不可兌現；除法律規定外不退費。</li>
     <li>禁止用本服務產生色情、仇恨、冒充他人或違法內容，違者停權且不退點。</li>
-    <li>商店內的商品由合作品牌與聯盟平台提供，購買在品牌網站完成；本服務可能因此獲得佣金，但不影響你的價格。商品資訊以品牌頁為準。</li>
+    <li>商店內的商品資訊與圖片整理自各品牌官網的公開頁面，僅供試穿參考；著作權與商標屬各品牌所有，除另有標示外，本服務與這些品牌沒有合作或代理關係。購買在品牌網站完成，商品資訊、價格與庫存以品牌頁為準。詳見「版權與移除申請」。</li>
     <li>本服務得視營運狀況調整免費額度、價格與功能，重大變更會公告。</li>
     <li>準據法為中華民國法律，爭議以臺灣臺北地方法院為第一審管轄法院。</li></ul>
-    <p class="muted">最後更新：2026-10-28</p></div>`}
+    <p class="muted">最後更新：2026-11-07</p></div>`},
+  copyright:{title:'版權與移除申請', html:`<div class="doc"><h3>商品資訊與圖片</h3><p>商店中的商品名稱、價格、尺寸表與商品圖片，整理自各品牌官網公開的商品頁，目的是讓使用者在購買前試穿參考，並導回品牌官網購買。這些內容的著作權與商標權均屬各品牌或原權利人所有。</p><p>除特別標示為合作品牌外，本服務與商店中的品牌沒有合作、授權或代理關係，品牌名稱僅用於說明商品來源。</p><h3>移除申請</h3><p>如果你是權利人，不希望你的商品、圖片或品牌出現在本服務，請來信 <a href="mailto:frankccc199@gmail.com?subject=試穿吧%20移除申請">frankccc199@gmail.com</a>，註明品牌名稱（或商品連結）與聯絡方式。我們會在收到後 3 個工作天內移除，並停止後續抓取。</p><h3>品牌合作</h3><p>歡迎品牌提供正式的商品資料或洽談合作，讓你的客人在官網就能試穿。來信同上。</p><h3>使用者上傳的內容</h3><p>使用者自行上傳的照片與單品圖，請確認你有權使用；本服務僅依你的要求產生試穿結果，不公開分享。</p><p class="muted">最後更新：2026-11-07</p></div>`}
 };
 function openDoc(k){ const d=DOCS[k]; if(d) openPick(d.title, d.html); }
 document.querySelectorAll('[data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefault(); openDoc(a.dataset.doc); });
