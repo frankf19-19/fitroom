@@ -22,8 +22,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://wsrv.nl">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" type="image/webp" href="demo/f-after.webp?v=20261106" fetchpriority="high">
-<link rel="preload" as="image" type="image/webp" href="demo/f-before.webp?v=20261106">
+<script>/* 只有開在首頁時才預載示範圖，直接開商店等頁面時不搶頻寬 */(function(){var h=location.hash.replace('#','').split('/')[0];if(h&&h!=='home')return;['f-after','f-before'].forEach(function(n,i){var l=document.createElement('link');l.rel='preload';l.as='image';l.type='image/webp';l.href='demo/'+n+'.webp?v=20261106';if(!i)l.fetchPriority='high';document.head.appendChild(l);});})();</script>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap"></noscript>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
@@ -693,9 +692,9 @@
         <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入，每天送免費額度。</div>
       </div>
       <div class="demo photo" id="demo" aria-label="拖曳比較試穿前後">
-        <img class="ph" id="demoPhAfter" src="demo/f-after.webp?v=20261106" alt="試穿後" width="749" height="1125" fetchpriority="high" decoding="async">
+        <img class="ph" id="demoPhAfter" src="demo/f-after.webp?v=20261106" alt="試穿後" width="749" height="1125" fetchpriority="high" decoding="async" loading="lazy">
         <div class="gcard" id="demoGcard"><img id="demoGimg" alt="要試的衣服"><span>想試這件</span></div>
-        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.webp?v=20261106" alt="試穿前" width="749" height="1125" decoding="async"></div>
+        <div class="after" id="demoAfter"><img class="ph" id="demoPhBefore" src="demo/f-before.webp?v=20261106" alt="試穿前" width="749" height="1125" decoding="async"  loading="lazy"></div>
         <div class="hd" id="demoHd"></div>
         <span class="tag l">試穿前</span><span class="tag r">試穿後</span>
         <div class="cap" id="demoCap">拖曳中線看看差別（真實 AI 合成結果）</div>
@@ -975,7 +974,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-08-01';
+const BUILD = '2026-11-08-02';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
