@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.14.1';
+const VERSION = '2.15.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -472,7 +472,28 @@ async function getProfile(env, user) {
       body: JSON.stringify({ id: user.id, email: user.email || null })
     });
   }
-  return rows[0];
+  const p = rows[0];
+  // 新會員見面禮：2026-11-08 起註冊的帳號送一次點數（預設 10，環境變數 SIGNUP_BONUS 可改）。
+  // 防重複：以 generations 表的一筆 status='bonus' 紀錄為準（使用者無法刪除 generations），
+  // 先寫紀錄再確認自己是第一筆才加點，同時多個請求也只會送一次。prefs.welcome 只是省查詢的快速標記。
+  const bonus = Number(env.SIGNUP_BONUS ?? 10);
+  if (p && bonus > 0 && !(p.prefs && p.prefs.welcome) && new Date(p.created_at || 0) >= new Date('2026-11-07T16:00:00Z')) {
+    try {
+      const had = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.bonus&select=id&order=id&limit=1`);
+      if (!had.length) {
+        const ins = await sbInsert(env, 'generations', { user_id: user.id, items: ['welcome'], cost: -bonus, free_used: 0, status: 'bonus', variants: 1, deleted: true });
+        const first = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.bonus&select=id&order=id&limit=1`);
+        const myId = Array.isArray(ins) ? (ins[0] && ins[0].id) : (ins && ins.id);
+        if (first.length && String(first[0].id) === String(myId)) {
+          await rpc(env, 'add_credits', { p_user: user.id, p_amount: bonus });
+          p.credits = (p.credits || 0) + bonus; p.welcome_bonus = bonus;
+        }
+      }
+      p.prefs = { ...(p.prefs || {}), welcome: bonus };
+      await sbPatch(env, `/rest/v1/profiles?id=eq.${user.id}`, { prefs: p.prefs }).catch(() => {});
+    } catch {}
+  }
+  return p;
 }
 function taipeiDayStart() {
   const now = new Date(Date.now() + 8 * 3600 * 1000);
@@ -495,7 +516,7 @@ async function handleMe(request, env, cors) {
   const used = await freeUsedToday(env, user.id);
   const packs = Object.fromEntries(Object.entries(PACKS).map(([k, v]) => [k, { name: v.name + ' 點', credits: v.credits, price: v.price }]));
   let payEnabled = false; try { payEnabled = !ecpayCfg(env).test || isAdmin(env, user); } catch { payEnabled = false; }
-  return json({ email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), pay_enabled: payEnabled, views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
+  return json({ welcome_bonus: p.welcome_bonus || 0, email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), pay_enabled: payEnabled, views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
 }
 
 /* ---------------- /api/analyze：身形與臉型分析（免費，不扣點；每天最多 5 次） ---------------- */

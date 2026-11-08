@@ -691,7 +691,7 @@
         <h1>買之前，<br>先看看穿在你身上的樣子</h1>
         <p class="sub">一張全身照，放進想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照，還能轉到側面與背面看整體。</p>
         <div class="herocta"><button class="btn primary lg" data-go="tryon">開始試穿</button><button class="btn lg" id="heroLogin">登入 / 註冊</button></div>
-        <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入，每天送免費額度。</div>
+        <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入。新會員送 10 點，每天再送免費額度。</div>
       </div>
       <div class="demo photo" id="demo" aria-label="拖曳比較試穿前後">
         <img class="ph" id="demoPhAfter" src="demo/f-after.webp?v=20261106" alt="試穿後" width="749" height="1125" fetchpriority="high" decoding="async" loading="lazy">
@@ -976,7 +976,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-08-05';
+const BUILD = '2026-11-08-06';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1155,7 +1155,7 @@ let otpPending=null;
 function openLogin(){
   if(!supa) return showSetup(true);
   if(otpPending && Date.now()-otpPending.at > 10*60*1000) otpPending=null;
-  openPick('登入後繼續', `<div class="muted" style="margin-bottom:10px">登入後才能合成、使用衣櫃與紀錄。每天送免費額度。</div>
+  openPick('登入後繼續', `<div class="muted" style="margin-bottom:10px">登入後才能合成、使用衣櫃與紀錄。新會員送 10 點，每天再送免費額度。</div>
     <button class="btn block gbtn" id="sheetGoogle">使用 Google 登入</button>
     <div class="or">或用 Email</div>
     <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄驗證碼</button></div>
@@ -1247,7 +1247,7 @@ async function api(path, opts={}){
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.user&&!busy) refreshMe(); });
 async function refreshMe(){
   if (!state.user) return;
-  try { state.me = await api('/api/me'); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+friendlyErr(e.message)); }
+  try { state.me = await api('/api/me'); if(state.me&&state.me.welcome_bonus>0) setTimeout(()=>toast(`歡迎加入！送你 ${state.me.welcome_bonus} 點，可以試穿 ${state.me.welcome_bonus} 件`),600); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+friendlyErr(e.message)); }
   renderUser(); renderCredits(); renderSlots(); updateAnalyzeCta();
 }
 
