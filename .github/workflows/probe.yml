@@ -9,7 +9,11 @@ jobs:
     permissions: { contents: write }
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir out && cd out && python3 ../tools/${{ inputs.script || 'probe_shops.py' }}
+      - run: pip install -q pillow
+      - env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: mkdir out && cd out && python3 ../tools/${{ inputs.script || 'probe_shops.py' }}
       - run: |
           cd out && git init -q && git checkout -q -b qa-debug && git add -A
           git -c user.name=bot -c user.email=b@b commit -q -m p
