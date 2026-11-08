@@ -33,7 +33,7 @@
     --bg:#faf7f4; --bg2:#f4efeb; --card:#ffffff; --ink:#1c1a19; --ink2:#5c5552; --muted:#6e6560; --line:#ece6e1; --line2:#e2dad4;
     --accent:#d9887a; --accent-d:#c96f61; --accent-btn:#b35a4c; --accent-btn-d:#a04c3f; --accent-s:#fbeeea; --accent-ink:#a04c3f; --accent-ring:rgba(217,136,122,.28);
     --rose:var(--accent); --rose-d:var(--accent-d); --rose-s:var(--accent-s); --rose-g:var(--accent);
-    --ok:#3f8a66; --warn:#b07a2a; --bad:#c4554a; --ok-s:#eaf4ee; --warn-s:#f8f0e2; --bad-s:#fbeae8;
+    --ok:#3f8a66; --warn:#b07a2a; --bad:#b5463c; --ok-s:#eaf4ee; --warn-s:#f8f0e2; --bad-s:#fbeae8;
     --mint:#e9f1ec; --butter:#f7f0dc; --blush:#fbe9e5; --lilac:#eeeaf5; --peach:#fbeadf; --sky:#e8eff4; --cocoa:#f0e6df;
     --sh:0 1px 2px rgba(28,26,25,.04),0 8px 24px rgba(28,26,25,.06); --sh-s:0 1px 2px rgba(28,26,25,.04),0 4px 12px rgba(28,26,25,.05); --sh-l:0 2px 6px rgba(28,26,25,.05),0 18px 48px rgba(28,26,25,.12);
     --r-xl:22px; --r-l:18px; --r-m:14px; --r-s:10px; --nav:64px;
@@ -660,6 +660,7 @@
     .iv-acts .ghost{grid-column:1/-1}
     .iv-acts .btn{min-height:44px}
   }
+  #pfHint.warn{color:var(--bad);font-weight:500}#slots.flash{animation:slotflash 1.6s ease}@keyframes slotflash{0%,60%{box-shadow:0 0 0 3px var(--accent-ring);border-radius:16px}100%{box-shadow:none}}
   .shopnote{display:block;font-size:12px;color:var(--muted);margin-top:4px}.shopnote a{color:var(--ink2);margin-left:6px;display:inline-block;padding:8px 2px;margin-block:-8px}
   .ivsrc{font-size:12px;color:var(--muted);margin:2px 0 10px}.ivsrc a{color:var(--muted)}
   footer .footnote{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted)}
@@ -975,7 +976,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-08-04';
+const BUILD = '2026-11-08-05';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1689,7 +1690,12 @@ renderRack();
 async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, 'engine:'+(engineParam()||''), ...items.map(i=>i.type+':'+(i.fit&&i.fit.size?'@'+i.fit.size+':':'')+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
 function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
 const pf={key:null,id:null,st:null,timer:null};
-function pfHint(){ const h=$('pfHint'); if(!h) return; const parts=[]; if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
+/* 點數夠不夠：回傳還差幾點（0＝夠） */
+function creditShort(){ if(!state.me||!runCost) return 0; const free=Math.min(state.me.free_left||0,runCost); return Math.max(0, runCost-free-(state.me.credits||0)); }
+function shortText(){ const m=state.me, short=creditShort(), free=Math.min(m.free_left||0,runCost), n=Object.keys(state.slots).length;
+  if(!(m.free_left>0)) return `今天的免費額度用完了（明天會再送），目前點數 ${m.credits||0} 點，這次需要 ${runCost} 點。`;
+  return short<=n-1 ? `免費額度今天剩 ${free} 張、點數 ${m.credits||0} 點，這次需要 ${runCost} 點。拿掉 ${short} 件單品就能先免費試。` : `這次需要 ${runCost} 點，免費額度今天剩 ${free} 張、點數 ${m.credits||0} 點。關掉加價選項或少放幾件，就能先用免費額度試。`; }
+function pfHint(){ const h=$('pfHint'); if(!h) return; const sh=creditShort(); h.classList.toggle('warn',sh>0); if(sh>0){ h.textContent=shortText(); return; } const parts=[]; if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
 function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 4000); }
 async function doPrefetch(){
   try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
@@ -2475,7 +2481,7 @@ function setWaitRaw(full, sec){
 function setWait(msg, sec){ setWaitRaw(msg+(sec!=null?`（${sec} 秒）`:''), sec); }
 // opts.retry：使用者按「再做一次」→ 強制用高品質引擎、不吃快取、不認領預先合成，結果才會真的不一樣
 // opts.resumeId：上次關掉頁面前還在跑的合成，重新打開後接著等
-async function runTryon(opts={}){
+async function runTryon(opts={}){ let noCredit=false;
   if (busy) return;
   const resumeId=opts.resumeId||null;
   if (!state.person) return toast('請先放一張全身照');
@@ -2566,7 +2572,7 @@ async function runTryon(opts={}){
     if (d._pendingId) followViews(d._pendingId, state.result);
     else if (pendingVideo) { const nb=$('runStatus').textContent; attachSpin(pendingVideo).then(()=>{ $('runStatus').textContent=nb+' 360° 好了：在圖上左右拖曳就能旋轉。'; }).catch(()=>{}); }
   }catch(e){
-    clearInterval(tick);
+    clearInterval(tick); if(e.data&&e.data.need_credits) noCredit=true;
     try{ localStorage.removeItem('tryon.pending'); }catch{}
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
     const msg=friendlyErr(e);
@@ -2577,10 +2583,18 @@ async function runTryon(opts={}){
     }
   }finally{
     busy=false; $('btnRun').disabled=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
-    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>這次沒有成功。再按一次「開始 AI 試穿」，<br>或換一張更清楚的全身照</div>'; }
+    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>'+(noCredit?'點數不夠，這次沒有送出、也沒有扣點。<br>拿掉幾件單品，或買點數後再試':'這次沒有成功。再按一次「開始 AI 試穿」，<br>或換一張更清楚的全身照')+'</div>'; }
   }
 }
-$('btnRun').onclick=()=>runTryon();
+$('btnRun').onclick=async()=>{
+  if(!busy && creditShort()>0){
+    const canFree=(state.me.free_left||0)>0;
+    const go2=await ask('點數不夠', shortText(), {ok:'去買點數', cancel:canFree?'我拿掉幾件':'先不要'});
+    if(go2) go('credits'); else if(canFree){ const sl=$('slots'); if(sl){ sl.scrollIntoView({behavior:'smooth',block:'center'}); sl.classList.add('flash'); setTimeout(()=>sl.classList.remove('flash'),1600); } }
+    return;
+  }
+  runTryon();
+};
 
 /* ---------- 手機：固定在底部導覽上方的「開始 AI 試穿」列、「看結果 ↓」、鍵盤時收起 ---------- */
 let runInView=true, resultInView=true, resultBelow=false;
