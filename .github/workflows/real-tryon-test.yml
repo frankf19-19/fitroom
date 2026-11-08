@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       products: { description: '商品 id（逗號分隔）', default: '60', required: false }
+      person: { description: '人物照路徑', default: 'demo/f-before.webp', required: false }
 jobs:
   t:
     runs-on: ubuntu-latest
@@ -15,6 +16,7 @@ jobs:
           SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           PRODUCTS: ${{ inputs.products }}
+          PERSON: ${{ inputs.person }}
         run: python3 qa/real_tryon_test.py
       - if: always()
         run: |
