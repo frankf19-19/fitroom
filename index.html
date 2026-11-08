@@ -30,8 +30,8 @@
 <style>
   /* ===== v6 Soft luxury ─ 一套 token ===== */
   :root{
-    --bg:#faf7f4; --bg2:#f4efeb; --card:#ffffff; --ink:#1c1a19; --ink2:#5c5552; --muted:#7a716c; --line:#ece6e1; --line2:#e2dad4;
-    --accent:#d9887a; --accent-d:#c96f61; --accent-btn:#c96f61; --accent-btn-d:#b65d50; --accent-s:#fbeeea; --accent-ink:#b35a4c; --accent-ring:rgba(217,136,122,.28);
+    --bg:#faf7f4; --bg2:#f4efeb; --card:#ffffff; --ink:#1c1a19; --ink2:#5c5552; --muted:#6e6560; --line:#ece6e1; --line2:#e2dad4;
+    --accent:#d9887a; --accent-d:#c96f61; --accent-btn:#b35a4c; --accent-btn-d:#a04c3f; --accent-s:#fbeeea; --accent-ink:#a04c3f; --accent-ring:rgba(217,136,122,.28);
     --rose:var(--accent); --rose-d:var(--accent-d); --rose-s:var(--accent-s); --rose-g:var(--accent);
     --ok:#3f8a66; --warn:#b07a2a; --bad:#c4554a; --ok-s:#eaf4ee; --warn-s:#f8f0e2; --bad-s:#fbeae8;
     --mint:#e9f1ec; --butter:#f7f0dc; --blush:#fbe9e5; --lilac:#eeeaf5; --peach:#fbeadf; --sky:#e8eff4; --cocoa:#f0e6df;
@@ -660,7 +660,7 @@
     .iv-acts .ghost{grid-column:1/-1}
     .iv-acts .btn{min-height:44px}
   }
-  .shopnote{display:block;font-size:12px;color:var(--muted);margin-top:4px}.shopnote a{color:var(--muted);margin-left:6px}
+  .shopnote{display:block;font-size:12px;color:var(--muted);margin-top:4px}.shopnote a{color:var(--ink2);margin-left:6px;display:inline-block;padding:8px 2px;margin-block:-8px}
   .ivsrc{font-size:12px;color:var(--muted);margin:2px 0 10px}.ivsrc a{color:var(--muted)}
   footer .footnote{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted)}
 </style>
@@ -975,7 +975,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-07-06';
+const BUILD = '2026-11-08-01';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1630,13 +1630,14 @@ $('shopMore').onclick=()=>loadShop(false);
 const HANGER='<svg viewBox="0 0 24 24"><path d="M12 4a2 2 0 0 1 2 2c0 1-1 1.5-2 2.5v1.5l8 5v2H4v-2l8-5"/></svg>';
 // 商品縮圖：經 wsrv.nl 轉成 ~400px WebP（原圖常常幾百 KB）；失敗退回原圖，再退回 Worker 代理
 function thumbUrl(u,w,id){ try{ if(!/^https?:/.test(u)) return u; const src=id?CONFIG.WORKER_URL+'/api/img?id='+id:u; return 'https://wsrv.nl/?url='+encodeURIComponent(src)+'&w='+(w||420)+'&h='+Math.round((w||420)*1.33)+'&fit=inside&output=webp&q=78&il'; }catch{ return u; } }
+const SHOP_TW=Math.min(420,Math.max(240,Math.round(Math.min(innerWidth||390,1100)/(innerWidth>=700?4:2)*Math.min(devicePixelRatio||1,2)/20)*20));
 function priceTxt(p){ return p&&p.price>0 ? ((p.currency&&p.currency!=='TWD')?p.currency+' ':'NT$ ')+Number(p.price).toLocaleString() : ''; }
 function syncRackBtn(id){ const on=inRack(id); document.querySelectorAll(`#shopList [data-rack="${id}"]`).forEach(b=>{ b.classList.toggle('on',on); const t=b.querySelector('.t'); if(t) t.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); }); }
 function renderShop(){
   const box=$('shopList');
   if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; syncShopClear(); $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
-  box.innerHTML=`<div class="pgrid">${shopItems.map((p,pi)=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(thumbUrl(p.image_url,420,p.id))}" ${pi<4?'fetchpriority="high" decoding="async"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" alt="${esc(p.name)}" data-orig="${esc(p.image_url)}" data-pid="${p.id}" onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.orig}else if(this.dataset.s==='1'){this.dataset.s=2;this.src='${CONFIG.WORKER_URL}/api/img?id='+this.dataset.pid}else{this.onerror=null}">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
+  box.innerHTML=`<div class="pgrid">${shopItems.map((p,pi)=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img"><img src="${esc(thumbUrl(p.image_url,SHOP_TW,p.id))}" ${pi<2?'fetchpriority="high" decoding="async"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" alt="${esc(p.name)}" data-orig="${esc(p.image_url)}" data-pid="${p.id}" onerror="if(!this.dataset.s){this.dataset.s=1;this.src=this.dataset.orig}else if(this.dataset.s==='1'){this.dataset.s=2;this.src='${CONFIG.WORKER_URL}/api/img?id='+this.dataset.pid}else{this.onerror=null}">${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
   box.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>buyProduct(shopItems.find(x=>String(x.id)===b.dataset.buy)));
   box.querySelectorAll('[data-rack]').forEach(b=>b.onclick=()=>{ toggleRack(shopItems.find(x=>String(x.id)===b.dataset.rack)); syncRackBtn(b.dataset.rack); });
@@ -2257,7 +2258,7 @@ const photoKey=u=>u?(u.length+':'+u.slice(-48)):'';
 state.sidePhoto=null;
 function renderMeasureBox(){
   const fr=$('mFront'); if(!fr) return;
-  fr.innerHTML=state.person?`<img src="${state.person}" alt=""><div><b>正面照</b>用試衣間的全身照</div>`:`<div><b>正面照</b>還沒有全身照，<button type="button" class="btn ghost sm" id="mFrontAdd" style="padding:0;min-height:0;text-decoration:underline">放一張</button></div>`;
+  fr.innerHTML=state.person?`<img src="${state.person}" alt=""><div><b>正面照</b>用試衣間的全身照</div>`:`<div><b>正面照</b>還沒有全身照，<button type="button" class="btn ghost sm" id="mFrontAdd" style="padding:8px 4px;min-height:36px;text-decoration:underline">放一張</button></div>`;
   if($('mFrontAdd')) $('mFrontAdd').onclick=()=>pickImage(im=>{ onPersonImage(im); setTimeout(renderBody,300); });
   const sd=$('mSide');
   if(state.sidePhoto){ sd.classList.remove('add'); sd.innerHTML=`<img src="${state.sidePhoto}" alt=""><div><b>側面照</b>圍度會更準</div><button type="button" class="mx" id="mSideX" aria-label="移除側面照">✕</button>`; $('mSideX').onclick=e=>{ e.stopPropagation(); state.sidePhoto=null; renderMeasureBox(); }; sd.onclick=null; }
@@ -2796,7 +2797,7 @@ document.querySelectorAll('[data-doc]').forEach(a=>a.onclick=e=>{ e.preventDefau
 $('btnTips').onclick=()=>openDoc('tips');
 
 /* 首頁示範男女切換 + 真人照片模式（demo/manifest.json 存在時自動啟用） */
-const DEMO_V='20261029-02';
+const DEMO_V='20261106';
 (function(){ const a=$('demoPhAfter'); if(!a) return; const fit=()=>{ if(a.naturalWidth&&a.naturalHeight){ const r=a.naturalWidth/a.naturalHeight; $('demo').style.aspectRatio=Math.max(0.55,Math.min(0.8,r)).toFixed(3); } }; a.addEventListener('load',fit); if(a.complete) fit(); })();
 let demoPhotos={ f:{before:'demo/f-before.webp?v='+DEMO_V, after:'demo/f-after.webp?v='+DEMO_V}, m:{before:'demo/m-before.webp?v='+DEMO_V, after:'demo/m-after.webp?v='+DEMO_V} }, demoG='f';
 function applyDemo(){
