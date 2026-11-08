@@ -4,6 +4,7 @@ on:
     inputs:
       email:  { description: '會員 Email', required: true }
       amount: { description: '要加的點數（可負數扣回）', required: true, default: '200' }
+      welcome: { description: '當作新會員見面禮（yes＝已領過就不再送，之後也不會自動再送）', required: false, default: 'no' }
 jobs:
   grant:
     runs-on: ubuntu-latest
@@ -22,6 +23,11 @@ jobs:
           rows = json.load(urllib.request.urlopen(q))
           if not rows: raise SystemExit(f'找不到會員 {email}（要先在網站登入過一次）')
           r = rows[0]
+          if "${{ inputs.welcome }}".strip().lower() == 'yes':
+            q = urllib.request.Request(f"{url}/rest/v1/generations?user_id=eq.{r['id']}&status=eq.bonus&select=id", headers=h)
+            if json.load(urllib.request.urlopen(q)): raise SystemExit(f'{email} 已經領過見面禮，不再重複送（目前 {r["credits"]} 點）')
+            row = json.dumps({'user_id': r['id'], 'items': ['welcome'], 'cost': -amount, 'free_used': 0, 'status': 'bonus', 'variants': 1, 'deleted': True}).encode()
+            urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/generations", data=row, headers=h, method='POST'))
           body = json.dumps({'p_user': r['id'], 'p_amount': amount}).encode()
           ok = json.load(urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/rpc/add_credits", data=body, headers=h, method='POST')))
           print(f"{email}: {r['credits']} → {r['credits']+amount}（{'成功' if ok else '失敗'}）")
