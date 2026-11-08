@@ -14,7 +14,7 @@ email = f'bonus-{int(time.time())}@tryon-test.invalid'; pw = secrets.token_urlsa
 s, u = call('POST', URL + '/auth/v1/admin/users', {'email': email, 'password': pw, 'email_confirm': True}, A); uid = u['id']
 try:
   s, tok = call('POST', URL + '/auth/v1/token?grant_type=password', {'email': email, 'password': pw}, {'apikey': ANON})
-  H = {'Authorization': 'Bearer ' + tok['access_token'], 'Origin': 'https://frankf19-19.github.io'}
+  H = {'Authorization': 'Bearer ' + tok['access_token'], 'Origin': 'https://frankf19-19.github.io', 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Safari/604.1'}
   with ThreadPoolExecutor(5) as ex: rs = list(ex.map(lambda _: call('GET', API + '/api/me', None, H), range(5)))
   s, again = call('GET', API + '/api/me', None, H)
   print('RAW', [r[:2] if not isinstance(r[1],dict) else (r[0],{k:r[1].get(k) for k in ('credits','welcome_bonus')}) for r in rs], s, str(again)[:300])
