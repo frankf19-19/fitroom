@@ -223,3 +223,12 @@ genHook = null; storageHook = null;
 
 console.log('test_quality: all assertions passed');
 console.log('vision calls in paid flow: captions 1 + QA per attempt; generations in retry flow: 2');
+
+/* ---------- 商品圖模特兒身上的其他衣服：明確排除 ---------- */
+{ const st = [{ type: 'bottom', image_url: 'https://x/p.jpg' }];
+  const caps = T.parseCaptions({ items: [{ n: 1, description: 'Olive wide-leg trousers.', other_garments: ['black bomber jacket', 'none'] }] }, st);
+  assert.deepEqual(caps[0].others, ['black bomber jacket']);
+  const pr = T.outfitPrompt(st, '', '', { captions: caps });
+  assert.match(pr, /The model in Image 2 also wears black bomber jacket — these are NOT products/);
+  assert.match(pr, /From Image 2 take only the/); assert.match(pr, /Do NOT mirror or flip/);
+  console.log('other-garment exclusion: ok'); }

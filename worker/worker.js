@@ -136,6 +136,8 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
     lines.push(`Image ${n} is a product photo of the ${ITEM_LABEL[st.type]} to put on the customer.`);
     const cap = captions[i] && captions[i].description ? String(captions[i].description).slice(0, 600) : '';
     if (cap) specs.push(`Product ${n - 1} specification (Image ${n}): ${cap}`);
+    const oth = captions[i] && Array.isArray(captions[i].others) ? captions[i].others : [];
+    if (oth.length) specs.push(`The model in Image ${n} also wears ${oth.join(', ')} — these are NOT products: do NOT put them on the customer.`);
     const fl = st.type !== 'hair' ? fitLine(st.fit, st.type, n - 1) : '';
     if (fl) fits.push(fl);
     return n;
@@ -183,7 +185,8 @@ function captionPrompt(targets) {
   return [
     'You are a fashion product cataloguer. You are given ' + targets.length + ' product photo(s), in order: ' + targets.map(t => `image ${t.n} = product ${t.n} (${ITEM_LABEL[t.type] || t.type})`).join('; ') + '.',
     'For EACH product write one precise, concrete description of the product itself (ignore the model, background and any text overlays). Include: exact color names, silhouette and fit (slim, straight, wide, balloon, oversized, cropped...), length relative to the body (e.g. hits mid-thigh, ankle length), rise for bottoms, sleeve type and length, neckline or collar, closure and its state (buttoned, zipped, open), fabric and texture, pattern / logos / prints and their placement, notable details (pockets, hood, drawstrings, hardware, pleats, slits), and how it is worn in the photo (tucked, open, hood down...). 2-4 sentences, English.',
-    'Return ONLY JSON: {"items":[{"n":1,"type":"...","description":"..."}, ...]} with one entry per product in the same order.'
+    'Also list in "other_garments" every OTHER clothing item or accessory the model in that photo wears that is NOT this product (for example "black bomber jacket", "grey hoodie", "white T-shirt"), or [] if none. These will be explicitly excluded.',
+    'Return ONLY JSON: {"items":[{"n":1,"type":"...","description":"...","other_garments":["..."]}, ...]} with one entry per product in the same order.'
   ].join('\n');
 }
 // 把模型回傳整理成與 item_steps 對齊的陣列（沒圖的位置為 null）
@@ -194,14 +197,15 @@ function parseCaptions(json, steps) {
   targets.forEach((t, k) => {
     const hit = items.find(x => x && Number(x.n) === t.n) || items[k];
     const d = hit && typeof hit.description === 'string' ? hit.description.trim() : '';
-    if (d) out[t.i] = { n: t.n, type: t.type, description: d.slice(0, 600) };
+    const others = hit && Array.isArray(hit.other_garments) ? hit.other_garments.filter(x => typeof x === 'string' && x.trim() && !/^(none|n\/a|-)$/i.test(x.trim())).map(x => x.trim().slice(0, 60)).slice(0, 5) : [];
+    if (d || others.length) out[t.i] = { n: t.n, type: t.type, description: d.slice(0, 600), others };
   });
   return out.some(Boolean) ? out : null;
 }
 // 有沒有「看得出來」的合身度要求（有部位資料才算；只有尺寸名稱不評 fit_match）
 const hasFitZones = fit => !!(fit && Array.isArray(fit.zones) && fit.zones.length);
 function qaPrompt(targets, captions) {
-  const specs = targets.map(t => { const c = captions && captions[t.i]; return `product ${t.n} (${ITEM_LABEL[t.type] || t.type}) = image ${t.n + 2}` + (c && c.description ? ': ' + c.description : ''); });
+  const specs = targets.map(t => { const c = captions && captions[t.i]; return `product ${t.n} (${ITEM_LABEL[t.type] || t.type}) = image ${t.n + 2}` + (c && c.description ? ': ' + c.description : '') + (c && c.others && c.others.length ? ` (the model there also wears ${c.others.join(', ')}, which must NOT appear on the customer)` : ''); });
   const fitT = targets.filter(t => hasFitZones(t.fit));
   const fitSpec = fitT.map(t => `product ${t.n} is size ${t.fit.size || '?'} and should visibly show: ${fitPhrases(t.fit, t.type).join('; ')}`);
   return [
