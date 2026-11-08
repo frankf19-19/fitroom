@@ -17,6 +17,8 @@ try:
   H = {'Authorization': 'Bearer ' + tok['access_token'], 'Origin': 'https://frankf19-19.github.io'}
   with ThreadPoolExecutor(5) as ex: rs = list(ex.map(lambda _: call('GET', API + '/api/me', None, H), range(5)))
   s, again = call('GET', API + '/api/me', None, H)
+  print('RAW', [r[:2] if not isinstance(r[1],dict) else (r[0],{k:r[1].get(k) for k in ('credits','welcome_bonus')}) for r in rs], s, str(again)[:300])
+  again = again if isinstance(again, dict) else {}
   s, prof = call('GET', URL + f'/rest/v1/profiles?id=eq.{uid}&select=credits,prefs', None, A)
   s, marks = call('GET', URL + f'/rest/v1/generations?user_id=eq.{uid}&status=eq.bonus&select=id', None, A)
   out = {'parallel': [(r[0], r[1].get('credits') if isinstance(r[1], dict) else r[1], r[1].get('welcome_bonus') if isinstance(r[1], dict) else None) for r in rs],
