@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.13.0';
+const VERSION = '2.14.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -1311,7 +1311,19 @@ async function handleProducts(request, env, cors, url) {
   if (q) qs += `&or=(name.ilike.*${encodeURIComponent(q)}*,brand.ilike.*${encodeURIComponent(q)}*)`;
   let rows;
   try { rows = await sb(env, qs); } catch (e) { rows = await sb(env, qs.replace(',sizes,', ',')); }  // 舊資料庫尚未加 sizes 欄位時仍可用
+  const th = await thumbIndex(env);
+  if (th && Array.isArray(rows)) for (const r of rows) { const k = th[String(r.id)]; if (k) r.thumb_url = `${env.SUPABASE_URL}/storage/v1/object/public/thumbs/${r.id}-${k}.webp`; }
   return json({ products: rows, page, has_more: rows.length === size }, 200, { ...cors, 'Cache-Control': 'public, max-age=60' });
+}
+/* 預先產生的縮圖索引（tools/build_thumbs.py 寫入）；同一個 Worker 執行個體快取 5 分鐘 */
+let THUMB_IDX = null, THUMB_AT = 0;
+async function thumbIndex(env) {
+  if (THUMB_IDX && Date.now() - THUMB_AT < 300000) return THUMB_IDX;
+  try {
+    const r = await fetch(`${env.SUPABASE_URL}/storage/v1/object/public/thumbs/index.json`, { cf: { cacheTtl: 300, cacheEverything: true } });
+    if (r.ok) { THUMB_IDX = await r.json(); THUMB_AT = Date.now(); }
+  } catch {}
+  return THUMB_IDX;
 }
 async function handleBrands(env, cors) {
   // Supabase 一次最多回 1000 筆，商品超過後要分頁，否則品牌清單會少
