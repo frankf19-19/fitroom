@@ -975,7 +975,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-08-03';
+const BUILD = '2026-11-08-04';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1652,8 +1652,10 @@ function renderShop(){
 }
 async function tryProduct(p, opt={}){
   if(!p) return;
-  try{ let uri; try{ uri=await urlToDataUri(p.image_url); }catch{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); } try{ const ps=pendingSize[String(p.id)]; if(ps) fitSizes[p.type]=ps; else delete fitSizes[p.type]; saveFitSizes(); }catch{} setSlot(p.type,{image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay) go('tryon'); }
-  catch{ toast('商品圖載入失敗，請改用截圖上傳'); }
+  const fromView=curView, btns=[...document.querySelectorAll(`[data-try="${p.id}"]`)]; btns.forEach(x=>{ x.dataset.t=x.textContent; x.classList.add('busy'); x.disabled=true; x.textContent='載入中…'; });
+  const done=()=>btns.forEach(x=>{ x.classList.remove('busy'); x.disabled=false; if(x.dataset.t) x.textContent=x.dataset.t; });
+  try{ let uri; try{ uri=await urlToDataUri(CONFIG.WORKER_URL+'/api/img?id='+p.id); }catch{ uri=await urlToDataUri(p.image_url); } done(); try{ const ps=pendingSize[String(p.id)]; if(ps) fitSizes[p.type]=ps; else delete fitSizes[p.type]; saveFitSizes(); }catch{} setSlot(p.type,{image:uri, name:(p.brand?p.brand+' ':'')+p.name, product_id:p.id, buy_url:p.buy_url||null, brand:p.brand||null, sizes:p.sizes||[], pgender:p.gender||null}); haptic(); if(!opt.stay) toast('已放進試衣間：'+TYPE_LABEL[p.type]); track('item',{type:p.type,product:p.id}); fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'try',anon_id:anonId}),keepalive:true}).catch(()=>{}); if(!opt.stay){ if(curView===fromView||curView==='tryon') go('tryon'); else toast('已放進試衣間：'+TYPE_LABEL[p.type]); } }
+  catch{ done(); toast('商品圖載入失敗，請改用截圖上傳'); }
 }
 function buyProduct(p){ if(!p||!p.buy_url) return; fetch(CONFIG.WORKER_URL+'/api/product-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:p.id,action:'buy',anon_id:anonId}),keepalive:true}).catch(()=>{}); track('buy_click',{product:p.id}); if(IS_APP&&Plug('Browser')) Plug('Browser').open({url:p.buy_url}); else window.open(p.buy_url,'_blank','noopener'); }
 $('importBtn').onclick=async()=>{
@@ -2934,8 +2936,10 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
   const go=b=>{ const u=new URL(location.href); u.searchParams.set('v',b); location.replace(u.pathname+u.search+location.hash); };
   async function check(eager){
     try{
-      const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}); if(!r.ok) return;
-      const b=((await r.text()).match(/const BUILD = '([^']+)'/)||[])[1];
+      // 先抓很小的 version.json；沒有才退回抓整頁（約 300KB）
+      let b=null; const base=location.pathname.replace(/[^/]*$/,'');
+      try{ const v=await fetch(base+'version.json?_='+Date.now(),{cache:'no-store'}); if(v.ok) b=(await v.json()).build; }catch{}
+      if(!b){ const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}); if(!r.ok) return; b=((await r.text()).match(/const BUILD = '([^']+)'/)||[])[1]; }
       if(!b||!cur||b===cur) return;
       const typing=(()=>{ const a=document.activeElement; return !!(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value); })();
       const pending=(()=>{ try{ return !!localStorage.getItem('tryon.pending'); }catch{ return false; } })();

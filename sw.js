@@ -36,6 +36,7 @@ self.addEventListener('fetch', e => {
   // 導覽／主頁：先網路，3 秒沒回或離線就用快取
   if (req.mode === 'navigate' || (u.origin === location.origin && /\/index\.html$/.test(u.pathname))) { e.respondWith(networkFirst(req, 3000)); return; }
   // 同站靜態檔（圖示、示範圖、manifest、sw 以外）：先快取
+  if (u.origin === location.origin && /version\.json$/.test(u.pathname)) return;  // 版本檢查永遠走網路
   if (u.origin === location.origin && /\.(webp|jpg|png|svg|json|woff2?)$/.test(u.pathname)) { e.respondWith(cacheFirst(req)); return; }
   // 字型與 Supabase 用戶端：先快取
   if (/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname) || u.hostname === 'cdn.jsdelivr.net') { e.respondWith(cacheFirst(req)); return; }

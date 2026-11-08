@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.14.0';
+const VERSION = '2.14.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -1301,6 +1301,9 @@ Output ONLY JSON: {"outfits":[{"title":"short Traditional Chinese title","tip":"
 
 /* ---------------- 商品櫥窗 ---------------- */
 async function handleProducts(request, env, cors, url) {
+  // 商品清單 60 秒內同樣的查詢直接用記憶體快取（workers.dev 網域不支援 Cache API），不必每次都查資料庫
+  const ck = url.search, CC = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60' };
+  const hit = PROD_CACHE.get(ck); if (hit && Date.now() - hit.t < 60000) return new Response(hit.body, { status: 200, headers: { ...cors, ...CC, 'X-Cache': 'HIT' } });
   const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 40);
   const page = Math.min(10000, Math.max(0, Math.floor(Number(url.searchParams.get('page')) || 0))), size = Math.min(24, Math.max(6, Math.floor(Number(url.searchParams.get('size')) || 24)));
   let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
@@ -1313,8 +1316,11 @@ async function handleProducts(request, env, cors, url) {
   try { rows = await sb(env, qs); } catch (e) { rows = await sb(env, qs.replace(',sizes,', ',')); }  // 舊資料庫尚未加 sizes 欄位時仍可用
   const th = await thumbIndex(env);
   if (th && Array.isArray(rows)) for (const r of rows) { const k = th[String(r.id)]; if (k) r.thumb_url = `${env.SUPABASE_URL}/storage/v1/object/public/thumbs/${r.id}-${k}.webp`; }
-  return json({ products: rows, page, has_more: rows.length === size }, 200, { ...cors, 'Cache-Control': 'public, max-age=60' });
+  const body = JSON.stringify({ products: rows, page, has_more: rows.length === size });
+  if (PROD_CACHE.size > 300) PROD_CACHE.clear(); PROD_CACHE.set(ck, { t: Date.now(), body });
+  return new Response(body, { status: 200, headers: { ...cors, ...CC } });
 }
+const PROD_CACHE = new Map();
 /* 預先產生的縮圖索引（tools/build_thumbs.py 寫入）；同一個 Worker 執行個體快取 5 分鐘 */
 let THUMB_IDX = null, THUMB_AT = 0;
 async function thumbIndex(env) {
