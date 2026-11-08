@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.15.0');
+assert.equal(T.VERSION, '2.16.0');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -144,7 +144,13 @@ row.job = { ...row.job, v: 1, lock_until: 0, touched: new Date().toISOString(), 
 row.job.prefetch = true; row.job.pf = 1;
 visionQueue = [{ items: [] }];
 queueStatus = ['COMPLETED'];
-s = await poll(); assert.equal(s.status, 'running'); assert.equal(calls.vision.length, 0, 'prefetch: no caption call'); assert.equal(calls.submits.length, 1);
+s = await poll(); assert.equal(s.status, 'running'); assert.equal(calls.vision.length, 1, 'prefetch: caption call too (better garment fidelity)'); assert.equal(calls.submits.length, 1);
+// 預先合成也會被品質檢查：鏡像／多出來的外套 → 判定重做
+{ const tg = [{ n: 1, type: 'bottom', i: 0 }];
+  const q1 = T.normalizeQa({ identity: 9, items: [{ n: 1, match: 9 }], framing: 9, mirrored: true, verdict: 'pass' }, tg); assert.equal(q1.verdict, 'retry'); assert.match(T.qaCorrections(q1, tg), /mirrored/);
+  const q2 = T.normalizeQa({ identity: 9, items: [{ n: 1, match: 9 }], framing: 9, extra_items: ['black bomber jacket'], verdict: 'pass' }, tg); assert.equal(q2.verdict, 'retry'); assert.match(T.qaCorrections(q2, tg), /black bomber jacket/);
+  const q3 = T.normalizeQa({ identity: 9, items: [{ n: 1, match: 9 }], framing: 9, extra_items: ['none'], body_changed: false, verdict: 'pass' }, tg); assert.equal(q3.verdict, 'pass');
+  const q4 = T.normalizeQa({ identity: 9, items: [{ n: 1, match: 9 }], framing: 9, body_changed: true }, tg); assert.equal(q4.verdict, 'retry'); }
 
 /* ---------- 尺寸合身度：fitPhrases／提示詞／QA／快取鍵 ---------- */
 const fitTop = T.cleanFit({ size: 'M', zones: [{ zone: 'chest', delta_cm: -3.2, verdict: 'tight' }, { zone: 'shoulder', delta_cm: 2, verdict: 'loose' }, { zone: 'sleeve', delta_cm: -2, verdict: 'short' }, { zone: 'length', delta_cm: 0, verdict: 'fit' }, { zone: 'bogus', delta_cm: 1, verdict: 'tight' }, { zone: 'waist', verdict: 'meh' }], summary_en: 'Tight across the chest, slightly dropped shoulders.\u0000' });
