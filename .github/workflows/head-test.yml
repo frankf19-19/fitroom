@@ -1,0 +1,21 @@
+name: 頭部還原測試（真瀏覽器，不花 AI 費用）
+on:
+  workflow_dispatch:
+    inputs: {}
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q playwright pillow && python3 -m playwright install --with-deps chrome
+      # 直接在本機架站測目前這個 commit（不用等 Pages／CDN 快取）
+      - run: (python3 -m http.server 8765 >/dev/null 2>&1 &) && sleep 2 && curl -sf -o /dev/null http://localhost:8765/index.html
+      - run: python3 qa/head_test.py
+        env:
+          SITE_URL: http://localhost:8765/index.html
+      - if: always()
+        run: |
+          cd qa-live && git init -q && git checkout -q -b qa-head && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m "measure ${{ github.sha }}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-head
