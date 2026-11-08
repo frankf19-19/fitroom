@@ -9,7 +9,7 @@ ANON = re.search(r"SUPABASE_ANON_KEY:\s*'([^']+)'", open('index.html').read()).g
 A = {'apikey': KEY, 'Authorization': 'Bearer ' + KEY}
 os.makedirs('out', exist_ok=True)
 def call(method, url, data=None, h=None, raw=False, timeout=120):
-  r = urllib.request.Request(url, data=json.dumps(data).encode() if data is not None else None, headers={'Content-Type': 'application/json', 'User-Agent': UA, **(h or {})}, method=method)
+  r = urllib.request.Request(url, data=json.dumps(data).encode() if data is not None else None, headers={'Content-Type': 'application/json', **({'User-Agent': UA} if url.startswith(API) else {}), **(h or {})}, method=method)
   try:
     with urllib.request.urlopen(r, timeout=timeout) as x: b = x.read(); return x.status, (b if raw else (json.loads(b) if b else None))
   except urllib.error.HTTPError as e: return e.code, e.read().decode()[:400]
@@ -19,7 +19,9 @@ def jpeg_uri(b, maxw=1200):
 pids = [x.strip() for x in os.environ.get('PRODUCTS', '60').split(',') if x.strip()]
 person = jpeg_uri(open(os.environ.get('PERSON', 'demo/f-before.webp'), 'rb').read())
 email = f'realtest-{int(time.time())}@tryon-test.invalid'; pw = secrets.token_urlsafe(16)
-s, u = call('POST', URL + '/auth/v1/admin/users', {'email': email, 'password': pw, 'email_confirm': True}, A); uid = u['id']
+s, u = call('POST', URL + '/auth/v1/admin/users', {'email': email, 'password': pw, 'email_confirm': True}, A)
+if not isinstance(u, dict): raise SystemExit(f'建立帳號失敗 {s} {u}')
+uid = u['id']
 rep = {}
 try:
   s, tok = call('POST', URL + '/auth/v1/token?grant_type=password', {'email': email, 'password': pw}, {'apikey': ANON})
