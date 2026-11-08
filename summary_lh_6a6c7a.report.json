@@ -1,0 +1,108 @@
+{
+ "url": "https://frankf19-19.github.io/fitroom/?lh=1#shop",
+ "scores": {
+  "performance": 79,
+  "accessibility": 100,
+  "best-practices": 100,
+  "seo": 100
+ },
+ "fcp": "0.8 s",
+ "lcp": "5.0 s",
+ "tbt": "180 ms",
+ "cls": "0.043",
+ "si": "1.5 s",
+ "bytes": "Total size was 1,706 KiB",
+ "fails": [
+  {
+   "id": "largest-contentful-paint-element",
+   "score": 0,
+   "title": "Largest Contentful Paint element",
+   "dv": "4,980 ms",
+   "items": [
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"node\",\"valueType\":\"node\",\"label\":\"Element\"}],\"items\":[{\"node\":{\"type\":\"node\",\"lhId\":",
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"phase\",\"valueType\":\"text\",\"label\":\"Phase\"},{\"key\":\"percent\",\"valueType\":\"text\",\"labe"
+   ]
+  },
+  {
+   "id": "uses-long-cache-ttl",
+   "score": 0.5,
+   "title": "Serve static assets with an efficient cache policy",
+   "dv": "1 resource found",
+   "items": [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "unminified-css",
+   "score": 0,
+   "title": "Minify CSS",
+   "dv": "Est savings of 18 KiB",
+   "items": [
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap"
+   ]
+  },
+  {
+   "id": "unused-css-rules",
+   "score": 0.5,
+   "title": "Reduce unused CSS",
+   "dv": "Est savings of 10 KiB",
+   "items": [
+    "/* ===== v6 Soft luxury ─ 一套 token ===== */\n  :root{\n  --bg:#faf7f4; --bg2:#f4efeb; --card:#ffffff;…"
+   ]
+  },
+  {
+   "id": "uses-responsive-images",
+   "score": 0,
+   "title": "Properly size images",
+   "dv": "Est savings of 90 KiB",
+   "items": [
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1812-3e48b40b.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1800-f24402c4.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1908-aaa4cc6d.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/41-ec94f2fe.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/72-3f69c622.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1836-307be31c.webp"
+   ]
+  },
+  {
+   "id": "cache-insight",
+   "score": 0.5,
+   "title": "Use efficient cache lifetimes",
+   "dv": "Est savings of 5 KiB",
+   "items": [
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "image-delivery-insight",
+   "score": 0.5,
+   "title": "Improve image delivery",
+   "dv": "Est savings of 39 KiB",
+   "items": [
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1800-f24402c4.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1919-7fb4edd5.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1931-26fc4cbc.webp",
+    "https://oksutiyvzxgssmgppdbz.supabase.co/storage/v1/object/public/thumbs/1896-0718084d.webp"
+   ]
+  },
+  {
+   "id": "lcp-discovery-insight",
+   "score": 0,
+   "title": "LCP request discovery",
+   "items": [
+    "{\"type\":\"checklist\",\"items\":{\"priorityHinted\":{\"label\":\"fetchpriority=high applied\",\"value\":true},\"requestDiscoverable\":",
+    "{\"type\":\"node\",\"lhId\":\"page-0-IMG\",\"path\":\"1,HTML,1,BODY,1,MAIN,11,SECTION,5,DIV,0,DIV,1,DIV,0,DIV,0,IMG\",\"selector\":\"di"
+   ]
+  },
+  {
+   "id": "network-dependency-tree-insight",
+   "score": 0,
+   "title": "Network dependency tree",
+   "items": [
+    "{\"type\":\"list-section\",\"value\":{\"type\":\"network-tree\",\"chains\":{\"9B9B72C963DD94B7109CA5CC742B423C\":{\"url\":\"https://frank",
+    "{\"type\":\"list-section\",\"title\":\"Preconnected origins\",\"description\":\"[preconnect](https://developer.chrome.com/docs/ligh",
+    "{\"type\":\"list-section\",\"title\":\"Preconnect candidates\",\"description\":\"Add [preconnect](https://developer.chrome.com/docs"
+   ]
+  }
+ ]
+}

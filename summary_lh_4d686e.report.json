@@ -1,0 +1,94 @@
+{
+ "url": "https://frankf19-19.github.io/fitroom/?lh=1",
+ "scores": {
+  "performance": 96,
+  "accessibility": 100,
+  "best-practices": 100,
+  "seo": 100
+ },
+ "fcp": "0.8 s",
+ "lcp": "2.3 s",
+ "tbt": "190 ms",
+ "cls": "0.037",
+ "si": "1.4 s",
+ "bytes": "Total size was 1,778 KiB",
+ "fails": [
+  {
+   "id": "lcp-lazy-loaded",
+   "score": 0,
+   "title": "Largest Contentful Paint image was lazily loaded",
+   "items": [
+    "section#view-home > div.hero > div#demo > img#demoPhAfter"
+   ]
+  },
+  {
+   "id": "uses-long-cache-ttl",
+   "score": 0.5,
+   "title": "Serve static assets with an efficient cache policy",
+   "dv": "3 resources found",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "unminified-css",
+   "score": 0.5,
+   "title": "Minify CSS",
+   "dv": "Est savings of 18 KiB",
+   "items": [
+    "https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500&family=Noto+Serif+TC:wght@400;500&display=swap"
+   ]
+  },
+  {
+   "id": "cache-insight",
+   "score": 0.5,
+   "title": "Use efficient cache lifetimes",
+   "dv": "Est savings of 34 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106",
+    "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+   ]
+  },
+  {
+   "id": "forced-reflow-insight",
+   "score": 0,
+   "title": "Forced reflow",
+   "items": [
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"source\",\"valueType\":\"source-location\",\"label\":\"Top function call\"},{\"key\":\"reflowTim",
+    "{\"type\":\"table\",\"headings\":[{\"key\":\"source\",\"valueType\":\"source-location\",\"label\":\"Source\"},{\"key\":\"reflowTime\",\"valueTy"
+   ]
+  },
+  {
+   "id": "image-delivery-insight",
+   "score": 0.5,
+   "title": "Improve image delivery",
+   "dv": "Est savings of 23 KiB",
+   "items": [
+    "https://frankf19-19.github.io/fitroom/demo/f-before.webp?v=20261106",
+    "https://frankf19-19.github.io/fitroom/demo/f-after.webp?v=20261106"
+   ]
+  },
+  {
+   "id": "lcp-discovery-insight",
+   "score": 0,
+   "title": "LCP request discovery",
+   "items": [
+    "{\"type\":\"checklist\",\"items\":{\"priorityHinted\":{\"label\":\"fetchpriority=high applied\",\"value\":true},\"requestDiscoverable\":",
+    "{\"type\":\"node\",\"lhId\":\"page-0-IMG\",\"path\":\"1,HTML,1,BODY,1,MAIN,1,SECTION,0,DIV,1,DIV,0,IMG\",\"selector\":\"section#view-ho"
+   ]
+  },
+  {
+   "id": "network-dependency-tree-insight",
+   "score": 0,
+   "title": "Network dependency tree",
+   "items": [
+    "{\"type\":\"list-section\",\"value\":{\"type\":\"network-tree\",\"chains\":{\"6E584E33D449668957F7A8FE7C84C480\":{\"url\":\"https://frank",
+    "{\"type\":\"list-section\",\"title\":\"Preconnected origins\",\"description\":\"[preconnect](https://developer.chrome.com/docs/ligh",
+    "{\"type\":\"list-section\",\"title\":\"Preconnect candidates\",\"description\":\"Add [preconnect](https://developer.chrome.com/docs"
+   ]
+  }
+ ]
+}
