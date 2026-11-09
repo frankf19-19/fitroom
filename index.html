@@ -2442,7 +2442,7 @@ function drawFitMap(cmp, g, zones, heightCm){
     else if(z.zone==='foot'){ g.feet.filter(f=>f.v>0.3).forEach(f=>band(f.x,f.y,g.bodyPx*0.03,g.bodyPx*0.015,col)); const f=g.feet[1]; if(f) label(txt,col,f.x+g.bodyPx*0.03,f.y,1); }
   }
 }
-try{ if(window.__tryon) Object.assign(window.__tryon,{ runs, renderTray, showRun, setFg(v){ fgRun=v; }, headRestore, faceLock, fit:{ellipseCirc,depthRatio,cmPerPx,rowRun,poseGeometry,measureFromPose,normChart,fitFor,recommendFit,summarize,pillText,getBody,scMem,sizeOptions,slotFit,buildRun,bodyPayload,regressCirc,chartZones}, fitSizes, saveMeasure, loadMeasure, renderMeasureBox, renderMeasureCard, syncMeasureToFit, renderFitResult, drawFitMap, toggleFitMap, mountFitUI, get renderCompare(){ return renderCompare; }, comboKey, setFitMapGeo(v){ fitMapGeo=v; }, resetMeasureCache(){ measureCache=null; } }); }catch{}
+try{ if(window.__tryon) Object.assign(window.__tryon,{ headRestore, faceLock, fit:{ellipseCirc,depthRatio,cmPerPx,rowRun,poseGeometry,measureFromPose,normChart,fitFor,recommendFit,summarize,pillText,getBody,scMem,sizeOptions,slotFit,buildRun,bodyPayload,regressCirc,chartZones}, fitSizes, saveMeasure, loadMeasure, renderMeasureBox, renderMeasureCard, syncMeasureToFit, renderFitResult, drawFitMap, toggleFitMap, mountFitUI, get renderCompare(){ return renderCompare; }, comboKey, setFitMapGeo(v){ fitMapGeo=v; }, resetMeasureCache(){ measureCache=null; } }); }catch{}
 
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
@@ -2550,6 +2550,7 @@ function showRun(R){
   setTimeout(()=>{ runs.delete(R.seq); renderTray(); },500);
 }
 document.addEventListener('visibilitychange',()=>{ try{ renderTray(); }catch{} });
+try{ if(window.__tryon) Object.assign(window.__tryon,{ runs, renderTray, showRun, setFg(v){ fgRun=v; } }); }catch{}
 const WAIT_STEP={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',qa:'檢查成品是否和商品一致',finish:'整理結果'};
 function waitScreen(){ $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">已送出，等待 AI 開始…</span><span id="waitNote" class="note hidden"></span><span class="waitgo">不用一直等：可以先去挑別的衣服、再試下一套，好了會通知你</span><button type="button" class="btn sm" id="waitShop">先去逛商店</button></div>'; }
 function setWaitRaw(full, sec){
