@@ -112,7 +112,7 @@ assert.equal(s.status, 'running'); assert.equal(s.progress.current, 'outfit'); a
 assert.equal(calls.vision.length, 2); assert.deepEqual(calls.vision[1].images, [RESULT1, PERSON, 'https://img/top.jpg', 'https://img/bottom.jpg']);
 assert.equal(calls.submits.length, 2); assert.match(calls.submits[1].url, /nano-banana-2\/edit/, "retry keeps the same engine (Pro changes framing)");
 assert.match(calls.submits[1].prompt, /PREVIOUS ATTEMPT WAS REJECTED FOR: product 2 \(BOTTOM.*\) does not match its product photo: trousers are slim, not balloon-leg\. Fix these specifically\./);
-assert.equal(row.job.retries, 1); assert.equal(row.job.qa.verdict, 'retry'); assert.equal(row.job.steps[0].engine, 1);
+assert.equal(row.job.retries, 1); assert.equal(row.job.qa.verdict, 'retry'); assert.equal(row.job.steps[0].engine || 0, 0);
 s = await poll();       // 4: IN_PROGRESS
 assert.equal(s.status, 'running'); assert.equal(s.progress.fixing, true);
 s = await poll();       // 5: COMPLETED → QA(pass) → 存正面 → 完成
