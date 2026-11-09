@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.17.1';
+const VERSION = '2.18.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -168,6 +168,7 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
     body,
     fits.length ? 'SIZE AND FIT (the customer chose a specific size; the photo must visibly show how that size really fits this body):\n' + fits.join('\n') + '\nThe size only changes how the garment sits on the body (tension, wrinkles, drape, where seams, hems and cuffs land); it never changes the garment design, color, fabric, pattern or details. Do not "correct" a tight or loose fit into a perfect fit.' : '',
     hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : '',
+    opts.keepOutfit ? 'The customer in Image 1 is already wearing their new clothes: keep every garment, the pose and the person exactly as they are and change ONLY the items listed above.' : '',
     fix ? 'PREVIOUS ATTEMPT WAS REJECTED FOR: ' + fix + '. Fix these specifically.' : ''
   ].filter(Boolean).join('\n');
 }
@@ -216,11 +217,14 @@ function qaPrompt(targets, captions) {
     'framing (0-10): same crop, aspect ratio and camera angle as image 2. artifacts: list visible defects (extra limbs, warped hands, text, duplicated garments, floating items) or [].',
     'mirrored (true/false): is image 1 a left-right mirror of image 2 (background, objects or the hand holding the phone switched sides)?',
     'body_changed (true/false): does the person in image 1 look clearly bigger, wider, heavier, slimmer, taller or shorter than in image 2?',
+    'pose_changed (true/false): is the pose different from image 2 (arms, hands, legs, head angle or body position moved)?',
     'extra_items: list garments the person wears in image 1 that are NOT one of the products AND were NOT already worn in image 2 (typically a jacket, coat or top copied from a product photo model), or [].',
-    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed or extra_items is not empty; otherwise "pass".`,
-    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
+    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed, pose_changed or extra_items is not empty; otherwise "pass".`,
+    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
   ].join('\n');
 }
+// 品質分數（挑最好的一張用）：鏡像／身形／動作改變重扣，多出衣服扣分，加上最差單品分與人物一致分
+const qaScore = qa => !qa ? -99 : (qa.mirrored || qa.body_changed || qa.pose_changed ? -20 : 0) - 5 * ((qa.extra_items || []).length) + Math.min(10, ...(qa.items || []).map(x => x.match == null ? 10 : x.match)) + (qa.identity == null ? 8 : qa.identity);
 const clamp10 = v => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : null; };
 // 正規化品質檢查結果；依規則重新判定 verdict（不完全信任模型自己的 verdict）
 function normalizeQa(json, targets) {
@@ -234,11 +238,11 @@ function normalizeQa(json, targets) {
   });
   const identity = clamp10(q.identity), framing = clamp10(q.framing);
   const artifacts = Array.isArray(q.artifacts) ? q.artifacts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 120)).slice(0, 6) : [];
-  const mirrored = q.mirrored === true, body_changed = q.body_changed === true;
+  const mirrored = q.mirrored === true, body_changed = q.body_changed === true, pose_changed = q.pose_changed === true;
   const extra_items = Array.isArray(q.extra_items) ? q.extra_items.filter(x => typeof x === 'string' && x.trim() && !/^(none|n\/a|-)$/i.test(x.trim())).map(x => x.trim().slice(0, 80)).slice(0, 4) : [];
-  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || extra_items.length > 0;
+  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || pose_changed || extra_items.length > 0;
   const verdict = bad || String(q.verdict).toLowerCase() === 'retry' ? 'retry' : 'pass';
-  return { identity, items, framing, artifacts, mirrored, body_changed, extra_items, verdict, at: Date.now() };
+  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, extra_items, verdict, at: Date.now() };
 }
 // 由檢查結果組成「上次被退回的原因」（放進重做的提示詞）
 // targets（可省略）：帶入各商品的合身度，讓重做提示詞寫出「應該看到的合身樣子」
@@ -257,6 +261,7 @@ function qaCorrections(qa, targets) {
   if (qa.framing != null && qa.framing < QA_MIN_FRAMING) out.push('the framing / crop / aspect ratio differs from Image 1 — keep the exact same framing');
   if (qa.mirrored) out.push('the image was mirrored left-right — keep the exact orientation of Image 1 (background and the hand holding the phone on the same side)');
   if (qa.body_changed) out.push("the customer's body size changed — keep exactly the same body size and proportions as Image 1");
+  if (qa.pose_changed) out.push("the pose changed — keep exactly the same pose as Image 1 (arms, hands, legs, head angle, and the hand holding the phone)");
   if (qa.extra_items && qa.extra_items.length) out.push('remove garments that were not provided (they came from a product photo model): ' + qa.extra_items.join(', ') + " — keep the customer's own clothing in those areas");
   if (qa.artifacts && qa.artifacts.length) out.push('visible defects: ' + qa.artifacts.join(', '));
   return out.join('; ').slice(0, 900);
@@ -776,12 +781,14 @@ async function handleTryon(request, env, cors, ctx) {
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
       // 只試一件衣服（上衣／下身／洋裝）：先用 FASHN 專門試穿模型（只改衣服那一塊，人不會被重畫；實測人像最穩、也較便宜）。
       // 品質檢查不過關 → 自動改用整套引擎（Nano Banana）帶著原因重做。
-      const fashnFirst = useOutfit && steps.length === 1 && !!steps[0].category && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      const clothing = steps.filter(x => x.category), extras = steps.filter(x => !x.category);
+      const fashnFirst = useOutfit && clothing.length >= 1 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
         pv: (!prefetch && useOutfit && !fashnFirst && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null, first: fashnFirst ? 'fashn' : undefined,
         // 整套引擎：付費（非預先合成）的工作多一個 qa 步驟（結果品質檢查，不過關自動重做一次）
-        steps: fashnFirst ? [{ ...steps[0] }, { type: 'qa' }] : useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
+        // 衣服（上衣／下身／洋裝）逐件用 FASHN（人不動）；鞋子、帽子、飾品、髮型最後才用整套引擎只換那幾樣
+        steps: fashnFirst ? [...clothing.map(x => ({ ...x })), ...(extras.length ? [{ type: 'outfit', engine: 0, only: extras.map(x => x.type) }] : []), { type: 'qa' }] : useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
@@ -835,7 +842,8 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
         job.rejected = [...(job.rejected || []), ...(job.front || [])].slice(-2);
         if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }
         const oi = job.steps.findIndex(s => s.type === 'outfit');
-        job.front = null; job.pf_bad = false; job.chains.forEach(c => { c.i = oi >= 0 ? oi : 0; c.cur = job.person_url; c.req = null; });
+        const onlyStep = oi >= 0 && Array.isArray(job.steps[oi].only);
+        job.front = null; job.pf_bad = false; job.chains.forEach(c => { c.i = oi >= 0 ? oi : 0; c.cur = (onlyStep && c.base) ? c.base : job.person_url; c.req = null; });
         patch.status = 'running'; patch.image_url = null; patch.views = null;
       } else if (row.status === 'ok') {
         let r = (row.views && row.views.result) || {}, vu = {};
@@ -870,6 +878,7 @@ async function finishJob(env, userId, g, job, cond = '') {
   const prof = await getProfile(env, { id: userId }).catch(() => null);
   const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error || null, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
   result.fit = (job.meta || []).map(x => x.fit || null);
+  if (job.extras_dropped) result.extras_dropped = job.extras_dropped;
   if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
   const row = { status: 'ok', cost: job.pay, free_used: job.free, error: job.views_error || null, job: await sealJob(env, job) };
@@ -982,7 +991,15 @@ async function handleTryonStatus(request, env, cors, url) {
       for (let guard = 0; guard < 3 && ch.i < job.steps.length && canStart(); guard++) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
-          if (!ch.req) { job.t = job.t || {}; job.t.submit = Date.now(); const urls = [ch.cur, ...job.item_steps.filter(x => x.image_url).map(x => x.image_url)]; ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(job.item_steps, job.hints, job.face_hint, { captions: job.captions, fixNotes: job.fix_notes, body: job.body }), job.hires !== false, job.aspect); return; }
+          if (!ch.req) {
+            job.t = job.t || {}; job.t.submit = Date.now();
+            const only = Array.isArray(st.only) ? st.only : null;
+            if (only && !ch.base) ch.base = ch.cur;          // 衣服已由 FASHN 換好：記下來，萬一換鞋改到動作可以退回
+            const sel = (job.item_steps || []).map((x, i) => [x, i]).filter(([x]) => !only || only.includes(x.type));
+            const urls = [ch.cur, ...sel.filter(([x]) => x.image_url).map(([x]) => x.image_url)];
+            const caps = Array.isArray(job.captions) ? sel.map(([, i]) => job.captions[i]) : null;
+            ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(sel.map(([x]) => x), job.hints, job.face_hint, { captions: caps, fixNotes: job.fix_notes, body: job.body, keepOutfit: !!only }), job.hires !== false, job.aspect); return;
+          }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
           catch (e) {
@@ -1008,6 +1025,12 @@ async function handleTryonStatus(request, env, cors, url) {
           catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
           qa.chain = ci; qa.attempt = (job.retries || 0) + 1;
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
+          job.cands = [...(job.cands || []), { url: ch.cur, s: qaScore(qa), qa }].slice(-3);
+          // 換鞋／帽子／飾品那一步改到人（動作、身形、鏡像）→ 不重畫，直接退回 FASHN 換好衣服的那張
+          if (qa.verdict === 'retry' && ch.base && (qa.pose_changed || qa.body_changed || qa.mirrored || (qa.identity != null && qa.identity < QA_MIN_IDENTITY))) {
+            const ost = job.steps.find(s => s.type === 'outfit' && Array.isArray(s.only));
+            job.extras_dropped = ost ? ost.only : null; ch.cur = ch.base; job.qa = { ...qa, verdict: 'pass', fallback: 'base' }; ch.i++; continue;
+          }
           if (qa.verdict === 'retry' && job.prefetch) { job.pf_bad = true; ch.i++; continue; }   // 預先合成不過關：先不重做（不一定會被用），認領時再重做
           if (qa.verdict === 'retry' && (job.retries || 0) < 1) {
             job.retries = (job.retries || 0) + 1;
@@ -1017,10 +1040,13 @@ async function handleTryonStatus(request, env, cors, url) {
             const ost = job.steps[oi];
             // 實測 Pro 常會放大裁切、改構圖，重做時維持同一個引擎、只帶上退回原因（使用者開高品質模式才用 Pro）
             job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
-            ch.req = null; ch.cur = job.person_url; ch.i = oi >= 0 ? oi : 0;
+            ch.req = null; ch.cur = (ost && Array.isArray(ost.only) && ch.base) ? ch.base : job.person_url; ch.i = oi >= 0 ? oi : 0;
             if (!canStart()) return;              // 重送交給下次輪詢（避免同一輪再多一個呼叫）
             continue;
           }
+          // 不再重做：如果之前那張比較好（例如重做後動作反而跑掉），就用之前那張
+          const best = (job.cands || []).reduce((a, b) => (b.s > a.s ? b : a), { s: -1e9 });
+          if (best.url && best.url !== ch.cur && best.s > qaScore(qa)) { ch.cur = best.url; job.qa = { ...best.qa, picked: 'earlier' }; }
           ch.i++;
           continue;
         }
