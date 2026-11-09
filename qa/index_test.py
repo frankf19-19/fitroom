@@ -11,7 +11,7 @@ def call(m, p, d=None):
 s, us = call('GET', '/auth/v1/admin/users?page=1&per_page=200'); uid = next(u['id'] for u in us['users'] if u['email'] == 'qa-bot@tryon-test.invalid')
 ids = []
 for k in range(2):
-  s, r = call('POST', '/rest/v1/generations', {'user_id': uid, 'items': ['top'], 'cost': 0, 'status': 'running', 'variants': 1})
+  s, r = call('POST', '/rest/v1/generations', {'user_id': uid, 'items': ['top'], 'cost': 0, 'status': 'working', 'variants': 1})
   print('insert', k, s, str(r)[:200]); 
   if isinstance(r, list) and r: ids.append(r[0]['id'])
 for i in ids: print('delete', call('DELETE', f'/rest/v1/generations?id=eq.{i}')[0])
