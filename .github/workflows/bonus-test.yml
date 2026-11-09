@@ -1,5 +1,8 @@
-name: 測試：新會員見面禮
-on: { workflow_dispatch: {} }
+name: 測試：帳號／資料庫小測試
+on:
+  workflow_dispatch:
+    inputs:
+      script: { description: 'qa 腳本', default: 'bonus_test.py', required: false }
 jobs:
   t:
     runs-on: ubuntu-latest
@@ -8,4 +11,4 @@ jobs:
       - env:
           SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-        run: python3 qa/bonus_test.py
+        run: python3 qa/${{ inputs.script || 'bonus_test.py' }}
