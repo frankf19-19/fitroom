@@ -661,6 +661,13 @@
     .iv-acts .btn{min-height:44px}
   }
   #pfHint.warn{color:var(--bad);font-weight:500}#slots.flash{animation:slotflash 1.6s ease}@keyframes slotflash{0%,60%{box-shadow:0 0 0 3px var(--accent-ring);border-radius:16px}100%{box-shadow:none}}
+  .runtray{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:center;gap:10px;max-width:calc(100% - 32px);padding:6px 16px 6px 6px;border-radius:999px;border:0;background:var(--ink);color:#fff;font:inherit;font-size:13px;letter-spacing:.5px;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer}
+  .runtray.hidden{display:none}.runtray img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none}.runtray b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .runtray .spin{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;animation:rtspin 1s linear infinite;flex:none}.runtray .ok{width:8px;height:8px;border-radius:50%;background:#7fd3a2;flex:none}
+  .runtray.done{background:var(--accent-btn)}@keyframes rtspin{to{transform:rotate(360deg)}}
+  html.sticky-on .runtray{bottom:calc(156px + env(safe-area-inset-bottom))}@media(min-width:900px){.runtray{left:auto;right:24px;transform:none;bottom:24px}}
+  .waiting .waitgo{display:block;font-size:12px;color:var(--ink2);margin-top:10px}.waiting #waitShop{margin-top:8px}
+  .dot{position:relative}.dot::after{content:'';position:absolute;top:6px;right:calc(50% - 18px);width:8px;height:8px;border-radius:50%;background:var(--bad)}
   .shopnote{display:block;font-size:12px;color:var(--muted);margin-top:4px}.shopnote a{color:var(--ink2);margin-left:6px;display:inline-block;padding:8px 2px;margin-block:-8px}
   .ivsrc{font-size:12px;color:var(--muted);margin:2px 0 10px}.ivsrc a{color:var(--muted)}
   footer .footnote{display:inline-block;margin-top:6px;font-size:12px;color:var(--muted)}
@@ -976,7 +983,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-09-01';
+const BUILD = '2026-11-09-02';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -2435,7 +2442,7 @@ function drawFitMap(cmp, g, zones, heightCm){
     else if(z.zone==='foot'){ g.feet.filter(f=>f.v>0.3).forEach(f=>band(f.x,f.y,g.bodyPx*0.03,g.bodyPx*0.015,col)); const f=g.feet[1]; if(f) label(txt,col,f.x+g.bodyPx*0.03,f.y,1); }
   }
 }
-try{ if(window.__tryon) Object.assign(window.__tryon,{ headRestore, faceLock, fit:{ellipseCirc,depthRatio,cmPerPx,rowRun,poseGeometry,measureFromPose,normChart,fitFor,recommendFit,summarize,pillText,getBody,scMem,sizeOptions,slotFit,buildRun,bodyPayload,regressCirc,chartZones}, fitSizes, saveMeasure, loadMeasure, renderMeasureBox, renderMeasureCard, syncMeasureToFit, renderFitResult, drawFitMap, toggleFitMap, mountFitUI, get renderCompare(){ return renderCompare; }, comboKey, setFitMapGeo(v){ fitMapGeo=v; }, resetMeasureCache(){ measureCache=null; } }); }catch{}
+try{ if(window.__tryon) Object.assign(window.__tryon,{ runs, renderTray, showRun, setFg(v){ fgRun=v; }, headRestore, faceLock, fit:{ellipseCirc,depthRatio,cmPerPx,rowRun,poseGeometry,measureFromPose,normChart,fitFor,recommendFit,summarize,pillText,getBody,scMem,sizeOptions,slotFit,buildRun,bodyPayload,regressCirc,chartZones}, fitSizes, saveMeasure, loadMeasure, renderMeasureBox, renderMeasureCard, syncMeasureToFit, renderFitResult, drawFitMap, toggleFitMap, mountFitUI, get renderCompare(){ return renderCompare; }, comboKey, setFitMapGeo(v){ fitMapGeo=v; }, resetMeasureCache(){ measureCache=null; } }); }catch{}
 
 /* ---------- 管理後台 ---------- */
 async function loadAdmin(){
@@ -2509,8 +2516,42 @@ function friendlyErr(m){
   if(/退回|退點/.test(m)) return 'AI 服務暫時出了點狀況，這次沒有成功，點數已自動退回。請再試一次';
   return 'AI 服務暫時出了點狀況，這次沒有成功，點數會自動退回。請再試一次；一直失敗的話，換一張更清楚的照片通常就會好';
 }
+/* ---- 同時多套試穿：進度小條、完成通知 ---- */
+const MAX_RUNS=3; let runSeq=0, fgRun=0; const runs=new Map();
+const activeRuns=()=>[...runs.values()].filter(r=>!r.done);
+function pendList(){ try{ const v=JSON.parse(localStorage.getItem('tryon.pendingList')||'[]'); const old=localStorage.getItem('tryon.pending'); if(old&&!v.includes(old)) v.push(old); return v.slice(-MAX_RUNS); }catch{ return []; } }
+function pendAdd(id){ try{ const v=pendList().filter(x=>x!==String(id)); v.push(String(id)); localStorage.setItem('tryon.pendingList',JSON.stringify(v.slice(-MAX_RUNS))); localStorage.setItem('tryon.pending',String(id)); }catch{} }
+function pendDel(id){ try{ const v=pendList().filter(x=>x!==String(id)); localStorage.setItem('tryon.pendingList',JSON.stringify(v)); if(localStorage.getItem('tryon.pending')===String(id)) localStorage.removeItem('tryon.pending'); }catch{} }
+const BASE_TITLE=document.title;
+function renderTray(){
+  let t=$('runTray'); if(!t){ t=document.createElement('button'); t.id='runTray'; t.type='button'; t.className='runtray hidden'; document.body.appendChild(t); t.onclick=onTray; }
+  const act=activeRuns(), un=[...runs.values()].filter(r=>r.unseen&&r.rec);
+  document.querySelectorAll('nav [data-go="tryon"]').forEach(tab=>tab.classList.toggle('dot', un.length>0));
+  document.title = (un.length && document.hidden) ? `(${un.length}) 試穿好了 · ${BASE_TITLE}` : BASE_TITLE;
+  const onlyFgHere = curView==='tryon' && !un.length && act.length===1 && act[0].seq===fgRun;
+  if((!act.length && !un.length) || onlyFgHere){ t.classList.add('hidden'); return; }
+  const last=act[act.length-1], img=(un[0]&&un[0].rec.img)||(last&&(last.preview||last.thumb))||'';
+  const txt = un.length ? `✓ ${un.length>1?un.length+' 套':''}試穿好了，點我看${act.length?` · 還有 ${act.length} 套在試`:''}` : `試穿中${act.length>1?' '+act.length+' 套':''} · ${(last.step||'').slice(0,22)}`;
+  t.innerHTML=`${img?`<img src="${esc(img)}" alt="">`:''}<span class="${un.length?'ok':'spin'}"></span><b>${esc(txt)}</b>`;
+  t.classList.toggle('done', un.length>0); t.classList.remove('hidden');
+}
+function onTray(){ const un=[...runs.values()].filter(r=>r.unseen&&r.rec); if(un.length) return showRun(un[0]); go('tryon'); setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),200); }
+function notifyDone(R){ haptic('success'); toast(`試穿好了：${R.label}，點下方小條查看`, 4500); renderTray(); }
+function showRun(R){
+  const rec=R.rec; if(!rec) return; R.unseen=false; fgRun=R.seq;
+  const d=rec.d; state.runItems=R.runItems; state.result=rec.img; state.resultPerson=rec.person0;
+  state.qaRetried=!!(d.quality&&d.quality.retried); state.extrasDropped=d.extras_dropped?('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的'):'';
+  if(curView!=='tryon') go('tryon');
+  { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); }
+  state.views=null; renderCompare(rec.person0, rec.img);
+  $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems(); try{ renderFitResult(d.fit); }catch{} renderFit();
+  $('runStatus').textContent='這是剛剛在背景試好的那套。';
+  setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),200);
+  setTimeout(()=>{ runs.delete(R.seq); renderTray(); },500);
+}
+document.addEventListener('visibilitychange',()=>{ try{ renderTray(); }catch{} });
 const WAIT_STEP={outfit:'把你選的單品穿上身',top:'穿上上衣',bottom:'換上下身',dress:'套上洋裝',shoes:'換雙鞋',hat:'戴上帽子',accessory:'戴上飾品',hair:'換個髮型',views:'轉個身，生成側面與背面',qa:'檢查成品是否和商品一致',finish:'整理結果'};
-function waitScreen(){ $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">已送出，等待 AI 開始…</span><span id="waitNote" class="note hidden"></span></div>'; }
+function waitScreen(){ $('result').innerHTML='<div class="waiting"><div class="sil"></div><b>AI 正在幫你換裝</b><span id="waitMsg">已送出，等待 AI 開始…</span><span id="waitNote" class="note hidden"></span><span class="waitgo">不用一直等：可以先去挑別的衣服、再試下一套，好了會通知你</span><button type="button" class="btn sm" id="waitShop">先去逛商店</button></div>'; }
 function setWaitRaw(full, sec){
   $('runStatus').textContent=full; const w=$('waitMsg'); if(w) w.textContent=full; const sp=$('stickyRunProg'); if(sp) sp.textContent=full;
   const n=$('waitNote'); if(n){ const long=sec!=null&&sec>90; n.classList.toggle('hidden',!long); if(long) n.textContent='等比較久沒關係：可以先切到別的 App 或鎖定螢幕，回來後會接著做，結果會出現在這裡。'; }
@@ -2519,7 +2560,7 @@ function setWait(msg, sec){ setWaitRaw(msg+(sec!=null?`（${sec} 秒）`:''), se
 // opts.retry：使用者按「再做一次」→ 強制用高品質引擎、不吃快取、不認領預先合成，結果才會真的不一樣
 // opts.resumeId：上次關掉頁面前還在跑的合成，重新打開後接著等
 async function runTryon(opts={}){ let noCredit=false;
-  if (busy) return;
+  if (!opts.resumeId && activeRuns().length>=MAX_RUNS) return toast(`最多同時試穿 ${MAX_RUNS} 套，等其中一套好了再試`);
   const resumeId=opts.resumeId||null;
   if (!state.person) return toast('請先放一張全身照');
   const run=buildRun(); const items=run.items;
@@ -2528,14 +2569,22 @@ async function runTryon(opts={}){ let noCredit=false;
   if (!state.user) { openLogin(); return; }
   if (!configured) return showSetup(true);
   const person0=state.personOrig; const isPhone=window.matchMedia('(max-width:899px)').matches;
+  // 可以同時跑多套：每一套是一個 run；只有最新的那套（前景）會更新試穿結果區，其他的在背景跑完後通知
+  let key0=null; if(!opts.resumeId){ try{ key0=await comboKey(items); }catch{} if(key0 && activeRuns().some(r=>r.key===key0)) return toast('這一套正在試穿中，好了會通知你'); }
+  const myRun=++runSeq; fgRun=myRun; const fg=()=>fgRun===myRun;
+  const R={ seq:myRun, key:key0, label:(state.runItems.map(i=>TYPE_LABEL[i.type]).join('＋')||'穿搭'), thumb:(state.runItems.find(i=>i.image)||{}).image||null, runItems:state.runItems.slice(), step:'已送出', done:false };
+  runs.set(myRun,R); renderTray();
+  const W=(msg,sec)=>{ R.step=msg; renderTray(); if(fg()) setWait(msg,sec); };
+  const WR=(full,sec)=>{ R.step=full.replace(/（[^）]*秒）$/,''); renderTray(); if(fg()) setWaitRaw(full,sec); };
+  const setBar=w=>{ if(fg()) bar.style.width=w; };
   if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); const fr=$('fitResult'); if(fr) fr.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); try{ updateSticky(); }catch{}
-  const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; bar.style.width='6%';
-  waitScreen(); $('result').classList.remove('busy');
+  const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; setBar('6%');
+  waitScreen(); $('result').classList.remove('busy'); { const ws=$('waitShop'); if(ws) ws.onclick=()=>go('shop'); }
   state.views=null; state.preferSpin=false; stopSpin(); spinState=null; $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
   const t0=Date.now();
   // 送出前／排隊中：只顯示真實狀態（已送出、等待開始）＋秒數，進度條慢慢前進表示還活著
-  let pct=6; const tick=setInterval(()=>{ pct=Math.min(20, pct+1); bar.style.width=pct+'%'; setWait(resumeId?'接續上次的合成，正在確認進度…':'已送出，等待 AI 開始…', Math.round((Date.now()-t0)/1000)); }, 1000);
-  setWait(resumeId?'接續上次的合成，正在確認進度…':'已送出，等待 AI 開始…', 0);
+  let pct=6; const tick=setInterval(()=>{ pct=Math.min(20, pct+1); setBar(pct+'%'); W(resumeId?'接續上次的合成，正在確認進度…':'已送出，等待 AI 開始…', Math.round((Date.now()-t0)/1000)); }, 1000);
+  W(resumeId?'接續上次的合成，正在確認進度…':'已送出，等待 AI 開始…', 0);
   setStep(3); if(isPhone) setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),100);
   try{
     const variants = $('twoVariants').classList.contains('on') ? 2 : 1;
@@ -2549,30 +2598,31 @@ async function runTryon(opts={}){ let noCredit=false;
       wasReady=!opts.retry&&pf.key===key&&pf.st==='ready'; pf.key=null; pf.st=null; pfHint();
       const body={ person: state.person, items, body:run.body, variants, views, async:true, aspect, key: opts.retry?undefined:key, nocache, engine: opts.retry?'pro':engineParam(), res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() };
       d = await api('/api/tryon', { method:'POST', body: JSON.stringify(body) });
+      $('btnRun').disabled=false; try{ updateSticky(); }catch{}
       if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
     }
     if (d && d.async && d.id) {
       // 非同步：後端在背景合成，前端每 1.5–2.5 秒問一次（手機切到背景、網路短暫中斷都不會丟結果）
       let st; clearInterval(tick); const jobId=d.id; let shownPv=null;
-      try{ localStorage.setItem('tryon.pending', String(d.id)); }catch{}
+      R.jobId=d.id; pendAdd(d.id);
       if ($('faceLock').classList.contains('on')) getFaceDetector().catch(()=>{});   // 等待時先載入臉部偵測，結果出來就能馬上鎖臉
       while (true) {
         await new Promise(r=>setTimeout(r, (d.claimed||wasReady) && Date.now()-t0 < 3000 ? 250 : (Date.now()-t0 < 15000 ? 2500 : 1500)));
-        try { st = await jobStatus(d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; setWait('網路不太穩，正在重新連線…', Math.round((Date.now()-t0)/1000)); continue; }
+        try { st = await jobStatus(d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; W('網路不太穩，正在重新連線…', Math.round((Date.now()-t0)/1000)); continue; }
         if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
-        if (st.preview && st.preview.url && st.preview.url!==shownPv && !st.front) { shownPv=st.preview.url; $('result').innerHTML=`<div class="pvwrap"><img src="${esc(shownPv)}" alt="快速預覽"><span class="pvtag">快速預覽${st.preview.partial?'（還在換其他單品）':''} · 高畫質版完成中…</span></div>`; window.__sawPreview=Date.now()-t0; }
+        if (st.preview && st.preview.url && st.preview.url!==shownPv && !st.front) { shownPv=st.preview.url; R.preview=shownPv; renderTray(); if(fg()) $('result').innerHTML=`<div class="pvwrap"><img src="${esc(shownPv)}" alt="目前進度"><span class="pvtag">${st.preview.step?'先給你看：已換好一部分，其他還在換…':'快速預覽'+(st.preview.partial?'（還在換其他單品）':'')+' · 高畫質版完成中…'}</span></div>`; window.__sawPreview=Date.now()-t0; }
         if (st.front) { window.__lastTiming=st.front.timing; d = st.front; d._pendingId = d._pendingId || (d.views_pending ? jobId : null); break; }
         if (st.status==='failed') throw new Error(st.error||'合成失敗');
         const sec=Math.round((Date.now()-t0)/1000);
         if (st.progress) {
-          const pg=st.progress; const total=Math.max(1,pg.total||1); const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/total*100))); bar.style.width=pc+'%';
+          const pg=st.progress; const total=Math.max(1,pg.total||1); const pc=Math.max(8, Math.min(95, Math.round((pg.done+0.5)/total*100))); setBar(pc+'%');
           const stepTxt = pg.fixing ? '發現不夠像，正在自動重做' : ('正在'+(WAIT_STEP[pg.current]||'處理'));
           const stepNo = pg.fixing ? '' : `第 ${Math.min(pg.done+1,total)}/${total} 步，`;
-          setWaitRaw(`${stepTxt}…（${stepNo}${sec} 秒）`, sec);
-        } else { setWait(sec<8?'已送出，等待 AI 開始…':'排隊中，AI 馬上就會開始…', sec); }
+          WR(`${stepTxt}…（${stepNo}${sec} 秒）`, sec);
+        } else { W(sec<8?'已送出，等待 AI 開始…':'排隊中，AI 馬上就會開始…', sec); }
         if (Date.now()-t0 > 7*60*1000) throw new Error('合成逾時，點數會自動退回，請再試一次');
       }
-      try{ localStorage.removeItem('tryon.pending'); }catch{}
+      pendDel(jobId);
     }
     // 伺服器已上傳成功的圖只回 URL，轉成 data URI 供後續（臉部鎖定、分享、繼續搭）使用
     const pick = async (data, url) => data || (url ? await urlToDataUri(url) : null);
@@ -2586,13 +2636,21 @@ async function runTryon(opts={}){ let noCredit=false;
       if (side || back) state.views = { side, back };
     }
 
-    clearInterval(tick); bar.style.width='96%';
+    clearInterval(tick); setBar('96%');
     let imgs = imgsResolved.filter(Boolean);
     if (!imgs.length) throw new Error('沒有收到合成結果');
     const runTypes = items.length ? items : (state.runItems||[]);
     const needLock = $('faceLock').classList.contains('on') && (d.engine==='outfit' || runTypes.some(i=>!['top','bottom','dress'].includes(i.type)));
-    if (needLock) { setWait('最後一步：把你的臉貼回去…', null); const headOK=!runTypes.some(i=>['hair','hat','accessory'].includes(i.type)); imgs = await Promise.all(imgs.map(async im=>{ if(headOK){ try{ return await headRestore(person0, im); }catch(e){ console.warn('headRestore',e&&e.message); } } try{ return await faceLock(person0, im); }catch(e){ return im; } })); }
-    bar.style.width='100%';
+    if (needLock) { W('最後一步：把你的臉貼回去…', null); const headOK=!runTypes.some(i=>['hair','hat','accessory'].includes(i.type)); imgs = await Promise.all(imgs.map(async im=>{ if(headOK){ try{ return await headRestore(person0, im); }catch(e){ console.warn('headRestore',e&&e.message); } } try{ return await faceLock(person0, im); }catch(e){ return im; } })); }
+    setBar('100%');
+    if(!fg()){
+      // 背景那套好了：存起來、通知使用者，不打斷他現在看的畫面
+      R.rec={ person0, img:imgs[0], d }; R.done=true; R.unseen=true; R.step='好了';
+      if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
+      state.historyLoaded=false; notifyDone(R); renderTray(); track('tryon_ok',{n:items.length,bg:1});
+      return;
+    }
+    R.done=true; R.rec={ person0, img:imgs[0], d };
     const charged=d.charged!=null?d.charged:null;
     $('runStatus').textContent = (charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.quality&&d.quality.retried ? ' 已自動校正一次，讓衣服更貼近商品。' : '');
     if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
@@ -2610,15 +2668,19 @@ async function runTryon(opts={}){ let noCredit=false;
     else if (pendingVideo) { const nb=$('runStatus').textContent; attachSpin(pendingVideo).then(()=>{ $('runStatus').textContent=nb+' 360° 好了：在圖上左右拖曳就能旋轉。'; }).catch(()=>{}); }
   }catch(e){
     clearInterval(tick); if(e.data&&e.data.need_credits) noCredit=true;
-    try{ localStorage.removeItem('tryon.pending'); }catch{}
+    if(R.jobId) pendDel(R.jobId);
     haptic('error'); track('tryon_fail',{msg:String(e.message).slice(0,80)});
     const msg=friendlyErr(e);
+    R.done=true; R.error=msg;
+    if(!fg()){ toast(`有一套沒有成功（${R.label}）：${msg}`); renderTray(); return; }
     if(resumeId && /找不到這筆合成/.test(String(e.message))){ $('runStatus').textContent=''; }
     else {
       $('runStatus').innerHTML = '<span style="color:var(--bad)">'+esc(msg)+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
       const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
     }
   }finally{
+    R.done=true; renderTray(); setTimeout(()=>{ if(!R.unseen) runs.delete(myRun); renderTray(); },4000);
+    if(!fg()) return;
     busy=false; $('btnRun').disabled=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
     if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>'+(noCredit?'點數不夠，這次沒有送出、也沒有扣點。<br>拿掉幾件單品，或買點數後再試':'這次沒有成功。再按一次「開始 AI 試穿」，<br>或換一張更清楚的全身照')+'</div>'; }
   }
@@ -2642,12 +2704,13 @@ function updateSticky(){
   const show=phone && onTry && !!state.person && n>0 && !runInView && !H.classList.contains('kb');
   bar.classList.toggle('on',show); H.classList.toggle('sticky-on',show);
   const b=$('stickyRunBtn'), p=$('stickyRunProg');
-  b.classList.toggle('hidden',busy); p.classList.toggle('hidden',!busy);
+  b.classList.remove('hidden'); p.classList.add('hidden');
   b.textContent=$('btnRun').textContent; b.disabled=$('btnRun').disabled;
   if(busy && !p.textContent) p.textContent=$('runStatus').textContent||'已送出，等待 AI 開始…';
   pill.classList.toggle('on', phone && onTry && !!state.result && !busy && !resultInView && resultBelow && !H.classList.contains('kb'));
 }
 $('stickyRunBtn').onclick=()=>$('btnRun').click();
+setInterval(()=>{ try{ if(runs.size) renderTray(); }catch{} },1500);
 $('seeResult').onclick=()=>{ $('result').scrollIntoView({behavior:'smooth',block:'start'}); };
 if(window.IntersectionObserver){
   const io=new IntersectionObserver(es=>{ es.forEach(e=>{ if(e.target.id==='btnRun') runInView=e.isIntersecting; else { resultInView=e.isIntersecting; resultBelow=e.boundingClientRect.top>0; } }); updateSticky(); },{rootMargin:'0px 0px -64px 0px',threshold:0});
@@ -2665,10 +2728,10 @@ isPhoneMQ.addEventListener ? isPhoneMQ.addEventListener('change',()=>updateStick
 })();
 // 上次關掉頁面時還在合成 → 登入後自動接著等（後端是前端每次查詢才推進一步，沒人問就停著）
 function resumePending(){
-  let id=null; try{ id=localStorage.getItem('tryon.pending'); }catch{}
-  if(!id||busy||!state.person) { if(id&&!state.person){ try{ localStorage.removeItem('tryon.pending'); }catch{} } return; }
+  const ids=pendList(); if(!ids.length) return;
+  if(!state.person){ try{ localStorage.removeItem('tryon.pending'); localStorage.removeItem('tryon.pendingList'); }catch{} return; }
   if(curView!=='tryon') go('tryon');
-  runTryon({resumeId:id});
+  ids.forEach(id=>{ if(![...runs.values()].some(r=>String(r.jobId)===String(id))) runTryon({resumeId:id}); });
 }
 function renderCompare(before, after){
   const box=$('result');
@@ -2993,7 +3056,7 @@ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded'
       if(!b){ const r=await fetch(location.pathname+'?_='+Date.now(),{cache:'no-store'}); if(!r.ok) return; b=((await r.text()).match(/const BUILD = '([^']+)'/)||[])[1]; }
       if(!b||!cur||b===cur) return;
       const typing=(()=>{ const a=document.activeElement; return !!(a&&/^(INPUT|TEXTAREA)$/.test(a.tagName)&&a.value); })();
-      const pending=(()=>{ try{ return !!localStorage.getItem('tryon.pending'); }catch{ return false; } })();
+      const pending=pendList().length>0 || activeRuns().length>0;
       const working=typing || pending || !!document.querySelector('#prog:not(.hidden)') || !!document.querySelector('.polaroid') || !!document.querySelector('.pickmenu.on,.dlg.on,.itemview.on,.lightbox.on,.onb.on') || !!document.querySelector('#sheetSent:not(.hidden)');
       if(!working && (eager===1 || document.visibilityState==='hidden')) return go(b);
       if(!shown){ shown=true; const bar=document.createElement('div'); bar.className='updbar'; bar.innerHTML='有新版本 <button>立即更新</button>'; bar.querySelector('button').onclick=()=>go(b); document.body.appendChild(bar); }
