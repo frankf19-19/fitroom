@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.17.0';
+const VERSION = '2.17.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -834,7 +834,7 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
         job.retries = 1; job.fix_notes = qaCorrections(job.qa, targets) || 'the result did not match the product photos closely enough';
         job.rejected = [...(job.rejected || []), ...(job.front || [])].slice(-2);
         if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }
-        const oi = job.steps.findIndex(s => s.type === 'outfit'); if (oi >= 0 && (job.steps[oi].engine || 0) === 0 && OUTFIT_ENGINES.length > 1 && !job.first_rejected) job.steps[oi].engine = 1;
+        const oi = job.steps.findIndex(s => s.type === 'outfit');
         job.front = null; job.pf_bad = false; job.chains.forEach(c => { c.i = oi >= 0 ? oi : 0; c.cur = job.person_url; c.req = null; });
         patch.status = 'running'; patch.image_url = null; patch.views = null;
       } else if (row.status === 'ok') {
@@ -1015,7 +1015,7 @@ async function handleTryonStatus(request, env, cors, url) {
             if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }   // FASHN 不過關 → 改用整套引擎
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];
-            if (ost && (ost.engine || 0) === 0 && OUTFIT_ENGINES.length > 1 && !job.first_rejected) ost.engine = 1;
+            // 實測 Pro 常會放大裁切、改構圖，重做時維持同一個引擎、只帶上退回原因（使用者開高品質模式才用 Pro）
             job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
             ch.req = null; ch.cur = job.person_url; ch.i = oi >= 0 ? oi : 0;
             if (!canStart()) return;              // 重送交給下次輪詢（避免同一輪再多一個呼叫）

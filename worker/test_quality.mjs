@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.17.0');
+assert.equal(T.VERSION, '2.17.1');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -110,7 +110,7 @@ assert.equal(s.status, 'running'); assert.equal(s.progress.current, 'outfit'); a
 s = await poll();       // 3: COMPLETED → QA(retry) → 換 pro 重送（同一輪，預算足夠）
 assert.equal(s.status, 'running'); assert.equal(s.progress.current, 'outfit'); assert.equal(s.progress.fixing, true); assert.equal(s.progress.retries, 1);
 assert.equal(calls.vision.length, 2); assert.deepEqual(calls.vision[1].images, [RESULT1, PERSON, 'https://img/top.jpg', 'https://img/bottom.jpg']);
-assert.equal(calls.submits.length, 2); assert.match(calls.submits[1].url, /nano-banana-pro\/edit/);
+assert.equal(calls.submits.length, 2); assert.match(calls.submits[1].url, /nano-banana-2\/edit/, "retry keeps the same engine (Pro changes framing)");
 assert.match(calls.submits[1].prompt, /PREVIOUS ATTEMPT WAS REJECTED FOR: product 2 \(BOTTOM.*\) does not match its product photo: trousers are slim, not balloon-leg\. Fix these specifically\./);
 assert.equal(row.job.retries, 1); assert.equal(row.job.qa.verdict, 'retry'); assert.equal(row.job.steps[0].engine, 1);
 s = await poll();       // 4: IN_PROGRESS
