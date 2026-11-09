@@ -2531,7 +2531,7 @@ function renderTray(){
   const onlyFgHere = curView==='tryon' && !un.length && act.length===1 && act[0].seq===fgRun;
   if((!act.length && !un.length) || onlyFgHere){ t.classList.add('hidden'); return; }
   const last=act[act.length-1], img=(un[0]&&un[0].rec.img)||(last&&(last.preview||last.thumb))||'';
-  const txt = un.length ? `✓ ${un.length>1?un.length+' 套':''}試穿好了，點我看${act.length?` · 還有 ${act.length} 套在試`:''}` : `試穿中${act.length>1?' '+act.length+' 套':''} · ${(last.step||'').slice(0,22)}`;
+  const txt = un.length ? `${un.length>1?un.length+' 套':''}試穿好了，點我看${act.length?` · 還有 ${act.length} 套在試`:''}` : `試穿中${act.length>1?' '+act.length+' 套':''} · ${(last.step||'').slice(0,22)}`;
   t.innerHTML=`${img?`<img src="${esc(img)}" alt="">`:''}<span class="${un.length?'ok':'spin'}"></span><b>${esc(txt)}</b>`;
   t.classList.toggle('done', un.length>0); t.classList.remove('hidden');
 }
