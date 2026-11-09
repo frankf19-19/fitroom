@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.16.0');
+assert.equal(T.VERSION, '2.17.0');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [

@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.16.0';
+const VERSION = '2.17.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -774,11 +774,14 @@ async function handleTryon(request, env, cors, ctx) {
       })]);
       const meta = sorted.map((it, k) => ({ type: it.type, name: String(it.name || '').slice(0, 80) || null, product_id: intId(it.product_id) || null, buy_url: typeof it.buy_url === 'string' && /^https?:/.test(it.buy_url) ? it.buy_url.slice(0, 500) : null, image_url: steps[k].image_url || null, text: steps[k].text || null, fit: it.fit || null }));
       const useOutfit = !!env.FAL_KEY && body.engine !== 'fashn';
+      // 只試一件衣服（上衣／下身／洋裝）：先用 FASHN 專門試穿模型（只改衣服那一塊，人不會被重畫；實測人像最穩、也較便宜）。
+      // 品質檢查不過關 → 自動改用整套引擎（Nano Banana）帶著原因重做。
+      const fashnFirst = useOutfit && steps.length === 1 && !!steps[0].category && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
-        pv: (!prefetch && useOutfit && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null,
+        pv: (!prefetch && useOutfit && !fashnFirst && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null, first: fashnFirst ? 'fashn' : undefined,
         // 整套引擎：付費（非預先合成）的工作多一個 qa 步驟（結果品質檢查，不過關自動重做一次）
-        steps: useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
+        steps: fashnFirst ? [{ ...steps[0] }, { type: 'qa' }] : useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
@@ -830,7 +833,8 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
         const targets = captionTargets(job.item_steps);
         job.retries = 1; job.fix_notes = qaCorrections(job.qa, targets) || 'the result did not match the product photos closely enough';
         job.rejected = [...(job.rejected || []), ...(job.front || [])].slice(-2);
-        const oi = job.steps.findIndex(s => s.type === 'outfit'); if (oi >= 0 && (job.steps[oi].engine || 0) === 0 && OUTFIT_ENGINES.length > 1) job.steps[oi].engine = 1;
+        if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }
+        const oi = job.steps.findIndex(s => s.type === 'outfit'); if (oi >= 0 && (job.steps[oi].engine || 0) === 0 && OUTFIT_ENGINES.length > 1 && !job.first_rejected) job.steps[oi].engine = 1;
         job.front = null; job.pf_bad = false; job.chains.forEach(c => { c.i = oi >= 0 ? oi : 0; c.cur = job.person_url; c.req = null; });
         patch.status = 'running'; patch.image_url = null; patch.views = null;
       } else if (row.status === 'ok') {
@@ -1008,9 +1012,10 @@ async function handleTryonStatus(request, env, cors, url) {
           if (qa.verdict === 'retry' && (job.retries || 0) < 1) {
             job.retries = (job.retries || 0) + 1;
             job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
+            if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }   // FASHN 不過關 → 改用整套引擎
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];
-            if (ost && (ost.engine || 0) === 0 && OUTFIT_ENGINES.length > 1) ost.engine = 1;
+            if (ost && (ost.engine || 0) === 0 && OUTFIT_ENGINES.length > 1 && !job.first_rejected) ost.engine = 1;
             job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
             ch.req = null; ch.cur = job.person_url; ch.i = oi >= 0 ? oi : 0;
             if (!canStart()) return;              // 重送交給下次輪詢（避免同一輪再多一個呼叫）
