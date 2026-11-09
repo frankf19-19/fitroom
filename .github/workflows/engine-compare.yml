@@ -1,0 +1,28 @@
+name: 測試：生圖引擎比較（會花 AI 費用）
+on:
+  workflow_dispatch:
+    inputs:
+      engines: { description: '引擎', default: 'nb2,nbpro,fashn,kling', required: false }
+      cases: { description: 'JSON [[人物照, 商品id, 類別],...]，留空用預設', default: '', required: false }
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: pip install -q pillow
+      - env:
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          ENGINES: ${{ inputs.engines }}
+          CASES: ${{ inputs.cases }}
+        run: |
+          [ -z "$CASES" ] && unset CASES
+          node qa/engine_compare.mjs && python3 qa/engine_sheet.py
+      - if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b qa-engines && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m engines
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-engines
