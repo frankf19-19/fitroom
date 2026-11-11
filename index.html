@@ -983,7 +983,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-12-03';
+const BUILD = '2026-11-12-04';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -2541,7 +2541,7 @@ function notifyDone(R){ haptic('success'); toast(`試穿好了：${R.label}，�
 function showRun(R){
   const rec=R.rec; if(!rec) return; R.unseen=false; fgRun=R.seq;
   const d=rec.d; state.runItems=R.runItems; state.result=rec.img; state.resultPerson=rec.person0;
-  state.qaRetried=!!(d.quality&&d.quality.retried); state.extrasDropped=d.extras_dropped?('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的'):'';
+  state.qaRetried=!!(d.quality&&d.quality.retried); state.notCharged=!!d.not_charged; state.extrasDropped=d.extras_dropped?('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的'):'';
   if(curView!=='tryon') go('tryon');
   { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); }
   state.views=null; renderCompare(rec.person0, rec.img);
@@ -2579,7 +2579,7 @@ async function runTryon(opts={}){ let noCredit=false;
   const W=(msg,sec)=>{ R.step=msg; renderTray(); if(fg()) setWait(msg,sec); };
   const WR=(full,sec)=>{ R.step=full.replace(/（[^）]*秒）$/,''); renderTray(); if(fg()) setWaitRaw(full,sec); };
   const setBar=w=>{ if(fg()) bar.style.width=w; };
-  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); const fr=$('fitResult'); if(fr) fr.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); try{ updateSticky(); }catch{}
+  if(!resumeId) track('tryon_start',{n:items.length,retry:!!opts.retry}); busy=true; state.result=null; state.qaRetried=false; state.notCharged=false; { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const q=$('qaNote'); if(q) q.remove(); const fr=$('fitResult'); if(fr) fr.remove(); } $('btnRun').disabled=true; $('result').classList.add('busy'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); try{ updateSticky(); }catch{}
   const prog=$('prog'); prog.classList.remove('hidden'); const bar=prog.firstElementChild; setBar('6%');
   waitScreen(); $('result').classList.remove('busy'); { const ws=$('waitShop'); if(ws) ws.onclick=()=>go('shop'); }
   state.views=null; state.preferSpin=false; stopSpin(); spinState=null; $('angles').classList.add('hidden'); $('result').style.background=''; $('result').style.border=''; $('result').style.overflow='';
@@ -2656,13 +2656,13 @@ async function runTryon(opts={}){ let noCredit=false;
     }
     R.done=true; R.rec={ person0, img:imgs[0], d };
     const charged=d.charged!=null?d.charged:null;
-    $('runStatus').textContent = (charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.quality&&d.quality.retried ? ' 已自動校正一次，讓衣服更貼近商品。' : '');
+    $('runStatus').textContent = (charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.not_charged ? ' 這張不夠準，這次不扣點。' : (d.quality&&d.quality.retried ? ' 已自動檢查並重做一次。' : ''));
     if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
     let finalImg = imgs[0];
     if (imgs.length > 1) {
       finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}" alt="結果 ${i+1}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
-    state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried); state.extrasDropped = d.extras_dropped ? ('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的') : '';
+    state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried); state.notCharged = !!d.not_charged; state.extrasDropped = d.extras_dropped ? ('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的') : '';
     renderCompare(person0, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems(); try{ renderFitResult(d.fit); }catch{}
     renderFit(); try{ updateSticky(); }catch{}
@@ -2744,7 +2744,7 @@ function renderCompare(before, after){
   box.style.background='transparent'; box.style.border='none'; box.style.overflow='visible';
   const v=state.views||{};
   box.innerHTML=`<div class="polaroid"><div class="cmp" id="cmp"><img src="${after}" alt="合成結果" id="cmpAfterFull"><div class="after" id="cmpAfter"><img src="${before}" alt="原圖"></div><div class="hd" id="cmpHd"></div><span class="tag l">原圖</span><span class="tag r">AI 試穿</span></div>${v.side?`<img class="view-img" data-v="side" src="${v.side}" alt="側面">`:''}${v.back?`<img class="view-img" data-v="back" src="${v.back}" alt="背面">`:''}<div class="cap"><span>${items}</span><small id="capAngle">${date}</small></div></div>`;
-  { const notes=[]; if(state.qaRetried) notes.push('已自動檢查並重做一次，讓結果更準確'); if(state.extrasDropped) notes.push(state.extrasDropped); if(notes.length){ const q=document.createElement('div'); q.id='qaNote'; q.className='qanote'; q.textContent=notes.join('；'); (box.querySelector('.polaroid')||box).appendChild(q); } }
+  { const notes=[]; if(state.notCharged) notes.push('這張自動檢查後還是不夠準，這次不扣點。可以再試一次，或換一張更清楚的全身照'); else if(state.qaRetried) notes.push('已自動檢查並重做一次，讓結果更準確'); if(state.extrasDropped) notes.push(state.extrasDropped); if(notes.length){ const q=document.createElement('div'); q.id='qaNote'; q.className='qanote'; q.textContent=notes.join('；'); (box.querySelector('.polaroid')||box).appendChild(q); } }
   if(v.spin){ const pol=box.querySelector('.polaroid'); const sb=document.createElement('div'); sb.className='view-img spinbox'; sb.dataset.v='spin';
     sb.innerHTML=`<img class="spinposter" src="${after}" alt=""><video hidden muted playsinline loop preload="auto" crossorigin="anonymous" src="${v.video}"></video><canvas hidden></canvas><button class="spinplay" hidden>▶ 點一下播放 360°</button><span class="spinhint">轉一圈給你看，之後可以左右拖曳</span><div class="spinbar"><i></i></div>`;
     pol.querySelector('.cmp').after(sb); initSpin(sb); }

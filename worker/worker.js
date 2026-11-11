@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.22.1';
+const VERSION = '2.23.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -227,13 +227,17 @@ function qaPrompt(targets, captions) {
     'color_wrong (true/false): is any product a clearly different color in image 1 than in its product photo (for example a light blue top rendered white, olive trousers rendered black)? Judge the garment color itself and allow for the lighting of image 2.',
     'zoomed (true/false): is the person noticeably larger or smaller in the frame than in image 2 (zoomed in or out, re-cropped, or moved to a different position)?',
     'leftover (true/false): are parts of the ORIGINAL garment that should have been replaced still visible in image 1 (old sleeves, collar, straps, hem or waistband poking out from under or around the new product)?',
-    'extra_items: list garments the person wears in image 1 that are NOT one of the products AND were NOT already worn in image 2 (typically a jacket, coat or top copied from a product photo model), or [].',
+    'extra_items: list MAJOR garments the person wears in image 1 that are NOT one of the products AND were NOT already worn in image 2 — outerwear (jacket, coat, hoodie), a different top, trousers, skirt, shorts, dress, hat, scarf or bag, typically copied from a product photo model — or []. Do NOT list socks, belts, jewelry, or an inner layer that only shows inside the opening of an open-front product (for example a top visible under an unbuttoned cardigan or jacket): put those in minor_extras instead.',
+    'minor_extras: list such small additions (socks, belt, inner layer inside an open-front product), or [].',
     `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed, pose_changed, color_wrong, zoomed, leftover or extra_items is not empty; otherwise "pass".`,
-    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"color_wrong":false,"zoomed":false,"leftover":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
+    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"color_wrong":false,"zoomed":false,"leftover":false,"extra_items":["..."],"minor_extras":["..."],"verdict":"pass"|"retry"}'
   ].join('\n');
 }
 // 品質分數（挑最好的一張用）：鏡像／身形／動作改變重扣，多出衣服扣分，加上最差單品分與人物一致分
 const qaScore = qa => !qa ? -99 : (qa.mirrored || qa.body_changed || qa.pose_changed || qa.zoomed ? -20 : 0) - (qa.color_wrong ? 6 : 0) - 5 * ((qa.extra_items || []).length) - (qa.leftover ? 3 : 0) + Math.min(10, ...(qa.items || []).map(x => x.match == null ? 10 : x.match)) + (qa.identity == null ? 8 : qa.identity);
+// 連檢查都判定「明顯不合格」：單品幾乎不像（≤4 分）、左右顛倒、身形被改、或幾乎不是本人。這種結果不向使用者收費。
+const qaClearlyBad = qa => !!(qa && qa.verdict === 'retry' && ((qa.items || []).some(x => x.match != null && x.match <= 4) || qa.mirrored || qa.body_changed || (qa.identity != null && qa.identity < 5)));
+const CLOTHING_TYPES = ['top', 'bottom', 'dress'];
 const clamp10 = v => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : null; };
 // 正規化品質檢查結果；依規則重新判定 verdict（不完全信任模型自己的 verdict）
 function normalizeQa(json, targets) {
@@ -250,8 +254,9 @@ function normalizeQa(json, targets) {
   const mirrored = q.mirrored === true, body_changed = q.body_changed === true, pose_changed = q.pose_changed === true, leftover = q.leftover === true, color_wrong = q.color_wrong === true, zoomed = q.zoomed === true;
   const extra_items = Array.isArray(q.extra_items) ? q.extra_items.filter(x => typeof x === 'string' && x.trim() && !/^(none|n\/a|-)$/i.test(x.trim())).map(x => x.trim().slice(0, 80)).slice(0, 4) : [];
   const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || pose_changed || leftover || color_wrong || zoomed || extra_items.length > 0;
-  const verdict = bad || String(q.verdict).toLowerCase() === 'retry' ? 'retry' : 'pass';
-  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, leftover, color_wrong, zoomed, extra_items, verdict, at: Date.now() };
+  const verdict = bad ? 'retry' : 'pass';   // 依規則判定，不採信模型自己寫的 verdict（實測它會因為襪子、皮帶這類小東西就寫 retry）
+  const minor_extras = Array.isArray(q.minor_extras) ? q.minor_extras.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 60)).slice(0, 4) : [];
+  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, leftover, color_wrong, zoomed, extra_items, minor_extras, verdict, at: Date.now() };
 }
 // 由檢查結果組成「上次被退回的原因」（放進重做的提示詞）
 // targets（可省略）：帶入各商品的合身度，讓重做提示詞寫出「應該看到的合身樣子」
@@ -888,8 +893,7 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
         job.retries = 1; job.fix_notes = qaCorrections(job.qa, targets) || 'the result did not match the product photos closely enough';
         job.rejected = [...(job.rejected || []), ...(job.front || [])].slice(-2);
         if (!job.steps.some(s => s.type === 'outfit')) {
-          if (job.first === 'fashn' && !job.fashn_failed) { const seed = 1000 + Math.floor(Math.random() * 1e6); job.steps = [...(job.item_steps || []).filter(x => x.category).map(x => ({ ...x, mode: 'quality', seed, seg: !!job.qa.leftover })), { type: 'qa' }]; }
-          else { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }
+          job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn';
         }
         const oi = job.steps.findIndex(s => s.type === 'outfit');
         const onlyStep = oi >= 0 && Array.isArray(job.steps[oi].only);
@@ -933,6 +937,7 @@ async function finishJob(env, userId, g, job, cond = '') {
   if (job.fashn_failed) result.fashn_failed = job.fashn_failed;
   // 追查用：每次品質檢查的結論與當時那張圖（被退回的也留著），方便事後看是真的壞還是檢查太嚴
   if (job.qa_log) result.qa_log = job.qa_log;
+  if (job.bad_refund) result.not_charged = true;
   if (job.first === 'fashn' && !job.fashn_failed && !job.first_rejected && !(job.steps || []).some(st => st.type === 'outfit')) result.fashn_only = true;
   if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
@@ -1106,22 +1111,15 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             job.extras_dropped = ost ? ost.only : null; ch.cur = ch.base; job.qa = { ...qa, verdict: 'pass', fallback: 'base' }; ch.i++; continue;
           }
           if (qa.verdict === 'retry' && job.prefetch) { job.pf_bad = true; ch.i++; continue; }   // 預先合成不過關：先不重做（不一定會被用），認領時再重做
-          // 只有衣服、先用 FASHN 的工作最多重做 2 次：① FASHN 品質模式換一組亂數（快、便宜、不會動到人）② 再不行才換整套引擎。其他情況重做 1 次。
-          const fashnOnly = job.first === 'fashn' && !job.fashn_failed && !job.steps.some(s => s.type === 'outfit');
-          const maxRetries = (job.first === 'fashn' && !job.steps.some(s => s.type === 'outfit' && Array.isArray(s.only))) ? 2 : 1;
-          if (qa.verdict === 'retry' && fashnOnly && (job.retries || 0) < 1) {
-            job.retries = 1; job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
-            const seed = 1000 + Math.floor(Math.random() * 1e6);
-            job.steps = [...(job.item_steps || []).filter(x => x.category).map(x => ({ ...x, mode: 'quality', seed, seg: !!qa.leftover })), { type: 'qa' }];
-            job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
-            ch.req = null; ch.cur = job.person_url; ch.i = 0;
-            if (!canStart()) return;
-            continue;
-          }
+          // 重做一次就好（實測：FASHN 被退回後再用 FASHN 重做多半還是不過，換整套引擎的成功率高很多；再多做只是讓人多等）
+          const maxRetries = 1;
           if (qa.verdict === 'retry' && (job.retries || 0) < maxRetries) {
             job.retries = (job.retries || 0) + 1;
             job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
-            if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }   // FASHN 兩次都不過關 → 改用整套引擎
+            // 有配件步驟（only）但問題出在衣服本身（FASHN 那幾步做壞了）：只重做配件救不回來 → 全部交給整套引擎從頭做
+            const onlySt = job.steps.find(s => s.type === 'outfit' && Array.isArray(s.only));
+            const clothingBad = (qa.items || []).some(x => CLOTHING_TYPES.includes(x.type) && x.match != null && x.match < QA_MIN_ITEM) || qa.leftover || qa.color_wrong || (qa.extra_items || []).length > 0;
+            if (!job.steps.some(s => s.type === 'outfit') || (onlySt && clothingBad)) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; job.chains.forEach(c => { c.base = null; }); }   // FASHN 不過關 → 改用整套引擎
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];
             // 實測 Pro 常會放大裁切、改構圖，重做時維持同一個引擎、只帶上退回原因（使用者開高品質模式才用 Pro）
@@ -1221,9 +1219,12 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
       } catch (e) { await refundViews(e.message); }
       await save(); return running();
     }
-    // 3) 收尾
+    // 3) 收尾。重做後最好的那張仍被判定「明顯不合格」→ 圖照給（附說明），但這次不收費
+    let badRefund = 0;
+    if (!job.prefetch && !job.bad_refund && qaClearlyBad(job.qa)) { badRefund = job.pay || 0; job.bad_refund = { pay: job.pay || 0, free: job.free || 0 }; job.pay = 0; job.free = 0; }
     const fin = await finishJob(env, user.id, g, job, vcond);
     if (!fin.got) return running();
+    if (badRefund > 0) { await rpc(env, 'add_credits', { p_user: user.id, p_amount: badRefund }).catch(() => {}); if (fin.result.credits != null) fin.result.credits += badRefund; }
     return jout({ status: 'ok', result: fin.result }, 200, cors);
   } catch (e) {
     const r = await stopJob(env, user.id, g, job, '合成失敗（已退回點數）：' + e.message, vcond).catch(() => null);
