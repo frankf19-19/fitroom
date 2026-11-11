@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.20.0';
+const VERSION = '2.21.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -649,22 +649,33 @@ async function handleTryon(request, env, cors, ctx) {
   const fsig = fitSig(items);
 
   // 清理卡住的「進行中」（Worker 中途被終止時）：標記失敗並退點
-  try { await sweepStale(env, user.id); } catch { /* ignore */ }
-  // 防濫用：60 秒內最多 3 次正式合成（進行中由資料庫唯一索引鎖住）
-  const recent = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&or=(status.in.(running,working),cost.gt.0,free_used.gt.0)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 60000).toISOString())}&select=status`);
-  if (recent.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors);
+  // 這裡原本是 9 個左右的資料庫查詢一個接一個（約 2.5 秒）。彼此不相依的改成同時發出、分兩輪等，省約 1.5 秒。
+  const settle = pr => pr.then(v => ({ v }), e => ({ e }));
+  const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + (wantViews ? '-v' : '') + '-' + variants : null;
+  const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + '-' + variants : null;
+  const useCache = !!(ckey && body.async === true && !body.nocache);
+  const P_sweep = settle(sweepStale(env, user.id));
+  const P_profile = settle(getProfile(env, user));
+  const P_hit = useCache ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.ok&job->>key=eq.${ckey}&created_at=gte.${encodeURIComponent(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,views&order=created_at.desc&limit=1`).catch(() => []) : null;
+  const P_pf = (bkey && stepMode) ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,working,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views,variants,cost,free_used&order=created_at.desc`).catch(() => []) : null;
+  await P_sweep;   // 第二輪的計數要在清理之後
+  const P_recent = settle(sb(env, `/rest/v1/generations?user_id=eq.${user.id}&or=(status.in.(running,working),cost.gt.0,free_used.gt.0)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 60000).toISOString())}&select=status`));
+  const P_used = settle(freeUsedToday(env, user.id));
+  const P_active = !prefetch ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=in.(running,working)&or=(job.is.null,job->>prefetch.is.null,job->>prefetch.eq.false)&select=id`).catch(() => []) : null;
+  const P_pfToday = prefetch ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>pf=eq.1&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`).catch(() => []) : null;
+  const P_running = prefetch ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=in.(running,working)&select=id`).catch(() => []) : null;
+  // 防濫用：60 秒內最多 3 次正式合成
+  { const rc = await P_recent; if (rc.e) throw rc.e; if (rc.v.length >= 3) return json({ error: '操作太頻繁，請等一分鐘再試' }, 429, cors); }
 
   // 同一張照片＋同樣單品組合 7 天內做過 → 直接用舊結果（秒出、不扣點）
-  const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + (wantViews ? '-v' : '') + '-' + variants : null;
-  if (ckey && body.async === true && !body.nocache) {
-    const hit = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.ok&job->>key=eq.${ckey}&created_at=gte.${encodeURIComponent(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,views&order=created_at.desc&limit=1`).catch(() => []);
+  if (useCache) {
+    const hit = await P_hit;
     const r = hit[0] && hit[0].views && hit[0].views.result;
-    if (r) { const used = await freeUsedToday(env, user.id).catch(() => 0); const pr = await getProfile(env, user).catch(() => null); return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
+    if (r) { const u0 = await P_used, p0 = await P_profile; const used = u0.e ? 0 : u0.v; const pr = p0.e ? null : p0.v; return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
   }
   // ---- 預先合成（使用者還在挑尺寸時就先跑；按下「開始」才扣點）----
-  const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + '-' + variants : null;
   if (bkey && stepMode) {
-    const pfRows = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,working,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views,variants,cost,free_used&order=created_at.desc`).catch(() => []);
+    const pfRows = await P_pf;
     for (const g of pfRows) {
       if (g.job && g.job.bkey === bkey) {
         if (prefetch) return json({ id: g.id, prefetch: true, ready: g.status === 'ok' }, 202, cors);
@@ -674,16 +685,16 @@ async function handleTryon(request, env, cors, ctx) {
     }
   }
   if (prefetch) {
-    const pfToday = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>pf=eq.1&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=id`).catch(() => []);
+    const pfToday = await P_pfToday;
     if (pfToday.length >= PREFETCH_DAILY) return json({ skip: true, reason: 'daily' }, 200, cors);
-    const realRunning = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=in.(running,working)&select=id`).catch(() => []);
+    const realRunning = await P_running;
     if (realRunning.length) return json({ skip: true, reason: 'busy' }, 200, cors);
   }
   // 扣點：每個品項 1 點 × 張數；先用今日免費點數，不足再扣點數
   const cost = items.length * variants + (wantViews ? 2 : 0);
   const freeDaily = Number(env.FREE_DAILY || 2);
-  const profile = await getProfile(env, user);
-  const used = await freeUsedToday(env, user.id);
+  const p1 = await P_profile; if (p1.e) throw p1.e; const profile = p1.v;
+  const u1 = await P_used; if (u1.e) throw u1.e; const used = u1.v;
   const freeLeft = Math.max(0, freeDaily - used);
   const useFree = Math.min(freeLeft, cost);
   const payCredits = cost - useFree;
@@ -694,7 +705,7 @@ async function handleTryon(request, env, cors, ctx) {
   // 先登記進行中（鎖住免費額度與限流），再扣點，失敗再退
   let gen;
   if (!prefetch) {
-    const active = await sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=in.(running,working)&or=(job.is.null,job->>prefetch.is.null,job->>prefetch.eq.false)&select=id`).catch(() => []);
+    const active = await P_active;
     if (active.length >= MAX_CONCURRENT) return json({ error: `最多同時試穿 ${MAX_CONCURRENT} 套，等其中一套好了再試這套`, busy: true }, 429, cors);
   }
   try { gen = await sbInsert(env, 'generations', { user_id: user.id, items: types, cost: prefetch ? 0 : payCredits, free_used: prefetch ? 0 : useFree, status: 'working', variants }); }   // 'working'（不是舊的 'running'）：舊資料庫有「每人只能一筆 running」的限制，改用新狀態才能同時跑多套
@@ -913,6 +924,7 @@ async function finishJob(env, userId, g, job, cond = '') {
   if (job.extras_dropped) result.extras_dropped = job.extras_dropped;
   if (job.tm) result.marks = [...job.tm, ['finish', Date.now() - (job.t0 || new Date(g.created_at).getTime())]];
   if (job.fashn_failed) result.fashn_failed = job.fashn_failed;
+  if (job.first === 'fashn' && !job.fashn_failed && !job.first_rejected && !(job.steps || []).some(st => st.type === 'outfit')) result.fashn_only = true;
   if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
   const row = { status: 'ok', cost: job.pay, free_used: job.free, error: job.views_error || null, job: await sealJob(env, job) };
@@ -993,19 +1005,21 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
   if (!job) { const r = await stopJob(env, user.id, g, null, '合成資料異常（已退回點數），請再試一次', g.job.v == null ? '&job->>v=is.null' : `&job->>v=eq.${g.job.v}`); return jout(r || { status: 'running' }, 200, cors); }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? (Array.isArray(job.steps[ch.i].only) ? job.steps[ch.i].only[0] : job.steps[ch.i].type) : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); const p = { done, total: tot + 1, current: cur }; if (job.retries && cur !== 'finish' && cur !== 'views') p.fixing = true; p.labels = job.steps.map(st => Array.isArray(st.only) ? st.only[0] : st.type); if (job.retries) p.retries = job.retries; return p; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], fit: (job.meta || []).map(x => x.fit || null), engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
-  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : (!job.front && !job.prefetch && job.first === 'fashn' && job.chains[0] && job.chains[0].i > 0 && job.chains[0].cur && job.chains[0].cur !== job.person_url && !job.fix_notes) ? { url: job.chains[0].cur, partial: true, step: true } : undefined }, 200, cors);
+  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : (!job.front && !job.prefetch && job.chains[0] && job.chains[0].cur && job.chains[0].cur !== job.person_url && !job.retries && (job.checking === job.chains[0].cur || (job.first === 'fashn' && job.chains[0].i > 0))) ? { url: job.chains[0].cur, partial: job.checking !== job.chains[0].cur, step: true, checking: job.checking === job.chains[0].cur } : undefined }, 200, cors);
   // 取得鎖（避免兩個輪詢同時推進）
   if ((job.lock_until || 0) > Date.now()) return running();
   const touchedMs = new Date(job.touched || g.created_at).getTime();                 // touched 缺失時以建立時間後備
   const stale = !(Date.now() - touchedMs <= RUNNING_STALE_MS) || (Date.now() - (job.t0 || new Date(g.created_at).getTime()) > JOB_MAX_AGE_MS);   // NaN 也視為逾時；整筆超過上限也收尾
   const v = Number(job.v) || 0;
   job.v = v + 1; job.lock_until = Date.now() + LOCK_MS;
-  const lockedV = job.v, vcond = `&job->>v=eq.${lockedV}`;
+  const lockedV = job.v; let vcond = `&job->>v=eq.${lockedV}`;
   const got = await sbPatch(env, `/rest/v1/generations?id=eq.${id}&status=in.(running,working)&${g.job.v == null ? 'job->>v=is.null' : 'job->>v=eq.' + v}`, { job: await sealJob(env, job) }, true).catch(() => []);
   if (!Array.isArray(got) || !got.length) return running();
   // 太久沒進度（使用者關掉頁面等）→ 正面已完成就以成功收尾，否則失敗並退點
   if (stale) { const r = await stopJob(env, user.id, g, job, '合成逾時（已退回點數），請再試一次', vcond); return jout(r || { status: 'running' }, 200, cors); }
   // save 只在鎖還是自己的（版本相符）時寫入
+  // 存檔但不放開鎖（同一輪還要繼續做事）：讓其他輪詢看得到最新進度，例如圖已經好了、正在檢查
+  const checkpoint = async () => { const prev = vcond; job.v += 1; job.touched = new Date().toISOString(); const got = await sbPatch(env, `/rest/v1/generations?id=eq.${id}${prev}`, { job: await sealJob(env, job) }, true).catch(() => null); if (Array.isArray(got) && got.length) vcond = `&job->>v=eq.${job.v}`; else job.v -= 1; };
   const save = async (extra = {}) => { job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString(); await sbPatch(env, `/rest/v1/generations?id=eq.${id}${vcond}`, { job: await sealJob(env, job), ...extra }); };
   const base = job.tok ? `${user.id}/jobs/${id}/${job.tok}` : `${user.id}/jobs/${id}`;
   const t0 = Date.now();
@@ -1062,6 +1076,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
         if (st.type === 'qa') {
           // 品質檢查：一個看圖呼叫；呼叫失敗視為通過。不過關且還沒重做過 → 換 pro 引擎、帶著原因重做一次
           const targets = captionTargets(job.item_steps);
+          if (!job.prefetch && job.checking !== ch.cur) { job.checking = ch.cur; await checkpoint(); }   // 先讓使用者看到這張（標示檢查中），檢查同時進行
           if (!job.cap_done && targets.length) {
             job.cap_done = true;
             try { job.captions = parseCaptions(await visionJson(env, captionPrompt(targets), targets.map(t => t.url), QA_TIMEOUT_MS), job.item_steps); } catch (e) { job.captions = null; job.cap_error = String(e.message).slice(0, 120); }
