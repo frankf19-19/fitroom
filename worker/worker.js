@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.21.2';
+const VERSION = '2.22.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -176,7 +176,10 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
   ].filter(Boolean).join('\n');
 }
 /* ---- 品質：單品文字規格（送出前）與結果品質檢查（送出後） ---- */
-const QA_MODELS = ['google/gemini-2.5-flash', 'openai/gpt-4.1-mini'];
+// 看圖模型（衣服描述＋品質檢查）。2026-11-12 用 22 張人工標記的生成圖實測（qa/qa_eval.mjs）：
+//   gpt-6.1-terra：11 張壞圖抓到 10 張、中位數 2.8 秒；gemini-2.5-flash（原本的）只抓到 6–7 張；gemini-4-argon 全抓到但要 12 秒以上。
+// 第一個失敗（下架、逾時）會自動換下一個。
+const QA_MODELS = ['openai/gpt-6.1-terra', 'google/gemini-2.5-flash'];
 const QA_TIMEOUT_MS = 12000;
 const QA_MIN_ITEM = 7, QA_MIN_IDENTITY = 7, QA_MIN_FRAMING = 6, QA_MIN_FIT = 5;
 // 有圖的單品（純文字髮型略過）：回傳 [{ i: item_steps 索引, n: 單品編號(1 起), type, url }]
