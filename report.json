@@ -1,0 +1,752 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 3.1,
+  "body_kb": 422,
+  "secs": 38.9,
+  "steps": [
+   [
+    "top",
+    10.6
+   ],
+   [
+    "qa",
+    31.8
+   ]
+  ],
+  "first_preview": 31.8,
+  "quality": {
+   "identity": 9,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.5
+   ],
+   [
+    "submit:top",
+    0.8
+   ],
+   [
+    "captions",
+    8.1
+   ],
+   [
+    "done:top",
+    29.3
+   ],
+   [
+    "show",
+    29.3
+   ],
+   [
+    "qa:pass",
+    34.9
+   ],
+   [
+    "finish",
+    36.4
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The top flares more at the hem and has a higher, narrower neckline than the product."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "one_b",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 2.2,
+  "body_kb": 186,
+  "secs": 44.3,
+  "steps": [
+   [
+    "bottom",
+    8.4
+   ],
+   [
+    "qa",
+    15.9
+   ],
+   [
+    "bottom",
+    21.2
+   ],
+   [
+    "qa",
+    37.9
+   ]
+  ],
+  "first_preview": 15.9,
+  "quality": {
+   "identity": 9,
+   "items": [
+    7
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.4
+   ],
+   [
+    "submit:bottom",
+    0.5
+   ],
+   [
+    "captions",
+    6.2
+   ],
+   [
+    "done:bottom",
+    13.7
+   ],
+   [
+    "show",
+    13.7
+   ],
+   [
+    "qa:retry[m6]",
+    19.0
+   ],
+   [
+    "submit:bottom",
+    19.1
+   ],
+   [
+    "done:bottom",
+    35.8
+   ],
+   [
+    "show",
+    35.8
+   ],
+   [
+    "qa:pass",
+    40.3
+   ],
+   [
+    "finish",
+    41.9
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [],
+    "flags": [],
+    "items": [
+     {
+      "m": 6,
+      "t": "bottom",
+      "issue": "Trousers are noticeably narrower and more tapered than the product's loose wide-leg cut; they sit lower and gather above the ankles rather than falling to the feet."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 9,
+    "artifacts": []
+   },
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 7,
+      "issue": "The trousers are more tapered and narrower through the lower legs than the product, with more pronounced front pleats."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 2.4,
+  "body_kb": 525,
+  "secs": 34.4,
+  "steps": [
+   [
+    "top",
+    10.4
+   ],
+   [
+    "bottom",
+    15.6
+   ],
+   [
+    "qa",
+    27.3
+   ]
+  ],
+  "first_preview": 15.6,
+  "quality": {
+   "identity": 9,
+   "items": [
+    8,
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.8
+   ],
+   [
+    "submit:top",
+    0.9
+   ],
+   [
+    "captions",
+    8.0
+   ],
+   [
+    "done:top",
+    13.2
+   ],
+   [
+    "submit:bottom",
+    13.2
+   ],
+   [
+    "done:bottom",
+    24.9
+   ],
+   [
+    "show",
+    24.9
+   ],
+   [
+    "qa:pass",
+    30.6
+   ],
+   [
+    "finish",
+    32.1
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The top is shorter than the product, ending at the waistband rather than the hip, with an uneven hem."
+     },
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "The trousers are slightly warmer and darker beige, with more pronounced ankle tapering and bunching."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "one_c",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 2.4,
+  "body_kb": 387,
+  "secs": 73.3,
+  "steps": [
+   [
+    "top",
+    9.1
+   ],
+   [
+    "qa",
+    14.3
+   ],
+   [
+    "top",
+    20.3
+   ],
+   [
+    "qa",
+    43.7
+   ],
+   [
+    "outfit",
+    48.2
+   ],
+   [
+    "qa",
+    67.0
+   ]
+  ],
+  "first_preview": 14.3,
+  "quality": {
+   "identity": 9,
+   "items": [
+    6
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:30:24.63342+00:00",
+   "queue_s": 2,
+   "gen_s": 16
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.9
+   ],
+   [
+    "submit:top",
+    1.0
+   ],
+   [
+    "captions",
+    6.7
+   ],
+   [
+    "done:top",
+    12.0
+   ],
+   [
+    "show",
+    12.0
+   ],
+   [
+    "qa:retry[extra]",
+    17.9
+   ],
+   [
+    "submit:top",
+    18.0
+   ],
+   [
+    "done:top",
+    41.4
+   ],
+   [
+    "show",
+    41.4
+   ],
+   [
+    "qa:retry[extra,m5]",
+    45.8
+   ],
+   [
+    "submit:outfit",
+    45.8
+   ],
+   [
+    "done:outfit",
+    64.6
+   ],
+   [
+    "show",
+    64.6
+   ],
+   [
+    "qa:retry[m6]",
+    68.1
+   ],
+   [
+    "finish",
+    71.0
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [
+     "black button-front top"
+    ],
+    "flags": [],
+    "items": [
+     {
+      "m": 8,
+      "t": "top",
+      "issue": "The cardigan appears paler and more fitted, with a shorter-looking hem and less visible knit texture."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 9,
+    "artifacts": []
+   },
+   {
+    "extra": [
+     "black top"
+    ],
+    "flags": [],
+    "items": [
+     {
+      "m": 5,
+      "t": "top",
+      "issue": "Cardigan is asymmetric and cropped at the right waist instead of straight and hip-length, with no visible buttoned front."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 9,
+    "artifacts": []
+   },
+   {
+    "verdict": "retry",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 6,
+      "issue": "Cardigan is fully open instead of partially buttoned, and has a visible front pocket absent from the product."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "one_d",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 2.0,
+  "body_kb": 343,
+  "secs": 75.2,
+  "steps": [
+   [
+    "bottom",
+    8.0
+   ],
+   [
+    "qa",
+    15.1
+   ],
+   [
+    "bottom",
+    20.4
+   ],
+   [
+    "qa",
+    39.3
+   ],
+   [
+    "outfit",
+    43.4
+   ],
+   [
+    "qa",
+    67.8
+   ]
+  ],
+  "first_preview": 15.1,
+  "quality": {
+   "identity": 10,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:32:05.658666+00:00",
+   "queue_s": 2,
+   "gen_s": 22
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.4
+   ],
+   [
+    "submit:bottom",
+    0.5
+   ],
+   [
+    "captions",
+    5.9
+   ],
+   [
+    "done:bottom",
+    13.2
+   ],
+   [
+    "show",
+    13.2
+   ],
+   [
+    "qa:retry[extra]",
+    18.4
+   ],
+   [
+    "submit:bottom",
+    18.5
+   ],
+   [
+    "done:bottom",
+    37.4
+   ],
+   [
+    "show",
+    37.4
+   ],
+   [
+    "qa:retry[extra]",
+    41.5
+   ],
+   [
+    "submit:outfit",
+    41.5
+   ],
+   [
+    "done:outfit",
+    65.9
+   ],
+   [
+    "show",
+    65.9
+   ],
+   [
+    "qa:pass",
+    69.8
+   ],
+   [
+    "finish",
+    73.2
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [
+     "dark brown socks"
+    ],
+    "flags": [],
+    "items": [
+     {
+      "m": 8,
+      "t": "bottom",
+      "issue": "The skirt appears slightly warmer brown, with more pronounced central pleats and a less smooth waistband than the product."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 8,
+    "artifacts": []
+   },
+   {
+    "extra": [
+     "dark socks"
+    ],
+    "flags": [],
+    "items": [
+     {
+      "m": 8,
+      "t": "bottom",
+      "issue": "The skirt is warmer brown and slightly less olive than the product photo; the flat waistband is less distinct."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 9,
+    "artifacts": []
+   },
+   {
+    "verdict": "pass",
+    "identity": 10,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "The skirt is more flared and the front pleats are deeper and more pronounced than in the product photo."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "hard",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 2.8,
+  "body_kb": 296,
+  "secs": 60.1,
+  "steps": [
+   [
+    "top",
+    9.3
+   ],
+   [
+    "qa",
+    28.6
+   ],
+   [
+    "top",
+    34.2
+   ],
+   [
+    "qa",
+    55.2
+   ]
+  ],
+  "first_preview": 28.6,
+  "quality": {
+   "identity": 8,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.9
+   ],
+   [
+    "submit:top",
+    1.0
+   ],
+   [
+    "captions",
+    6.6
+   ],
+   [
+    "done:top",
+    25.9
+   ],
+   [
+    "show",
+    25.9
+   ],
+   [
+    "qa:retry[pose_changed,m4]",
+    31.5
+   ],
+   [
+    "submit:top",
+    31.6
+   ],
+   [
+    "done:top",
+    52.5
+   ],
+   [
+    "show",
+    52.5
+   ],
+   [
+    "qa:pass",
+    56.1
+   ],
+   [
+    "finish",
+    57.5
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [],
+    "flags": [
+     "pose_changed"
+    ],
+    "items": [
+     {
+      "m": 4,
+      "t": "top",
+      "issue": "The top has a pointed, bodysuit-like hem extending to the crotch with a flared side flap, rather than a relaxed straight hem at the hips. The neckline is more rounded than the product's wide boat neck"
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 7,
+    "artifacts": [
+     "Measuring tape across the waist is missing, with disconnected hanging fragments and distorted hands.",
+     "Top merges into a pointed underwear-like shape."
+    ]
+   },
+   {
+    "verdict": "pass",
+    "identity": 8,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The hem is more uneven and lifted on one side than the product's straight hem."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": [
+     "The measuring tape is interrupted across the waist and its left end is truncated."
+    ]
+   }
+  ]
+ }
+]
