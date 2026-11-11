@@ -33,7 +33,7 @@ try:
   for name, ppath, its in CASES:
     person = ju(open(ppath, 'rb').read())
     body = {'person': person, 'items': [item(p, t) for p, t in its], 'body': {'height_cm': 165, 'weight_kg': 55}, 'variants': 1, 'views': False, 'async': True, 'key': secrets.token_hex(16), 'aspect': 'auto', 'nocache': True}
-    t0 = time.time(); s, d = call('POST', API + '/api/tryon', body, H); r = {'case': name, 'items': [t for _, t in its], 'submit': s}
+    t0 = time.time(); s, d = call('POST', API + '/api/tryon', body, H); r = {'case': name, 'items': [t for _, t in its], 'submit': s, 'post_secs': round(time.time() - t0, 1), 'body_kb': len(json.dumps(body)) // 1024}
     if not (isinstance(d, dict) and d.get('id')): r['error'] = str(d)[:200]; rep.append(r); print(r); time.sleep(25); continue
     seen = []; first_pv = None
     while time.time() - t0 < 360:
@@ -45,7 +45,7 @@ try:
       if st.get('preview') and first_pv is None: first_pv = round(time.time() - t0, 1)
       res = st.get('result') if st.get('status') == 'ok' else st.get('front')
       if res:
-        r.update({'secs': round(time.time() - t0, 1), 'steps': seen, 'first_preview': first_pv, 'quality': res.get('quality'), 'timing': res.get('timing'), 'engine': res.get('engine'), 'dropped': res.get('extras_dropped')})
+        r.update({'secs': round(time.time() - t0, 1), 'steps': seen, 'first_preview': first_pv, 'quality': res.get('quality'), 'timing': res.get('timing'), 'engine': res.get('engine'), 'dropped': res.get('extras_dropped'), 'marks': [(m[0], round(m[1] / 1000, 1)) for m in (res.get('marks') or [])]})
         url = (res.get('image_urls') or [None])[0]
         if url:
           b = call('GET', url, None, None, raw=True)[1]
