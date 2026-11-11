@@ -1,0 +1,242 @@
+[
+ {
+  "id": "google/gemini-4-carbon",
+  "created": 1794326871,
+  "in": 2,
+  "out": 10
+ },
+ {
+  "id": "google/gemini-4-carbon:batch",
+  "created": 1794326871,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "google/gemini-omni-1.2-flash",
+  "created": 1793898961,
+  "in": 1.5,
+  "out": 9
+ },
+ {
+  "id": "google/gemini-omni-1.1-flash",
+  "created": 1793825668,
+  "in": 1.5,
+  "out": 9
+ },
+ {
+  "id": "openai/gpt-6.1-terra-pro",
+  "created": 1793038556,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "openai/gpt-6.1-terra-pro:batch",
+  "created": 1793038556,
+  "in": 0.5,
+  "out": 2.5
+ },
+ {
+  "id": "openai/gpt-6.1-terra",
+  "created": 1793038409,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "openai/gpt-6.1-terra:batch",
+  "created": 1793038409,
+  "in": 0.5,
+  "out": 2.5
+ },
+ {
+  "id": "google/gemini-4-argon",
+  "created": 1791907477,
+  "in": 2,
+  "out": 10
+ },
+ {
+  "id": "google/gemini-4-argon:batch",
+  "created": 1791907477,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "google/gemini-nano-banana-2.1",
+  "created": 1791300825,
+  "in": 1.5,
+  "out": 7.5
+ },
+ {
+  "id": "openai/gpt-6.1-sol-pro",
+  "created": 1790702886,
+  "in": 2,
+  "out": 10
+ },
+ {
+  "id": "openai/gpt-6.1-sol-pro:batch",
+  "created": 1790702886,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "openai/gpt-6.1-sol",
+  "created": 1790702882,
+  "in": 2,
+  "out": 10
+ },
+ {
+  "id": "openai/gpt-6.1-sol:batch",
+  "created": 1790702882,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "openai/gpt-6-luna-pro",
+  "created": 1790100791,
+  "in": 0.09999999999999999,
+  "out": 0.5
+ },
+ {
+  "id": "openai/gpt-6-luna-pro:batch",
+  "created": 1790100791,
+  "in": 0.049999999999999996,
+  "out": 0.25
+ },
+ {
+  "id": "openai/gpt-6-luna",
+  "created": 1790100786,
+  "in": 0.09999999999999999,
+  "out": 0.5
+ },
+ {
+  "id": "openai/gpt-6-luna:batch",
+  "created": 1790100786,
+  "in": 0.049999999999999996,
+  "out": 0.25
+ },
+ {
+  "id": "openai/gpt-6-sol-pro",
+  "created": 1790100781,
+  "in": 2,
+  "out": 10
+ },
+ {
+  "id": "openai/gpt-6-sol-pro:batch",
+  "created": 1790100781,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "openai/gpt-6-sol",
+  "created": 1790100775,
+  "in": 2,
+  "out": 10
+ },
+ {
+  "id": "openai/gpt-6-sol:batch",
+  "created": 1790100775,
+  "in": 1,
+  "out": 5
+ },
+ {
+  "id": "openai/gpt-6-astra",
+  "created": 1788552838,
+  "in": 10,
+  "out": 50
+ },
+ {
+  "id": "openai/gpt-6-astra:batch",
+  "created": 1788552838,
+  "in": 5,
+  "out": 25
+ },
+ {
+  "id": "openai/gpt-6-astra-pro",
+  "created": 1788552835,
+  "in": 10,
+  "out": 50
+ },
+ {
+  "id": "openai/gpt-6-astra-pro:batch",
+  "created": 1788552835,
+  "in": 5,
+  "out": 25
+ },
+ {
+  "id": "google/gemini-3.8-flash",
+  "created": 1788362056,
+  "in": 0.8250000000000001,
+  "out": 4.125
+ },
+ {
+  "id": "google/gemini-3.8-flash:batch",
+  "created": 1788362056,
+  "in": 0.375,
+  "out": 1.875
+ },
+ {
+  "id": "google/gemini-3.7-flash",
+  "created": 1786640581,
+  "in": 0.75,
+  "out": 3.75
+ },
+ {
+  "id": "google/gemini-3.7-flash:batch",
+  "created": 1786640581,
+  "in": 0.375,
+  "out": 1.875
+ },
+ {
+  "id": "google/gemini-3.6-flash",
+  "created": 1784646733,
+  "in": 0.75,
+  "out": 3.75
+ },
+ {
+  "id": "google/gemini-3.6-flash:batch",
+  "created": 1784646733,
+  "in": 0.375,
+  "out": 1.875
+ },
+ {
+  "id": "google/gemini-3.5-flash-lite",
+  "created": 1784646726,
+  "in": 0.3,
+  "out": 2.5
+ },
+ {
+  "id": "google/gemini-3.5-flash-lite:batch",
+  "created": 1784646726,
+  "in": 0.15,
+  "out": 1.25
+ },
+ {
+  "id": "openai/gpt-5.6-luna-pro",
+  "created": 1783590867,
+  "in": 0.19999999999999998,
+  "out": 1.2
+ },
+ {
+  "id": "openai/gpt-5.6-luna-pro:batch",
+  "created": 1783590867,
+  "in": 0.09999999999999999,
+  "out": 0.6
+ },
+ {
+  "id": "openai/gpt-5.6-luna",
+  "created": 1783590864,
+  "in": 0.19999999999999998,
+  "out": 1.2
+ },
+ {
+  "id": "openai/gpt-5.6-luna:batch",
+  "created": 1783590864,
+  "in": 0.09999999999999999,
+  "out": 0.6
+ },
+ {
+  "id": "openai/gpt-5.6-terra-pro",
+  "created": 1783590861,
+  "in": 2,
+  "out": 12
+ }
+]

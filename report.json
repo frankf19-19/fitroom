@@ -1,0 +1,299 @@
+{
+ "openai/gpt-6.1-terra": {
+  "correct": 18,
+  "of": 22,
+  "false_pass": [
+   "qec1_fashn"
+  ],
+  "false_retry": [
+   "qec1_nbpro [zoomed m8 i8 f5]",
+   "qec2_nb2 [pose_changed m7 i6 f10]",
+   "qe3c3_fashn [ m4 i9 f10]"
+  ],
+  "errors": [],
+  "needs_reasoning": false,
+  "soft": [
+   "qe3c0_fashn→pass []"
+  ],
+  "median_secs": 2.8,
+  "max_secs": 4.6,
+  "rows": [
+   {
+    "id": "qec0_nbpro",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 2.6,
+    "match": 6,
+    "identity": 7,
+    "framing": 5,
+    "flags": [
+     "zoomed"
+    ],
+    "issue": "Trousers are cropped above the ankles with straight hems instead of full-length and softly gathered at the shoes."
+   },
+   {
+    "id": "qec0_kling",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 2.7,
+    "match": 8,
+    "identity": 9,
+    "framing": 10,
+    "flags": [
+     "extra:black jacket/white top"
+    ],
+    "issue": "Trouser legs taper more at the ankles and appear less wide than in the product photo."
+   },
+   {
+    "id": "qec0_fashn",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 3,
+    "match": 9,
+    "identity": 10,
+    "framing": 10,
+    "flags": [],
+    "issue": "The trousers are slightly more tapered and gathered at the ankles than in the product photo."
+   },
+   {
+    "id": "qec0_nb2",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 3.2,
+    "match": 7,
+    "identity": 10,
+    "framing": 10,
+    "flags": [],
+    "issue": "Trousers are shorter and straighter, ending above the shoes instead of falling loosely over them as in the product photo."
+   },
+   {
+    "id": "qec1_kling",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 3.2,
+    "match": 8,
+    "identity": 8,
+    "framing": 10,
+    "flags": [
+     "extra:Blue gingham skirt"
+    ],
+    "issue": "The top appears nearly white rather than pale blue, and its hem is slightly longer and more flared."
+   },
+   {
+    "id": "qec1_nbpro",
+    "expect": "pass",
+    "got": "retry",
+    "secs": 3.1,
+    "match": 8,
+    "identity": 8,
+    "framing": 5,
+    "flags": [
+     "zoomed"
+    ],
+    "issue": "Top appears darker and more saturated blue, with a wavier hem than the product photo."
+   },
+   {
+    "id": "qec2_nb2",
+    "expect": "pass",
+    "got": "retry",
+    "secs": 3,
+    "match": 7,
+    "identity": 6,
+    "framing": 10,
+    "flags": [
+     "pose_changed"
+    ],
+    "issue": "Cardigan is more tightly fitted and gathered at the waist, with a wider lower opening and less visible buttons than the product."
+   },
+   {
+    "id": "qec1_fashn",
+    "expect": "retry",
+    "got": "pass",
+    "secs": 4.6,
+    "match": 8,
+    "identity": 8,
+    "framing": 10,
+    "flags": [],
+    "issue": "Top appears nearly white rather than pale blue, with a more rounded neckline and flared hem."
+   },
+   {
+    "id": "qec2_fashn",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.7,
+    "match": 8,
+    "identity": 9,
+    "framing": 10,
+    "flags": [],
+    "issue": "The cardigan appears more fully closed at the lower front, with less of the black inner layer visible than in the product photo."
+   },
+   {
+    "id": "qec3_nb2",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.7,
+    "match": 7,
+    "identity": 9,
+    "framing": 10,
+    "flags": [],
+    "issue": "The skirt has prominent pleats across the front and a visible pocket, rather than the product's mostly smooth front with restrained side pleats."
+   },
+   {
+    "id": "qec2_kling",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 2.8,
+    "match": 8,
+    "identity": 9,
+    "framing": 10,
+    "flags": [
+     "extra:dark shorts"
+    ],
+    "issue": "Cardigan hangs more loosely and appears slightly longer and less fitted than the product, with a wider open neckline."
+   },
+   {
+    "id": "qec3_fashn",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.5,
+    "match": 8,
+    "identity": 9,
+    "framing": 10,
+    "flags": [],
+    "issue": "Skirt has an added visible waistband button and side pocket; pleat placement differs from the product."
+   },
+   {
+    "id": "qec3_kling",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 2.5,
+    "match": 8,
+    "identity": 8,
+    "framing": 10,
+    "flags": [
+     "extra:striped high-neck blouse"
+    ],
+    "issue": "The skirt has more prominent central pleats and a visible pocket not apparent in the product photo."
+   },
+   {
+    "id": "qec3_nbpro",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 2.8,
+    "match": 7,
+    "identity": 8,
+    "framing": 6,
+    "flags": [
+     "zoomed"
+    ],
+    "issue": "The skirt has multiple prominent pleats across the front instead of the product's mostly smooth front with restrained side pleating."
+   },
+   {
+    "id": "qe3c1_fashn",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 3.4,
+    "match": 8,
+    "identity": 7,
+    "framing": 10,
+    "flags": [
+     "extra:Brown jacket/Gray shorts"
+    ],
+    "issue": "Top is rendered almost white rather than pale blue, and its hem is longer and less structured."
+   },
+   {
+    "id": "qe3c1_fashn_seg",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 3.1,
+    "match": 3,
+    "identity": 7,
+    "framing": 10,
+    "flags": [
+     "pose_changed",
+     "color_wrong"
+    ],
+    "issue": "The light blue sleeveless, loose top is rendered nearly white and tight, with a black sleeve-like section and a shorter hem."
+   },
+   {
+    "id": "qe3c3_fashn_b",
+    "expect": "retry",
+    "got": "retry",
+    "secs": 2.6,
+    "match": 8,
+    "identity": 9,
+    "framing": 10,
+    "flags": [
+     "extra:pinstriped shorts"
+    ],
+    "issue": "The cardigan is mostly closed at the hem rather than open below the buttons, and the button placket is less distinct."
+   },
+   {
+    "id": "qe3c0_fashn_b",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.7,
+    "match": 8,
+    "identity": 10,
+    "framing": 10,
+    "flags": [],
+    "issue": "The top appears more rigid and boxy, with a flatter, wider hem and less natural fabric drape than the product."
+   },
+   {
+    "id": "qe3c0_fashn_p",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.8,
+    "match": 8,
+    "identity": 9,
+    "framing": 10,
+    "flags": [],
+    "issue": "The top appears more flared and boxy, with a straighter, more rigid hem than the product."
+   },
+   {
+    "id": "qe3c2_fashn",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.5,
+    "match": 9,
+    "identity": 10,
+    "framing": 10,
+    "flags": [],
+    "issue": "Trouser legs are slightly more tapered at the ankles than in the product photo."
+   },
+   {
+    "id": "qe3c2_fashn_b",
+    "expect": "pass",
+    "got": "pass",
+    "secs": 2.6,
+    "match": 8,
+    "identity": 10,
+    "framing": 10,
+    "flags": [],
+    "issue": "Trouser legs are shorter and more tapered at the ankles than the full-length, wider product trousers."
+   },
+   {
+    "id": "qe3c3_fashn",
+    "expect": "pass",
+    "got": "retry",
+    "secs": 2.8,
+    "match": 4,
+    "identity": 9,
+    "framing": 10,
+    "flags": [],
+    "issue": "The cardigan is rendered as a pointed, bodysuit-like garment extending to the crotch rather than a straight waist-length hem with an open button front."
+   },
+   {
+    "id": "qe3c0_fashn",
+    "expect": "soft",
+    "got": "pass",
+    "secs": 2.6,
+    "match": 9,
+    "identity": 10,
+    "framing": 10,
+    "flags": [],
+    "issue": "The hem flares outward more and shows a dark blue underside not visible in the product photo."
+   }
+  ]
+ }
+}
