@@ -983,7 +983,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-12-04';
+const BUILD = '2026-11-12-05';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -2541,7 +2541,7 @@ function notifyDone(R){ haptic('success'); toast(`試穿好了：${R.label}，�
 function showRun(R){
   const rec=R.rec; if(!rec) return; R.unseen=false; fgRun=R.seq;
   const d=rec.d; state.runItems=R.runItems; state.result=rec.img; state.resultPerson=rec.person0;
-  state.qaRetried=!!(d.quality&&d.quality.retried); state.notCharged=!!d.not_charged; state.extrasDropped=d.extras_dropped?('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的'):'';
+  state.qaRetried=!!(d.quality&&d.quality.retried); state.notCharged=!!d.not_charged; state.extrasDropped=d.extras_dropped?('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上（不扣點）：一換就會改變你的動作，所以先保留原本的'):'';
   if(curView!=='tryon') go('tryon');
   { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); }
   state.views=null; renderCompare(rec.person0, rec.img);
@@ -2662,7 +2662,7 @@ async function runTryon(opts={}){ let noCredit=false;
     if (imgs.length > 1) {
       finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}" alt="結果 ${i+1}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
-    state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried); state.notCharged = !!d.not_charged; state.extrasDropped = d.extras_dropped ? ('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上：一換就會改變你的動作，所以先保留原本的') : '';
+    state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried); state.notCharged = !!d.not_charged; state.extrasDropped = d.extras_dropped ? ('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上（不扣點）：一換就會改變你的動作，所以先保留原本的') : '';
     renderCompare(person0, finalImg);
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems(); try{ renderFitResult(d.fit); }catch{}
     renderFit(); try{ updateSticky(); }catch{}

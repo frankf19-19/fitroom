@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.23.0';
+const VERSION = '2.23.2';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -938,6 +938,7 @@ async function finishJob(env, userId, g, job, cond = '') {
   // 追查用：每次品質檢查的結論與當時那張圖（被退回的也留著），方便事後看是真的壞還是檢查太嚴
   if (job.qa_log) result.qa_log = job.qa_log;
   if (job.bad_refund) result.not_charged = true;
+  if (job.drop_refund) result.dropped_not_charged = (job.drop_refund.pay || 0) + (job.drop_refund.free || 0);
   if (job.first === 'fashn' && !job.fashn_failed && !job.first_rejected && !(job.steps || []).some(st => st.type === 'outfit')) result.fashn_only = true;
   if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
@@ -1105,10 +1106,11 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
           job.qa_log = [...(job.qa_log || []), { url: ch.cur, verdict: qa.verdict, identity: qa.identity, framing: qa.framing, items: (qa.items || []).map(x => ({ t: x.type, m: x.match, issue: x.issue })), flags: ['mirrored', 'body_changed', 'pose_changed', 'zoomed', 'color_wrong', 'leftover'].filter(k => qa[k]), extra: qa.extra_items || [], artifacts: qa.artifacts || [] }].slice(-4);
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
           job.cands = [...(job.cands || []), { url: ch.cur, s: qaScore(qa), qa }].slice(-3);
-          // 換鞋／帽子／飾品那一步改到人（動作、身形、鏡像）→ 不重畫，直接退回 FASHN 換好衣服的那張
-          if (qa.verdict === 'retry' && ch.base && (qa.pose_changed || qa.body_changed || qa.mirrored || qa.zoomed || (qa.identity != null && qa.identity < QA_MIN_IDENTITY))) {
-            const ost = job.steps.find(s => s.type === 'outfit' && Array.isArray(s.only));
-            job.extras_dropped = ost ? ost.only : null; ch.cur = ch.base; job.qa = { ...qa, verdict: 'pass', fallback: 'base' }; ch.i++; continue;
+          const changed = q => !!(q && (q.pose_changed || q.body_changed || q.mirrored || q.zoomed || (q.identity != null && q.identity < QA_MIN_IDENTITY)));   // 人被動到了
+          const onlySt = job.steps.find(s => s.type === 'outfit' && Array.isArray(s.only));
+          // 排程代跑時（使用者不在線上），配件那一步動到人就直接退回只換好衣服的那張，不多花一次
+          if (qa.verdict === 'retry' && ch.base && changed(qa) && internal && !job.prefetch) {
+            job.extras_dropped = onlySt ? onlySt.only : null; ch.cur = ch.base; job.qa = { ...qa, verdict: 'pass', fallback: 'base' }; ch.i++; continue;
           }
           if (qa.verdict === 'retry' && job.prefetch) { job.pf_bad = true; ch.i++; continue; }   // 預先合成不過關：先不重做（不一定會被用），認領時再重做
           // 重做一次就好（實測：FASHN 被退回後再用 FASHN 重做多半還是不過，換整套引擎的成功率高很多；再多做只是讓人多等）
@@ -1116,10 +1118,12 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
           if (qa.verdict === 'retry' && (job.retries || 0) < maxRetries) {
             job.retries = (job.retries || 0) + 1;
             job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
-            // 有配件步驟（only）但問題出在衣服本身（FASHN 那幾步做壞了）：只重做配件救不回來 → 全部交給整套引擎從頭做
-            const onlySt = job.steps.find(s => s.type === 'outfit' && Array.isArray(s.only));
+            // 有配件步驟（only）時：
+            //  ・配件那一步動到人（動作／身形／鏡像／放大）→ 從「只換好衣服」那張再做一次配件（衣服是 FASHN 做的，人沒動過）
+            //  ・人沒動、但衣服本身不對（FASHN 那幾步做壞了）→ 只重做配件救不回來，全部交給整套引擎從頭做
             const clothingBad = (qa.items || []).some(x => CLOTHING_TYPES.includes(x.type) && x.match != null && x.match < QA_MIN_ITEM) || qa.leftover || qa.color_wrong || (qa.extra_items || []).length > 0;
-            if (!job.steps.some(s => s.type === 'outfit') || (onlySt && clothingBad)) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; job.chains.forEach(c => { c.base = null; }); }   // FASHN 不過關 → 改用整套引擎
+            if (ch.base) job.safe = ch.base;       // 記住「人沒被動過」的那張，最後萬一都不行可以退回它
+            if (!job.steps.some(s => s.type === 'outfit') || (onlySt && clothingBad && !changed(qa))) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; job.chains.forEach(c => { c.base = null; }); }   // FASHN 不過關 → 改用整套引擎
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];
             // 實測 Pro 常會放大裁切、改構圖，重做時維持同一個引擎、只帶上退回原因（使用者開高品質模式才用 Pro）
@@ -1128,9 +1132,15 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             if (!canStart()) return;              // 重送交給下次輪詢（避免同一輪再多一個呼叫）
             continue;
           }
-          // 不再重做：如果之前那張比較好（例如重做後動作反而跑掉），就用之前那張
-          const best = (job.cands || []).reduce((a, b) => (b.s > a.s ? b : a), { s: -1e9 });
-          if (best.url && best.url !== ch.cur && best.s > qaScore(qa)) { ch.cur = best.url; job.qa = { ...best.qa, picked: 'earlier' }; }
+          // 不再重做：挑最好的一張；如果最好的那張還是動到了人，而我們有「只換好衣服、人沒動」的那張 → 用那張，並告訴使用者哪幾樣沒換上
+          if (qa.verdict === 'retry') {
+            const best = (job.cands || []).reduce((a, b) => (b.s > a.s ? b : a), { s: -1e9, qa: qa, url: ch.cur });
+            const safe = ch.base || job.safe;
+            if (safe && changed(best.qa)) {
+              job.extras_dropped = (job.item_steps || []).filter(x => !x.category).map(x => x.type); if (!job.extras_dropped.length) job.extras_dropped = null;
+              ch.cur = safe; job.qa = { ...best.qa, verdict: 'pass', fallback: 'base' };
+            } else if (best.url && best.url !== ch.cur && best.s > qaScore(qa)) { ch.cur = best.url; job.qa = { ...best.qa, picked: 'earlier' }; }
+          }
           ch.i++;
           continue;
         }
@@ -1222,6 +1232,11 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
     // 3) 收尾。重做後最好的那張仍被判定「明顯不合格」→ 圖照給（附說明），但這次不收費
     let badRefund = 0;
     if (!job.prefetch && !job.bad_refund && qaClearlyBad(job.qa)) { badRefund = job.pay || 0; job.bad_refund = { pay: job.pay || 0, free: job.free || 0 }; job.pay = 0; job.free = 0; }
+    // 沒換上的配件（一換就會動到人，所以保留原樣）不收費：每樣退 1 點；用免費額度付的就把額度還回去
+    else if (!job.prefetch && Array.isArray(job.extras_dropped) && job.extras_dropped.length && !job.drop_refund) {
+      const n = job.extras_dropped.length, backPay = Math.min(n, job.pay || 0), backFree = Math.min(n - backPay, job.free || 0);
+      job.drop_refund = { pay: backPay, free: backFree }; job.pay = (job.pay || 0) - backPay; job.free = (job.free || 0) - backFree; badRefund = backPay;
+    }
     const fin = await finishJob(env, user.id, g, job, vcond);
     if (!fin.got) return running();
     if (badRefund > 0) { await rpc(env, 'add_credits', { p_user: user.id, p_amount: badRefund }).catch(() => {}); if (fin.result.credits != null) fin.result.credits += badRefund; }

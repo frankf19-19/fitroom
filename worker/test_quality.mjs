@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.23.0');
+assert.equal(T.VERSION, '2.23.2');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -272,4 +272,18 @@ console.log('vision calls in paid flow: captions 1 + QA per attempt; generations
   queueStatus = [];
   r = await poll(); r = r.status === 'ok' ? r : await poll();
   assert.equal(r.status, 'ok'); assert.match(calls.submits[calls.submits.length - 1].url, /nano-banana-2\/edit/); assert.ok(r.result.fashn_failed);
+  // 衣服＋鞋子：鞋子那一步動到姿勢 → 從「只換好衣服」那張再做一次鞋子；還是動到 → 交出只換好衣服的那張，並告知鞋子沒換上
+  { const shoes = { type: 'shoes', image_url: 'https://img/shoes.jpg' };
+    fresh({ steps: [{ ...top }, { type: 'outfit', engine: 0, only: ['shoes'] }, { type: 'qa' }], item_steps: [top, shoes], meta: [{ type: 'top', fit: null }, { type: 'shoes', fit: null }], pay: 2, cost: 2 });
+    visionQueue = [ { items: [{ n: 1, description: 'Light blue top' }, { n: 2, description: 'White clogs' }] },
+      { identity: 9, items: [{ n: 1, match: 9 }, { n: 2, match: 9 }], framing: 10, pose_changed: true },
+      { identity: 9, items: [{ n: 1, match: 9 }, { n: 2, match: 9 }], framing: 10, pose_changed: true } ];
+    r = await pollOnce();                       // 送出 FASHN 上衣
+    r = await pollOnce();                       // 規格 → 上衣完成 → 送出鞋子（整套引擎，只換鞋）
+    assert.equal(calls.submits.length, 2); assert.match(calls.submits[1].url, /nano-banana-2/); const base = row.job.chains[0].base; assert.ok(base, 'clothes-only picture remembered');
+    assert.deepEqual(calls.submits[1].images, [base, 'https://img/shoes.jpg'], 'shoe step edits the FASHN result, shoe image only'); assert.match(calls.submits[1].prompt, /change ONLY the items listed above/);
+    r = await poll();                           // 鞋子完成 → 檢查：姿勢變了 → 從 base 再做一次鞋子
+    assert.equal(row.job.retries, 1); assert.equal(calls.submits.length, 3); assert.deepEqual(calls.submits[2].images, [base, 'https://img/shoes.jpg']); assert.match(calls.submits[2].prompt, /pose changed/);
+    r = await poll(); r = r.status === 'ok' ? r : await poll();
+    assert.equal(r.status, 'ok'); assert.deepEqual(r.result.extras_dropped, ['shoes']); assert.equal(r.result.dropped_not_charged, 1); assert.equal(r.result.charged, 1, 'only the top is charged'); assert.deepEqual(calls.rpc.map(x => x.p_amount), [1], 'the shoe point is refunded'); assert.equal(r.result.image_urls[0] === base || /front-0-/.test(r.result.image_urls[0]), true); assert.ok(!r.result.not_charged); assert.equal(calls.submits.length, 3); }
   globalThis.fetch = _f; console.log('fashn ladder + fallback: ok'); }
