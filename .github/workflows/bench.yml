@@ -1,0 +1,24 @@
+name: 測試：生圖速度與品質基準（會花 AI 費用）
+on:
+  workflow_dispatch:
+    inputs:
+      cases: { description: 'JSON [[名稱, 人物照, [[商品id, 類別],...]],...]，留空用預設', default: '', required: false }
+      tag: { description: '結果分支後綴', default: 'a', required: false }
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -q pillow
+      - env:
+          SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          CASES: ${{ inputs.cases }}
+        run: python3 qa/bench_test.py
+      - if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b qa-bench-${{ inputs.tag || 'a' }} && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m bench
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-bench-${{ inputs.tag || 'a' }}
