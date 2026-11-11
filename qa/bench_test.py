@@ -35,14 +35,15 @@ try:
     body = {'person': person, 'items': [item(p, t) for p, t in its], 'body': {'height_cm': 165, 'weight_kg': 55}, 'variants': 1, 'views': False, 'async': True, 'key': secrets.token_hex(16), 'aspect': 'auto', 'nocache': True}
     t0 = time.time(); s, d = call('POST', API + '/api/tryon', body, H); r = {'case': name, 'items': [t for _, t in its], 'submit': s, 'post_secs': round(time.time() - t0, 1), 'body_kb': len(json.dumps(body)) // 1024}
     if not (isinstance(d, dict) and d.get('id')): r['error'] = str(d)[:200]; rep.append(r); print(r); time.sleep(25); continue
-    seen = []; first_pv = None
+    seen = []; first_pv = None; fast = False; last_fast = 0
     while time.time() - t0 < 360:
-      time.sleep(1.5)
+      time.sleep(0.15 if fast else 1.5); fast = False
       s, st = call('GET', f"{API}/api/tryon/status?id={d['id']}", None, H)
       if not isinstance(st, dict): continue
       pg = st.get('progress') or {}; cur = pg.get('current')
       if cur and (not seen or seen[-1][0] != cur): seen.append((cur, round(time.time() - t0, 1)))
       if st.get('preview') and first_pv is None: first_pv = round(time.time() - t0, 1)
+      if st.get('checking') and time.time() - last_fast > 4: fast = True; last_fast = time.time()
       res = st.get('result') if st.get('status') == 'ok' else st.get('front')
       if res:
         r.update({'secs': round(time.time() - t0, 1), 'steps': seen, 'first_preview': first_pv, 'quality': res.get('quality'), 'timing': res.get('timing'), 'engine': res.get('engine'), 'dropped': res.get('extras_dropped'), 'marks': [(m[0], round(m[1] / 1000, 1)) for m in (res.get('marks') or [])]})

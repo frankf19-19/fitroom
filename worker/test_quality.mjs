@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.21.0');
+assert.equal(T.VERSION, '2.21.1');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -97,7 +97,9 @@ visionQueue = [
   { identity: 9, items: [{ n: 1, match: 9, issue: '' }, { n: 2, match: 8, issue: '' }], framing: 9, artifacts: [], verdict: 'pass' }
 ];
 queueStatus = ['IN_PROGRESS', 'COMPLETED', 'IN_PROGRESS', 'COMPLETED'];
-const poll = async () => { const r = await T.handleTryonStatus(new Request('https://w/api/tryon/status?id=1', { headers: { Authorization: 'Bearer tok' } }), env, {}, new URL('https://w/api/tryon/status?id=1')); return r.json(); };
+// 跟前端一樣：伺服器回報「圖好了、等品質檢查」（checking）時馬上再問一次，檢查才會開始
+const pollOnce = async () => { const r = await T.handleTryonStatus(new Request('https://w/api/tryon/status?id=1', { headers: { Authorization: 'Bearer tok' } }), env, {}, new URL('https://w/api/tryon/status?id=1')); return r.json(); };
+const poll = async () => { let r = await pollOnce(); if (r && r.status === 'running' && r.checking) r = await pollOnce(); return r; };
 
 let s = await poll();   // 1: 規格 + 送出
 assert.equal(s.status, 'running'); assert.equal(s.progress.current, 'outfit'); assert.ok(!s.progress.fixing);

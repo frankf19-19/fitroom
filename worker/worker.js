@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.21.0';
+const VERSION = '2.21.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -537,7 +537,7 @@ function taipeiDayStart() {
 }
 // 今日已用免費點數（含進行中的，避免同時連按繞過）
 async function freeUsedToday(env, userId) {
-  const rows = await sb(env, `/rest/v1/generations?user_id=eq.${userId}&status=in.(ok,running)&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=free_used`);
+  const rows = await sb(env, `/rest/v1/generations?user_id=eq.${userId}&status=in.(ok,running,working)&created_at=gte.${encodeURIComponent(taipeiDayStart())}&select=free_used`);
   return rows.reduce((a, r) => a + (r.free_used || 0), 0);
 }
 
@@ -654,7 +654,7 @@ async function handleTryon(request, env, cors, ctx) {
   const ckey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + (wantViews ? '-v' : '') + '-' + variants : null;
   const bkey = typeof body.key === 'string' && /^[a-f0-9]{16,64}$/.test(body.key) ? body.key + fsig + '-' + variants : null;
   const useCache = !!(ckey && body.async === true && !body.nocache);
-  const P_sweep = settle(sweepStale(env, user.id));
+  const P_sweep = settle(sweepStale(env, user.id, true));   // cheap：一個查詢就夠（touched 一定晚於建立時間）
   const P_profile = settle(getProfile(env, user));
   const P_hit = useCache ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&status=eq.ok&job->>key=eq.${ckey}&created_at=gte.${encodeURIComponent(new Date(Date.now() - 7 * 864e5).toISOString())}&select=id,views&order=created_at.desc&limit=1`).catch(() => []) : null;
   const P_pf = (bkey && stepMode) ? sb(env, `/rest/v1/generations?user_id=eq.${user.id}&job->>prefetch=eq.true&status=in.(running,working,ok)&created_at=gte.${encodeURIComponent(new Date(Date.now() - 30 * 60000).toISOString())}&select=id,status,job,views,variants,cost,free_used&order=created_at.desc`).catch(() => []) : null;
@@ -1005,7 +1005,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
   if (!job) { const r = await stopJob(env, user.id, g, null, '合成資料異常（已退回點數），請再試一次', g.job.v == null ? '&job->>v=is.null' : `&job->>v=eq.${g.job.v}`); return jout(r || { status: 'running' }, 200, cors); }
   const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? (Array.isArray(job.steps[ch.i].only) ? job.steps[ch.i].only[0] : job.steps[ch.i].type) : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); const p = { done, total: tot + 1, current: cur }; if (job.retries && cur !== 'finish' && cur !== 'views') p.fixing = true; p.labels = job.steps.map(st => Array.isArray(st.only) ? st.only[0] : st.type); if (job.retries) p.retries = job.retries; return p; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], fit: (job.meta || []).map(x => x.fit || null), engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
-  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : (!job.front && !job.prefetch && job.chains[0] && job.chains[0].cur && job.chains[0].cur !== job.person_url && !job.retries && (job.checking === job.chains[0].cur || (job.first === 'fashn' && job.chains[0].i > 0))) ? { url: job.chains[0].cur, partial: job.checking !== job.chains[0].cur, step: true, checking: job.checking === job.chains[0].cur } : undefined }, 200, cors);
+  const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), checking: (!job.front && job.chains[0] && job.checking && job.checking === job.chains[0].cur && job.qa_for !== job.chains[0].cur) || undefined, preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : (!job.front && !job.prefetch && job.chains[0] && job.chains[0].cur && job.chains[0].cur !== job.person_url && !job.retries && (job.checking === job.chains[0].cur || (job.first === 'fashn' && job.chains[0].i > 0))) ? { url: job.chains[0].cur, partial: job.checking !== job.chains[0].cur, step: true, checking: job.checking === job.chains[0].cur } : undefined }, 200, cors);
   // 取得鎖（避免兩個輪詢同時推進）
   if ((job.lock_until || 0) > Date.now()) return running();
   const touchedMs = new Date(job.touched || g.created_at).getTime();                 // touched 缺失時以建立時間後備
@@ -1076,7 +1076,8 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
         if (st.type === 'qa') {
           // 品質檢查：一個看圖呼叫；呼叫失敗視為通過。不過關且還沒重做過 → 換 pro 引擎、帶著原因重做一次
           const targets = captionTargets(job.item_steps);
-          if (!job.prefetch && job.checking !== ch.cur) { job.checking = ch.cur; await checkpoint(); }   // 先讓使用者看到這張（標示檢查中），檢查同時進行
+          // 先回報「圖好了、檢查中」讓使用者馬上看到這張，品質檢查留到下一次輪詢（前端收到後會立刻再問一次）。排程代跑時不必等。
+          if (!job.prefetch && !internal && job.checking !== ch.cur) { job.checking = ch.cur; mark('show'); return; }
           if (!job.cap_done && targets.length) {
             job.cap_done = true;
             try { job.captions = parseCaptions(await visionJson(env, captionPrompt(targets), targets.map(t => t.url), QA_TIMEOUT_MS), job.item_steps); } catch (e) { job.captions = null; job.cap_error = String(e.message).slice(0, 120); }
@@ -1086,6 +1087,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
           try { qa = normalizeQa(await visionJson(env, qaPrompt(targets, job.captions), [ch.cur, job.person_url, ...targets.map(t => t.url)], QA_TIMEOUT_MS), targets); }
           catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
           qa.chain = ci; qa.attempt = (job.retries || 0) + 1; mark('qa:' + qa.verdict);
+          job.qa_for = ch.cur;
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
           job.cands = [...(job.cands || []), { url: ch.cur, s: qaScore(qa), qa }].slice(-3);
           // 換鞋／帽子／飾品那一步改到人（動作、身形、鏡像）→ 不重畫，直接退回 FASHN 換好衣服的那張
