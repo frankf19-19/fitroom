@@ -1,0 +1,124 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 3.3,
+  "body_kb": 422,
+  "secs": 34.5,
+  "steps": [
+   [
+    "top",
+    9.3
+   ]
+  ],
+  "first_preview": null,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.5
+   ],
+   [
+    "submit:top",
+    0.7
+   ],
+   [
+    "captions",
+    6.0
+   ],
+   [
+    "done:top",
+    26.3
+   ],
+   [
+    "qa:pass",
+    30.2
+   ],
+   [
+    "finish",
+    31.5
+   ]
+  ]
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.1,
+  "body_kb": 525,
+  "secs": 36.5,
+  "steps": [
+   [
+    "top",
+    9.0
+   ],
+   [
+    "bottom",
+    19.0
+   ]
+  ],
+  "first_preview": 19.0,
+  "quality": {
+   "identity": 10,
+   "items": [
+    10,
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.9
+   ],
+   [
+    "submit:top",
+    1.0
+   ],
+   [
+    "captions",
+    6.0
+   ],
+   [
+    "done:top",
+    15.6
+   ],
+   [
+    "submit:bottom",
+    15.7
+   ],
+   [
+    "done:bottom",
+    30.1
+   ],
+   [
+    "qa:pass",
+    32.1
+   ],
+   [
+    "finish",
+    33.5
+   ]
+  ]
+ }
+]
