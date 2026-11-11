@@ -1,0 +1,210 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 3.9,
+  "body_kb": 422,
+  "secs": 32.3,
+  "steps": [
+   [
+    "top",
+    9.7
+   ]
+  ],
+  "first_preview": null,
+  "quality": {
+   "identity": 10,
+   "items": [
+    10
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.3
+   ],
+   [
+    "submit:top",
+    1.4
+   ],
+   [
+    "captions",
+    5.9
+   ],
+   [
+    "done:top",
+    24.2
+   ],
+   [
+    "qa:pass",
+    26.8
+   ],
+   [
+    "finish",
+    28.5
+   ]
+  ]
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.7,
+  "body_kb": 525,
+  "secs": 41.7,
+  "steps": [
+   [
+    "top",
+    10.7
+   ],
+   [
+    "bottom",
+    21.1
+   ]
+  ],
+  "first_preview": 21.1,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "submit:top",
+    1.3
+   ],
+   [
+    "captions",
+    7.0
+   ],
+   [
+    "done:top",
+    17.4
+   ],
+   [
+    "submit:bottom",
+    17.5
+   ],
+   [
+    "done:bottom",
+    32.9
+   ],
+   [
+    "qa:pass",
+    36.7
+   ],
+   [
+    "finish",
+    38.0
+   ]
+  ]
+ },
+ {
+  "case": "three",
+  "items": [
+   "top",
+   "bottom",
+   "shoes"
+  ],
+  "submit": 202,
+  "post_secs": 3.2,
+  "body_kb": 362,
+  "secs": 58.8,
+  "steps": [
+   [
+    "top",
+    9.9
+   ],
+   [
+    "bottom",
+    17.7
+   ],
+   [
+    "shoes",
+    30.7
+   ]
+  ],
+  "first_preview": 17.7,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    8,
+    10
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-11T16:46:18.468189+00:00",
+   "queue_s": 3,
+   "gen_s": 21
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.1
+   ],
+   [
+    "submit:top",
+    1.2
+   ],
+   [
+    "captions",
+    6.7
+   ],
+   [
+    "done:top",
+    14.5
+   ],
+   [
+    "submit:bottom",
+    14.5
+   ],
+   [
+    "done:bottom",
+    27.4
+   ],
+   [
+    "submit:outfit",
+    27.4
+   ],
+   [
+    "done:outfit",
+    50.6
+   ],
+   [
+    "qa:pass",
+    53.6
+   ],
+   [
+    "finish",
+    55.6
+   ]
+  ]
+ }
+]
