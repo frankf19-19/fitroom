@@ -1,0 +1,102 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "secs": 32.0,
+  "steps": [
+   [
+    "top",
+    12.8
+   ]
+  ],
+  "first_preview": null,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "secs": 44.0,
+  "steps": [
+   [
+    "top",
+    10.0
+   ],
+   [
+    "bottom",
+    20.0
+   ]
+  ],
+  "first_preview": 20.0,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null
+ },
+ {
+  "case": "three",
+  "items": [
+   "top",
+   "bottom",
+   "shoes"
+  ],
+  "submit": 202,
+  "secs": 78.2,
+  "steps": [
+   [
+    "top",
+    11.0
+   ],
+   [
+    "bottom",
+    17.2
+   ],
+   [
+    "shoes",
+    28.7
+   ]
+  ],
+  "first_preview": 17.2,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    9,
+    9
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T16:30:55.947448+00:00",
+   "queue_s": 3,
+   "gen_s": 19
+  },
+  "engine": "outfit",
+  "dropped": null
+ }
+]
