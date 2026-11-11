@@ -1679,6 +1679,7 @@ function pImg(p,w){ const ws=thumbUrl(p.image_url,w,p.id), px=CONFIG.WORKER_URL+
   const list=[]; if(p.thumb_url&&w<=480) list.push(p.thumb_url); list.push(ws); if(o&&o!==ws) list.push(o); list.push(px);
   const enc=u=>String(u).replace(/\|/g,'%7C'); return { src:list[0], fb:list.slice(1).map(enc).join('|') }; }
 function imgFb(el){ const l=(el.dataset.fb||'').split('|').filter(Boolean); if(!l.length){ el.onerror=null; return; } el.src=l.shift(); el.dataset.fb=l.join('|'); }
+window.imgFb=imgFb;   // 圖片的 onerror 寫在 HTML 屬性裡，只看得到全域函式（整支程式包在 __tryonBoot 內），沒掛上去備用圖就不會生效
 function thumbUrl(u,w,id){ try{ if(!/^https?:/.test(u)) return u; const src=id?CONFIG.WORKER_URL+'/api/img?id='+id:u; return 'https://wsrv.nl/?url='+encodeURIComponent(src)+'&w='+(w||420)+'&h='+Math.round((w||420)*1.33)+'&fit=inside&output=webp&q=78&il'; }catch{ return u; } }
 const SHOP_TW=Math.min(420,Math.max(240,Math.round(Math.min(innerWidth||390,1100)/(innerWidth>=700?4:2)*Math.min(devicePixelRatio||1,2)/20)*20));
 function priceTxt(p){ return p&&p.price>0 ? ((p.currency&&p.currency!=='TWD')?p.currency+' ':'NT$ ')+Number(p.price).toLocaleString() : ''; }

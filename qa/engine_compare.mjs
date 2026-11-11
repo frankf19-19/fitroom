@@ -35,6 +35,13 @@ for (const [ci, [personPath, pid, type]] of CASES.entries()) {
     nbpro: () => falRun('fal-ai/nano-banana-pro/edit', { prompt, image_urls: [person, garment], num_images: 1, output_format: 'jpeg', resolution: '2K' }),
     fashn: () => falRun('fal-ai/fashn/tryon/v1.6', { model_image: person, garment_image: garment, category: type === 'top' ? 'tops' : type === 'bottom' ? 'bottoms' : 'one-pieces', mode: 'quality', garment_photo_type: 'auto', output_format: 'jpeg' }),
     kling: () => falRun('fal-ai/kling/v1-5/kolors-virtual-try-on', { human_image_url: person, garment_image_url: garment }),
+    fashn_b: () => falRun('fal-ai/fashn/tryon/v1.6', { model_image: person, garment_image: garment, category: type === 'top' ? 'tops' : type === 'bottom' ? 'bottoms' : 'one-pieces', mode: 'balanced', garment_photo_type: 'auto', output_format: 'jpeg' }),
+    fashn_p: () => falRun('fal-ai/fashn/tryon/v1.6', { model_image: person, garment_image: garment, category: type === 'top' ? 'tops' : type === 'bottom' ? 'bottoms' : 'one-pieces', mode: 'performance', garment_photo_type: 'auto', output_format: 'jpeg' }),
+    fashn_seg: () => falRun('fal-ai/fashn/tryon/v1.6', { model_image: person, garment_image: garment, category: type === 'top' ? 'tops' : type === 'bottom' ? 'bottoms' : 'one-pieces', mode: 'quality', garment_photo_type: 'auto', segmentation_free: false, output_format: 'jpeg' }),
+    fashn_model: () => falRun('fal-ai/fashn/tryon/v1.6', { model_image: person, garment_image: garment, category: type === 'top' ? 'tops' : type === 'bottom' ? 'bottoms' : 'one-pieces', mode: 'quality', garment_photo_type: 'model', output_format: 'jpeg' }),
+    fmax1: () => falRun('fal-ai/fashn/tryon/max', { model_image: person, product_image: garment, generation_mode: 'fast', resolution: '1k', output_format: 'jpeg' }),
+    fmax2: () => falRun('fashn/tryon/max', { model_image: person, product_image: garment, generation_mode: 'fast', resolution: '1k', output_format: 'jpeg' }),
+    fmax3: () => falRun('fal-ai/fashn/tryon-max', { model_image: person, product_image: garment, generation_mode: 'fast', resolution: '1k', output_format: 'jpeg' }),
   };
   await Promise.all(ENGINES.map(async e => {
     try {
