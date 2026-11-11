@@ -20,11 +20,15 @@ if (!models.length) {
   models = [...new Set(['google/gemini-2.5-flash', 'openai/gpt-4.1-mini', ...cheapNew])];
 }
 console.log('models', models);
+const NEEDS_REASONING = new Set();
 async function ask(model, prompt, imgs) {
   const t0 = Date.now();
-  const r = await fetch('https://fal.run/openrouter/router/vision', { method: 'POST', headers: { Authorization: 'Key ' + KEY, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(40000),
-    body: JSON.stringify({ model, prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000, image_urls: imgs }) });
-  const t = await r.text(); const secs = (Date.now() - t0) / 1000;
+  const send = extra => fetch('https://fal.run/openrouter/router/vision', { method: 'POST', headers: { Authorization: 'Key ' + KEY, 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(60000),
+    body: JSON.stringify({ model, prompt, system_prompt: 'You are a precise assistant. Reply with a single valid JSON object only, no markdown.', temperature: 0.3, max_tokens: 3000, image_urls: imgs, ...extra }) });
+  let r = await send(NEEDS_REASONING.has(model) ? { reasoning: true } : {});
+  let t = await r.text();
+  if (!r.ok && /Reasoning is mandatory/i.test(t)) { NEEDS_REASONING.add(model); r = await send({ reasoning: true }); t = await r.text(); }
+  const secs = (Date.now() - t0) / 1000;
   if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + t.slice(0, 160));
   const d = JSON.parse(t); const txt = String(d.output ?? d.text ?? '');
   const m = txt.replace(/```json|```/g, '').match(/\{[\s\S]*\}/); if (!m) throw new Error('no json: ' + txt.slice(0, 120));
@@ -48,7 +52,7 @@ for (const model of models) {
   const clear = rows.filter(r => r.expect !== 'soft'), ok = clear.filter(r => r.got === r.expect);
   const secs = rows.filter(r => r.secs).map(r => r.secs).sort((a, b) => a - b);
   report[model] = { correct: ok.length, of: clear.length, false_pass: clear.filter(r => r.expect === 'retry' && r.got === 'pass').map(r => r.id), false_retry: clear.filter(r => r.expect === 'pass' && r.got === 'retry').map(r => r.id + ' [' + (r.flags || []).join(',') + ' m' + r.match + ' i' + r.identity + ' f' + r.framing + ']'), errors: rows.filter(r => r.got === 'error').map(r => r.id + ': ' + r.error).slice(0, 3),
-    soft: rows.filter(r => r.expect === 'soft').map(r => r.id + '→' + r.got + ' [' + (r.flags || []).join(',') + ']'), median_secs: secs[Math.floor(secs.length / 2)], max_secs: secs[secs.length - 1], rows };
+    needs_reasoning: NEEDS_REASONING.has(model), soft: rows.filter(r => r.expect === 'soft').map(r => r.id + '→' + r.got + ' [' + (r.flags || []).join(',') + ']'), median_secs: secs[Math.floor(secs.length / 2)], max_secs: secs[secs.length - 1], rows };
   console.log(model, JSON.stringify({ ...report[model], rows: undefined }));
 }
 writeFileSync('out/report.json', JSON.stringify(report, null, 1));
