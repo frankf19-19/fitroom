@@ -1,0 +1,23 @@
+name: 測試：品質檢查準確度（看圖模型比較）
+on:
+  workflow_dispatch:
+    inputs:
+      models: { description: '要比較的模型（逗號分隔，留空＝目前的兩個＋最新的便宜模型）', default: '', required: false }
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    permissions: { contents: write }
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - env:
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          MODELS: ${{ inputs.models }}
+        run: node qa/qa_eval.mjs
+      - if: always()
+        run: |
+          cd out && git init -q && git checkout -q -b qa-qaeval && git add -A
+          git -c user.name=bot -c user.email=b@b commit -q -m qaeval
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" qa-qaeval

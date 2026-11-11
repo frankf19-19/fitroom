@@ -1,0 +1,209 @@
+[
+ {
+  "id": "qec0_nb2",
+  "person": "qec0_person.jpg",
+  "garment": "qec0_garment.jpg",
+  "result": "qec0_nb2.jpg",
+  "type": "bottom",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec0_fashn",
+  "person": "qec0_person.jpg",
+  "garment": "qec0_garment.jpg",
+  "result": "qec0_fashn.jpg",
+  "type": "bottom",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec0_kling",
+  "person": "qec0_person.jpg",
+  "garment": "qec0_garment.jpg",
+  "result": "qec0_kling.jpg",
+  "type": "bottom",
+  "expect": "retry",
+  "why": "extra jacket copied from product photo"
+ },
+ {
+  "id": "qec0_nbpro",
+  "person": "qec0_person.jpg",
+  "garment": "qec0_garment.jpg",
+  "result": "qec0_nbpro.jpg",
+  "type": "bottom",
+  "expect": "retry",
+  "why": "pose and framing changed, shoes changed"
+ },
+ {
+  "id": "qec1_fashn",
+  "person": "qec1_person.jpg",
+  "garment": "qec1_garment.jpg",
+  "result": "qec1_fashn.jpg",
+  "type": "top",
+  "expect": "retry",
+  "why": "top is white instead of light blue"
+ },
+ {
+  "id": "qec1_kling",
+  "person": "qec1_person.jpg",
+  "garment": "qec1_garment.jpg",
+  "result": "qec1_kling.jpg",
+  "type": "top",
+  "expect": "retry",
+  "why": "skirt added from product photo"
+ },
+ {
+  "id": "qec1_nbpro",
+  "person": "qec1_person.jpg",
+  "garment": "qec1_garment.jpg",
+  "result": "qec1_nbpro.jpg",
+  "type": "top",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec2_nb2",
+  "person": "qec2_person.jpg",
+  "garment": "qec2_garment.jpg",
+  "result": "qec2_nb2.jpg",
+  "type": "top",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec2_fashn",
+  "person": "qec2_person.jpg",
+  "garment": "qec2_garment.jpg",
+  "result": "qec2_fashn.jpg",
+  "type": "top",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec2_kling",
+  "person": "qec2_person.jpg",
+  "garment": "qec2_garment.jpg",
+  "result": "qec2_kling.jpg",
+  "type": "top",
+  "expect": "retry",
+  "why": "shorts added"
+ },
+ {
+  "id": "qec3_nb2",
+  "person": "qec3_person.jpg",
+  "garment": "qec3_garment.jpg",
+  "result": "qec3_nb2.jpg",
+  "type": "bottom",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec3_fashn",
+  "person": "qec3_person.jpg",
+  "garment": "qec3_garment.jpg",
+  "result": "qec3_fashn.jpg",
+  "type": "bottom",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qec3_kling",
+  "person": "qec3_person.jpg",
+  "garment": "qec3_garment.jpg",
+  "result": "qec3_kling.jpg",
+  "type": "bottom",
+  "expect": "retry",
+  "why": "top replaced by striped shirt from product photo"
+ },
+ {
+  "id": "qec3_nbpro",
+  "person": "qec3_person.jpg",
+  "garment": "qec3_garment.jpg",
+  "result": "qec3_nbpro.jpg",
+  "type": "bottom",
+  "expect": "retry",
+  "why": "framing zoomed / pose changed"
+ },
+ {
+  "id": "qe3c1_fashn",
+  "person": "qe3c1_person.jpg",
+  "garment": "qe3c1_garment.jpg",
+  "result": "qe3c1_fashn.jpg",
+  "type": "top",
+  "expect": "retry",
+  "why": "brown jacket artifact"
+ },
+ {
+  "id": "qe3c1_fashn_seg",
+  "person": "qe3c1_person.jpg",
+  "garment": "qe3c1_garment.jpg",
+  "result": "qe3c1_fashn_seg.jpg",
+  "type": "top",
+  "expect": "retry",
+  "why": "black jacket artifact, top white"
+ },
+ {
+  "id": "qe3c3_fashn_b",
+  "person": "qe3c3_person.jpg",
+  "garment": "qe3c3_garment.jpg",
+  "result": "qe3c3_fashn_b.jpg",
+  "type": "top",
+  "expect": "retry",
+  "why": "extra grey skirt"
+ },
+ {
+  "id": "qe3c0_fashn_b",
+  "person": "qe3c0_person.jpg",
+  "garment": "qe3c0_garment.jpg",
+  "result": "qe3c0_fashn_b.jpg",
+  "type": "top",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qe3c0_fashn_p",
+  "person": "qe3c0_person.jpg",
+  "garment": "qe3c0_garment.jpg",
+  "result": "qe3c0_fashn_p.jpg",
+  "type": "top",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qe3c2_fashn",
+  "person": "qe3c2_person.jpg",
+  "garment": "qe3c2_garment.jpg",
+  "result": "qe3c2_fashn.jpg",
+  "type": "bottom",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qe3c2_fashn_b",
+  "person": "qe3c2_person.jpg",
+  "garment": "qe3c2_garment.jpg",
+  "result": "qe3c2_fashn_b.jpg",
+  "type": "bottom",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qe3c3_fashn",
+  "person": "qe3c3_person.jpg",
+  "garment": "qe3c3_garment.jpg",
+  "result": "qe3c3_fashn.jpg",
+  "type": "top",
+  "expect": "pass",
+  "why": ""
+ },
+ {
+  "id": "qe3c0_fashn",
+  "person": "qe3c0_person.jpg",
+  "garment": "qe3c0_garment.jpg",
+  "result": "qe3c0_fashn.jpg",
+  "type": "top",
+  "expect": "soft",
+  "why": "old cap sleeves still visible at the shoulders (leftover)"
+ }
+]
