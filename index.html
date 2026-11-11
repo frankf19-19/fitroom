@@ -983,7 +983,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-09-02';
+const BUILD = '2026-11-12-01';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -2609,7 +2609,7 @@ async function runTryon(opts={}){ let noCredit=false;
       R.jobId=d.id; pendAdd(d.id);
       if ($('faceLock').classList.contains('on')) getFaceDetector().catch(()=>{});   // 等待時先載入臉部偵測，結果出來就能馬上鎖臉
       while (true) {
-        await new Promise(r=>setTimeout(r, (d.claimed||wasReady) && Date.now()-t0 < 3000 ? 250 : (Date.now()-t0 < 15000 ? 2500 : 1500)));
+        await new Promise(r=>setTimeout(r, (d.claimed||wasReady) && Date.now()-t0 < 3000 ? 250 : 1500));
         try { st = await jobStatus(d.id); } catch(e){ if (Date.now()-t0 > 6*60*1000) throw e; W('網路不太穩，正在重新連線…', Math.round((Date.now()-t0)/1000)); continue; }
         if (st.status==='ok') { window.__lastTiming=st.result&&st.result.timing; d = st.result; break; }
         if (st.preview && st.preview.url && st.preview.url!==shownPv && !st.front) { shownPv=st.preview.url; R.preview=shownPv; renderTray(); if(fg()) $('result').innerHTML=`<div class="pvwrap"><img src="${esc(shownPv)}" alt="目前進度"><span class="pvtag">${st.preview.step?'先給你看：已換好一部分，其他還在換…':'快速預覽'+(st.preview.partial?'（還在換其他單品）':'')+' · 高畫質版完成中…'}</span></div>`; window.__sawPreview=Date.now()-t0; }

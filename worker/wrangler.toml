@@ -12,5 +12,8 @@ FREE_DAILY = "2"
 ADMIN_EMAILS = "frankccc199@gmail.com,frankccc199@hotmail.com"
 GEMINI_IMAGE_MODEL = "gemini-nano-banana-2.1"
 
+[triggers]
+crons = ["* * * * *"]   # 每分鐘：代替離線的使用者推進試穿進度
+
 [observability]
 enabled = true

@@ -37,7 +37,7 @@ try:
     if not (isinstance(d, dict) and d.get('id')): r['error'] = str(d)[:200]; rep.append(r); print(r); time.sleep(25); continue
     seen = []; first_pv = None
     while time.time() - t0 < 360:
-      time.sleep(2.5 if time.time() - t0 < 15 else 1.5)
+      time.sleep(1.5)
       s, st = call('GET', f"{API}/api/tryon/status?id={d['id']}", None, H)
       if not isinstance(st, dict): continue
       pg = st.get('progress') or {}; cur = pg.get('current')

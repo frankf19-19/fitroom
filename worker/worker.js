@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.19.0';
+const VERSION = '2.20.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -27,6 +27,8 @@ const LOCK_MS = 150000;                      // 輪詢鎖（> POLL_HARD_MS + 儲
 const PREFETCH_DAILY = 5;                    // 每人每天預先合成上限
 const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 // 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
+const FASHN_MODE = 'balanced';   // 第一次用 FASHN 平衡模式（實測畫質與 quality 相近、每件快 5–10 秒）；重做時才用 quality
+const JOB_MAX_AGE_MS = 12 * 60 * 1000;   // 一筆試穿從開始（或認領）起最久 12 分鐘，超過就收尾／退點
 const MAX_CONCURRENT = 3;   // 每人同時進行中的試穿上限
 const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-2/edit', 'https://queue.fal.run/fal-ai/nano-banana-pro/edit'];
 const ITEM_LABEL = { top: 'TOP or OUTERWEAR (upper body garment)', bottom: 'BOTTOM (trousers / skirt / shorts)', dress: 'ONE-PIECE (dress / jumpsuit)', shoes: 'SHOES', hat: 'HAT', accessory: 'ACCESSORY (bag / jewelry / glasses / watch)', hair: 'HAIRSTYLE reference' };
@@ -219,13 +221,14 @@ function qaPrompt(targets, captions) {
     'mirrored (true/false): is image 1 a left-right mirror of image 2 (background, objects or the hand holding the phone switched sides)?',
     'body_changed (true/false): does the person in image 1 look clearly bigger, wider, heavier, slimmer, taller or shorter than in image 2?',
     'pose_changed (true/false): is the pose different from image 2 (arms, hands, legs, head angle or body position moved)?',
+    'leftover (true/false): are parts of the ORIGINAL garment that should have been replaced still visible in image 1 (old sleeves, collar, straps, hem or waistband poking out from under or around the new product)?',
     'extra_items: list garments the person wears in image 1 that are NOT one of the products AND were NOT already worn in image 2 (typically a jacket, coat or top copied from a product photo model), or [].',
-    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed, pose_changed or extra_items is not empty; otherwise "pass".`,
-    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
+    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed, pose_changed, leftover or extra_items is not empty; otherwise "pass".`,
+    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"leftover":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
   ].join('\n');
 }
 // 品質分數（挑最好的一張用）：鏡像／身形／動作改變重扣，多出衣服扣分，加上最差單品分與人物一致分
-const qaScore = qa => !qa ? -99 : (qa.mirrored || qa.body_changed || qa.pose_changed ? -20 : 0) - 5 * ((qa.extra_items || []).length) + Math.min(10, ...(qa.items || []).map(x => x.match == null ? 10 : x.match)) + (qa.identity == null ? 8 : qa.identity);
+const qaScore = qa => !qa ? -99 : (qa.mirrored || qa.body_changed || qa.pose_changed ? -20 : 0) - 5 * ((qa.extra_items || []).length) - (qa.leftover ? 3 : 0) + Math.min(10, ...(qa.items || []).map(x => x.match == null ? 10 : x.match)) + (qa.identity == null ? 8 : qa.identity);
 const clamp10 = v => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : null; };
 // 正規化品質檢查結果；依規則重新判定 verdict（不完全信任模型自己的 verdict）
 function normalizeQa(json, targets) {
@@ -239,11 +242,11 @@ function normalizeQa(json, targets) {
   });
   const identity = clamp10(q.identity), framing = clamp10(q.framing);
   const artifacts = Array.isArray(q.artifacts) ? q.artifacts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 120)).slice(0, 6) : [];
-  const mirrored = q.mirrored === true, body_changed = q.body_changed === true, pose_changed = q.pose_changed === true;
+  const mirrored = q.mirrored === true, body_changed = q.body_changed === true, pose_changed = q.pose_changed === true, leftover = q.leftover === true;
   const extra_items = Array.isArray(q.extra_items) ? q.extra_items.filter(x => typeof x === 'string' && x.trim() && !/^(none|n\/a|-)$/i.test(x.trim())).map(x => x.trim().slice(0, 80)).slice(0, 4) : [];
-  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || pose_changed || extra_items.length > 0;
+  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || pose_changed || leftover || extra_items.length > 0;
   const verdict = bad || String(q.verdict).toLowerCase() === 'retry' ? 'retry' : 'pass';
-  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, extra_items, verdict, at: Date.now() };
+  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, leftover, extra_items, verdict, at: Date.now() };
 }
 // 由檢查結果組成「上次被退回的原因」（放進重做的提示詞）
 // targets（可省略）：帶入各商品的合身度，讓重做提示詞寫出「應該看到的合身樣子」
@@ -262,6 +265,7 @@ function qaCorrections(qa, targets) {
   if (qa.framing != null && qa.framing < QA_MIN_FRAMING) out.push('the framing / crop / aspect ratio differs from Image 1 — keep the exact same framing');
   if (qa.mirrored) out.push('the image was mirrored left-right — keep the exact orientation of Image 1 (background and the hand holding the phone on the same side)');
   if (qa.body_changed) out.push("the customer's body size changed — keep exactly the same body size and proportions as Image 1");
+  if (qa.leftover) out.push("parts of the customer's ORIGINAL garment are still visible — fully remove the old garment in the replaced category (no old sleeves, collar, straps or hem showing)");
   if (qa.pose_changed) out.push("the pose changed — keep exactly the same pose as Image 1 (arms, hands, legs, head angle, and the hand holding the phone)");
   if (qa.extra_items && qa.extra_items.length) out.push('remove garments that were not provided (they came from a product photo model): ' + qa.extra_items.join(', ') + " — keep the customer's own clothing in those areas");
   if (qa.artifacts && qa.artifacts.length) out.push('visible defects: ' + qa.artifacts.join(', '));
@@ -355,7 +359,19 @@ const VIEW_PROMPTS = {
   back: 'Generate a new photo of the exact same person wearing the exact same outfit as in this photo, but photographed from behind (a full back view, the person has turned around 180 degrees, face not visible). Same background, lighting, camera distance and framing, full body visible. Keep body shape, hairstyle, skin and every garment detail (color, pattern, length, fit) perfectly consistent. Photorealistic, no text.'
 };
 
+/* 排程（每分鐘）：使用者離開網站（切到別的 App、鎖螢幕、關分頁）時沒人輪詢，進度會停住，回來可能已逾時。
+   這裡代替他推進「超過 12 秒沒人碰」的付費試穿，回來時結果已經在紀錄裡。每次最多 3 筆、推進 2 輪。 */
+async function cronAdvance(env) {
+  for (let round = 0; round < 2; round++) {
+    const cut = encodeURIComponent(new Date(Date.now() - 12000).toISOString());
+    const rows = await sb(env, `/rest/v1/generations?status=in.(running,working)&job=not.is.null&job->>touched=lt.${cut}&or=(job->>prefetch.is.null,job->>prefetch.eq.false)&select=id,user_id&order=id&limit=3`).catch(() => []);
+    if (!Array.isArray(rows) || !rows.length) return;
+    for (const r of rows) { try { await handleTryonStatus(null, env, {}, null, { userId: r.user_id, id: r.id }); } catch { /* 下一分鐘再試 */ } }
+    if (round === 0) await new Promise(z => setTimeout(z, 20000));
+  }
+}
 export default {
+  async scheduled(event, env, ctx) { ctx.waitUntil(cronAdvance(env).catch(() => {})); },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const cors = corsHeaders(request, env);
@@ -769,6 +785,7 @@ async function handleTryon(request, env, cors, ctx) {
     try { await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { views: stored }); } catch { /* ignore */ }
     return payload;
   };
+  const T_REQ = Date.now();
   if (stepMode) {
     // 分段模式：先把輸入圖存到 Storage，之後每次前端輪詢推進一步（不靠長時間背景工作）
     try {
@@ -797,6 +814,12 @@ async function handleTryon(request, env, cors, ctx) {
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
+      jobState.t0 = Date.now(); jobState.tm = [['ready', Date.now() - T_REQ]];
+      // 不等第一次輪詢：衣服已上傳好就立刻送出第一件（描述衣服改成同時進行），省掉開始前約 7–10 秒的空等
+      if (fashnFirst && variants === 1) {
+        try { const s0 = jobState.steps[0]; jobState.chains[0].req = await falSubmit(env, personUrl, s0.image_url, s0.category, s0.photo_type, s0.mode || FASHN_MODE, { seed: s0.seed, seg: s0.seg }); jobState.tm.push(['submit:' + s0.type, Date.now() - T_REQ]); }
+        catch (e) { jobState.chains[0].req = null; jobState.early_error = String(e.message).slice(0, 120); }
+      }
       await sbPatch(env, `/rest/v1/generations?id=eq.${gen.id}`, { job: await sealJob(env, jobState) });
     } catch (e) {
       // 先標記失敗，真的改到那一列才退點（避免和逾時清理重複退）
@@ -835,7 +858,8 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
     if (!job.prefetch) return json({ id: row.id, async: true, cost, claimed: true }, 202, cors);   // 另一個同時送出的請求已認領並扣點
     if ((job.lock_until || 0) <= Date.now()) {
       const v = job.v;
-      if (!job.front && !job.pv && job.engine === 'outfit' && (job.item_steps || []).some(x => x.category)) job.pv = { i: 0, cur: job.person_url, req: null };
+      job.t0 = Date.now();
+      if (!job.front && !job.pv && job.first !== 'fashn' && job.engine === 'outfit' && (job.item_steps || []).some(x => x.category)) job.pv = { i: 0, cur: job.person_url, req: null };
       // 認領後成為付費工作：正面還沒完成就補上品質檢查步驟
       if (!job.front && job.engine === 'outfit' && Array.isArray(job.steps) && !job.steps.some(s => s.type === 'qa')) job.steps = [...job.steps, { type: 'qa' }];
       job.v = v + 1; job.prefetch = false; job.pay = payCredits; job.free = useFree; job.free_left = freeLeft; job.cost = cost; job.key = ckey; job.want_views = wantViews; job.touched = new Date().toISOString();
@@ -845,7 +869,10 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
         const targets = captionTargets(job.item_steps);
         job.retries = 1; job.fix_notes = qaCorrections(job.qa, targets) || 'the result did not match the product photos closely enough';
         job.rejected = [...(job.rejected || []), ...(job.front || [])].slice(-2);
-        if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }
+        if (!job.steps.some(s => s.type === 'outfit')) {
+          if (job.first === 'fashn' && !job.fashn_failed) { const seed = 1000 + Math.floor(Math.random() * 1e6); job.steps = [...(job.item_steps || []).filter(x => x.category).map(x => ({ ...x, mode: 'quality', seed, seg: !!job.qa.leftover })), { type: 'qa' }]; }
+          else { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }
+        }
         const oi = job.steps.findIndex(s => s.type === 'outfit');
         const onlyStep = oi >= 0 && Array.isArray(job.steps[oi].only);
         job.front = null; job.pf_bad = false; job.chains.forEach(c => { c.i = oi >= 0 ? oi : 0; c.cur = (onlyStep && c.base) ? c.base : job.person_url; c.req = null; });
@@ -884,6 +911,8 @@ async function finishJob(env, userId, g, job, cond = '') {
   const result = { timing: job.t ? { created: g.created_at, queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000) } : null, items: job.meta || [], engine: job.engine, images: urls.map(() => null), image_urls: urls, views: null, view_urls: viewUrls, views_error: job.views_error || null, charged: job.pay, free_used: job.free, credits: prof ? prof.credits : null, free_left: Math.max(0, (job.free_left || 0) - job.free) };
   result.fit = (job.meta || []).map(x => x.fit || null);
   if (job.extras_dropped) result.extras_dropped = job.extras_dropped;
+  if (job.tm) result.marks = [...job.tm, ['finish', Date.now() - (job.t0 || new Date(g.created_at).getTime())]];
+  if (job.fashn_failed) result.fashn_failed = job.fashn_failed;
   if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
   const row = { status: 'ok', cost: job.pay, free_used: job.free, error: job.views_error || null, job: await sealJob(env, job) };
@@ -942,10 +971,12 @@ async function sweepStale(env, userId, cheap = false) {
   }
 }
 
-async function handleTryonStatus(request, env, cors, url) {
+// internal：排程（cron）代替離線的使用者推進進度時傳入 { userId, id }，跳過登入檢查
+async function handleTryonStatus(request, env, cors, url, internal = null) {
   let user;
-  try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); }
-  const id = intId(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
+  if (internal) user = { id: internal.userId };
+  else { try { user = await requireUser(request, env); } catch (e) { return json({ error: e.message }, e.status || 401, cors); } }
+  const id = internal ? intId(internal.id) : intId(url.searchParams.get('id')); if (!id) return json({ error: '缺少 id' }, 400, cors);
   const rows = await sb(env, `/rest/v1/generations?id=eq.${id}&user_id=eq.${user.id}&select=id,status,error,image_url,views,created_at,job,cost,free_used,items,variants`);
   const g = rows[0]; if (!g) return json({ error: '找不到這筆合成' }, 404, cors);
   const pf = !!(g.job && g.job.prefetch);
@@ -960,13 +991,13 @@ async function handleTryonStatus(request, env, cors, url) {
   let job;
   try { job = await openJob(env, g.job); } catch { job = null; }
   if (!job) { const r = await stopJob(env, user.id, g, null, '合成資料異常（已退回點數），請再試一次', g.job.v == null ? '&job->>v=is.null' : `&job->>v=eq.${g.job.v}`); return jout(r || { status: 'running' }, 200, cors); }
-  const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? (Array.isArray(job.steps[ch.i].only) ? job.steps[ch.i].only[0] : job.steps[ch.i].type) : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); const p = { done, total: tot + 1, current: cur }; if (job.fix_notes && ch && job.steps[ch.i] && job.steps[ch.i].type === 'outfit') p.fixing = true; p.labels = job.steps.map(st => Array.isArray(st.only) ? st.only[0] : st.type); if (job.retries) p.retries = job.retries; return p; };
+  const progress = () => { const tot = job.steps.length * job.chains.length + (job.want_views ? 1 : 0); const done = job.chains.reduce((a, c) => a + c.i, 0) + (job.views || job.views_error ? 1 : 0); const ch = job.chains[0]; const cur = ch && ch.i < job.steps.length ? (Array.isArray(job.steps[ch.i].only) ? job.steps[ch.i].only[0] : job.steps[ch.i].type) : (job.want_views && !job.views && !job.views_error ? 'views' : 'finish'); const p = { done, total: tot + 1, current: cur }; if (job.retries && cur !== 'finish' && cur !== 'views') p.fixing = true; p.labels = job.steps.map(st => Array.isArray(st.only) ? st.only[0] : st.type); if (job.retries) p.retries = job.retries; return p; };
   const frontOut = () => job.front ? { timing: job.t ? { queue_s: Math.round(((job.t.start || 0) - (job.t.submit || 0)) / 1000), gen_s: Math.round(((job.t.done || 0) - (job.t.start || 0)) / 1000), prep_s: Math.round(((job.t.submit || 0) - new Date(g.created_at).getTime()) / 1000) } : null, items: job.meta || [], fit: (job.meta || []).map(x => x.fit || null), engine: job.engine, images: job.front.map(() => null), image_urls: job.front, views: null, view_urls: {}, views_pending: true, views_error: null, charged: job.pay, free_used: job.free, credits: null, free_left: Math.max(0, (job.free_left || 0) - job.free) } : undefined;
   const running = () => jout({ status: 'running', progress: progress(), front: frontOut(), preview: (!job.front && job.pv && job.pv.shown) ? { url: job.pv.shown, partial: !!job.pv.more } : (!job.front && !job.prefetch && job.first === 'fashn' && job.chains[0] && job.chains[0].i > 0 && job.chains[0].cur && job.chains[0].cur !== job.person_url && !job.fix_notes) ? { url: job.chains[0].cur, partial: true, step: true } : undefined }, 200, cors);
   // 取得鎖（避免兩個輪詢同時推進）
   if ((job.lock_until || 0) > Date.now()) return running();
   const touchedMs = new Date(job.touched || g.created_at).getTime();                 // touched 缺失時以建立時間後備
-  const stale = !(Date.now() - touchedMs <= RUNNING_STALE_MS);                        // NaN 也視為逾時
+  const stale = !(Date.now() - touchedMs <= RUNNING_STALE_MS) || (Date.now() - (job.t0 || new Date(g.created_at).getTime()) > JOB_MAX_AGE_MS);   // NaN 也視為逾時；整筆超過上限也收尾
   const v = Number(job.v) || 0;
   job.v = v + 1; job.lock_until = Date.now() + LOCK_MS;
   const lockedV = job.v, vcond = `&job->>v=eq.${lockedV}`;
@@ -979,16 +1010,21 @@ async function handleTryonStatus(request, env, cors, url) {
   const base = job.tok ? `${user.id}/jobs/${id}/${job.tok}` : `${user.id}/jobs/${id}`;
   const t0 = Date.now();
   const canStart = () => Date.now() - t0 < POLL_BUDGET_MS;     // 超過預算就不再開始新步驟，留到下次輪詢
+  const T_JOB = job.t0 || new Date(g.created_at).getTime();
+  const mark = label => { job.tm = [...(job.tm || []), [label, Date.now() - T_JOB]].slice(-30); };   // 各步驟時間點（毫秒），收尾時放進結果，方便追查哪一步慢
   const hardLeft = () => t0 + POLL_HARD_MS - Date.now();
   try {
     // 0) 單品文字規格：付費工作、整套引擎、第一次送出前，只做一次（一個看圖呼叫；失敗就不帶規格繼續）
-    if (job.engine === 'outfit' && !job.cap_done && job.chains.some(c => c.i === 0 && !c.req) && canStart()) {
+    // 第一步是 FASHN（不需要文字規格）時，不擋送出：送出後同一輪或下一輪再做，兩件事同時進行
+    const firstIsFashn = !!(job.steps[0] && job.steps[0].category);
+    if (job.engine === 'outfit' && !job.cap_done && (firstIsFashn ? job.chains.every(c => c.req || c.i > 0) : job.chains.some(c => c.i === 0 && !c.req)) && canStart()) {
       job.cap_done = true;
       const targets = captionTargets(job.item_steps);
       if (targets.length) {
         try { job.captions = parseCaptions(await visionJson(env, captionPrompt(targets), targets.map(t => t.url), QA_TIMEOUT_MS), job.item_steps); }
         catch (e) { job.captions = null; job.cap_error = String(e.message).slice(0, 120); }
       }
+      mark('captions');
       if (!canStart()) { await save(); return running(); }   // 規格花太久：這次輪詢不再送出合成
     }
     // 1) 推進每條合成鏈（一次最多一個 Gemini 步驟）
@@ -997,8 +1033,9 @@ async function handleTryonStatus(request, env, cors, url) {
         const st = job.steps[ch.i];
         if (st.type === 'outfit') {
           if (!ch.req) {
-            job.t = job.t || {}; job.t.submit = Date.now();
+            job.t = job.t || {}; job.t.submit = Date.now(); job.t.start = 0; mark('submit:outfit');
             const only = Array.isArray(st.only) ? st.only : null;
+            if (!job.cap_done) { const tg = captionTargets(job.item_steps); job.cap_done = true; if (tg.length) { try { job.captions = parseCaptions(await visionJson(env, captionPrompt(tg), tg.map(t => t.url), QA_TIMEOUT_MS), job.item_steps); } catch (e) { job.captions = null; } mark('captions'); } }
             if (only && !ch.base) ch.base = ch.cur;          // 衣服已由 FASHN 換好：記下來，萬一換鞋改到動作可以退回
             const sel = (job.item_steps || []).map((x, i) => [x, i]).filter(([x]) => !only || only.includes(x.type));
             const urls = [ch.cur, ...sel.filter(([x]) => x.image_url).map(([x]) => x.image_url)];
@@ -1017,7 +1054,7 @@ async function handleTryonStatus(request, env, cors, url) {
           }
           job.t = job.t || {};
           if (!r) { if (ch.req.last_status === 'IN_PROGRESS' && !job.t.start) job.t.start = Date.now(); return; }
-          job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done;
+          job.t.done = Date.now(); if (!job.t.start) job.t.start = job.t.done; mark('done:outfit');
           ch.cur = r; ch.req = null; ch.i++;
           if (!canStart()) return;                // 查詢可能花了十幾秒：超過預算就不再送下一步
           continue;
@@ -1025,10 +1062,15 @@ async function handleTryonStatus(request, env, cors, url) {
         if (st.type === 'qa') {
           // 品質檢查：一個看圖呼叫；呼叫失敗視為通過。不過關且還沒重做過 → 換 pro 引擎、帶著原因重做一次
           const targets = captionTargets(job.item_steps);
+          if (!job.cap_done && targets.length) {
+            job.cap_done = true;
+            try { job.captions = parseCaptions(await visionJson(env, captionPrompt(targets), targets.map(t => t.url), QA_TIMEOUT_MS), job.item_steps); } catch (e) { job.captions = null; job.cap_error = String(e.message).slice(0, 120); }
+            mark('captions');
+          }
           let qa = null;
           try { qa = normalizeQa(await visionJson(env, qaPrompt(targets, job.captions), [ch.cur, job.person_url, ...targets.map(t => t.url)], QA_TIMEOUT_MS), targets); }
           catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
-          qa.chain = ci; qa.attempt = (job.retries || 0) + 1;
+          qa.chain = ci; qa.attempt = (job.retries || 0) + 1; mark('qa:' + qa.verdict);
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
           job.cands = [...(job.cands || []), { url: ch.cur, s: qaScore(qa), qa }].slice(-3);
           // 換鞋／帽子／飾品那一步改到人（動作、身形、鏡像）→ 不重畫，直接退回 FASHN 換好衣服的那張
@@ -1037,10 +1079,22 @@ async function handleTryonStatus(request, env, cors, url) {
             job.extras_dropped = ost ? ost.only : null; ch.cur = ch.base; job.qa = { ...qa, verdict: 'pass', fallback: 'base' }; ch.i++; continue;
           }
           if (qa.verdict === 'retry' && job.prefetch) { job.pf_bad = true; ch.i++; continue; }   // 預先合成不過關：先不重做（不一定會被用），認領時再重做
-          if (qa.verdict === 'retry' && (job.retries || 0) < 1) {
+          // 只有衣服、先用 FASHN 的工作最多重做 2 次：① FASHN 品質模式換一組亂數（快、便宜、不會動到人）② 再不行才換整套引擎。其他情況重做 1 次。
+          const fashnOnly = job.first === 'fashn' && !job.fashn_failed && !job.steps.some(s => s.type === 'outfit');
+          const maxRetries = (job.first === 'fashn' && !job.steps.some(s => s.type === 'outfit' && Array.isArray(s.only))) ? 2 : 1;
+          if (qa.verdict === 'retry' && fashnOnly && (job.retries || 0) < 1) {
+            job.retries = 1; job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
+            const seed = 1000 + Math.floor(Math.random() * 1e6);
+            job.steps = [...(job.item_steps || []).filter(x => x.category).map(x => ({ ...x, mode: 'quality', seed, seg: !!qa.leftover })), { type: 'qa' }];
+            job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
+            ch.req = null; ch.cur = job.person_url; ch.i = 0;
+            if (!canStart()) return;
+            continue;
+          }
+          if (qa.verdict === 'retry' && (job.retries || 0) < maxRetries) {
             job.retries = (job.retries || 0) + 1;
             job.fix_notes = qaCorrections(qa, targets) || 'the result did not match the product photos closely enough';
-            if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }   // FASHN 不過關 → 改用整套引擎
+            if (!job.steps.some(s => s.type === 'outfit')) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; }   // FASHN 兩次都不過關 → 改用整套引擎
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];
             // 實測 Pro 常會放大裁切、改構圖，重做時維持同一個引擎、只帶上退回原因（使用者開高品質模式才用 Pro）
@@ -1056,10 +1110,22 @@ async function handleTryonStatus(request, env, cors, url) {
           continue;
         }
         if (st.category) {
-          if (!ch.req) { ch.req = await falSubmit(env, ch.cur, st.image_url, st.category, st.photo_type); return; }
-          const r = await falCheck(env, ch.req, '衣服試穿服務');
+          let r;
+          try {
+            if (!ch.req) { ch.req = await falSubmit(env, ch.cur, st.image_url, st.category, st.photo_type, st.mode || FASHN_MODE, { seed: st.seed, seg: st.seg }); mark('submit:' + st.type); return; }
+            r = await falCheck(env, ch.req, '衣服試穿服務');
+          } catch (e) {
+            // FASHN 這張做不了（照片被擋、偵測不到人、服務異常…）：不要整筆失敗，改用整套引擎重做
+            if (job.first === 'fashn' && !job.fashn_failed && job.engine === 'outfit') {
+              job.fashn_failed = String(e.message).slice(0, 160); mark('fashn-error');
+              job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }];
+              job.chains.forEach(c => { c.i = 0; c.cur = job.person_url; c.req = null; c.base = null; });
+              return;
+            }
+            throw e;
+          }
           if (!r) return;                         // 還在排隊／處理中
-          ch.cur = r; ch.req = null; ch.i++;      // 完成，換下一步
+          ch.cur = r; ch.req = null; ch.i++; mark('done:' + st.type);     // 完成，換下一步
           if (!canStart()) return;
           continue;
         }
@@ -1156,9 +1222,9 @@ async function copyToStorage(env, pathNoExt, srcUrl) {
   return `${env.SUPABASE_URL}/storage/v1/object/public/results/${path}`;
 }
 /* ---- FASHN 分段：送出／查一次 ---- */
-async function falSubmit(env, personUrl, garmentUrl, category, photoType, mode = 'quality') {
+async function falSubmit(env, personUrl, garmentUrl, category, photoType, mode = 'quality', opt = {}) {
   const headers = { 'Authorization': 'Key ' + need(env, 'FAL_KEY'), 'Content-Type': 'application/json' };
-  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode, garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: mode === 'performance' ? 'jpeg' : 'png', seed: Math.floor(Math.random() * 1e9) }) }, '衣服試穿服務', 15000);
+  const r = await fetchT(FAL_QUEUE, { method: 'POST', headers, body: JSON.stringify({ model_image: personUrl, garment_image: garmentUrl, category, mode, garment_photo_type: ['flat-lay', 'model'].includes(photoType) ? photoType : 'auto', num_samples: 1, output_format: 'jpeg', seed: Number.isFinite(opt.seed) ? opt.seed : Math.floor(Math.random() * 1e9), ...(opt.seg ? { segmentation_free: false } : {}) }) }, '衣服試穿服務', 15000);
   const t = await r.text();
   if (!r.ok) throw new Error('衣服試穿服務：' + extractErr(t));
   const j = JSON.parse(t);

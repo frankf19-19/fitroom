@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.19.0');
+assert.equal(T.VERSION, '2.20.0');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -232,3 +232,40 @@ console.log('vision calls in paid flow: captions 1 + QA per attempt; generations
   assert.match(pr, /The model in Image 2 also wears black bomber jacket — these are NOT products/);
   assert.match(pr, /From Image 2 take only the/); assert.match(pr, /Do NOT mirror or flip/);
   console.log('other-garment exclusion: ok'); }
+
+/* ---------- FASHN 優先：平衡模式 → 不過關換品質模式＋新亂數（殘留舊衣服用去除較乾淨的設定）→ 再不過關才換整套引擎 → 挑最好的一張 ---------- */
+{ const fashn = []; const _f = globalThis.fetch;
+  globalThis.fetch = async (url, opts = {}) => { if (/queue\.fal\.run\/fal-ai\/fashn/.test(String(url))) { const b = JSON.parse(opts.body); fashn.push(b); calls.submits.push({ url: String(url), fashn: b }); const k = calls.submits.length; return res({ status_url: `https://queue.fal.run/status/${k}`, response_url: `https://queue.fal.run/response/${k}` }); } return _f(url, opts); };
+  const top = { type: 'top', category: 'tops', image_url: 'https://img/top.jpg', photo_type: null };
+  calls.vision.length = 0; calls.submits.length = 0;
+  row.status = 'working'; row.image_url = null; row.views = null;
+  row.job = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok: 't', person_url: PERSON, meta: [{ type: 'top', fit: null }], prefetch: false, pf: 0, aspect: 'auto', hires: true, key: 'k2', pv: null, first: 'fashn', t0: Date.now(),
+    steps: [{ ...top }, { type: 'qa' }], item_steps: [top], engine: 'outfit', chains: [{ i: 0, cur: PERSON, req: null }], want_views: false, views: null, views_error: null, hints: '', face_hint: '', pay: 1, free: 0, free_left: 2, cost: 1 };
+  visionQueue = [
+    { items: [{ n: 1, description: 'Light blue sleeveless top', other_garments: [] }] },
+    { identity: 10, items: [{ n: 1, match: 8, issue: 'old sleeves visible' }], framing: 10, leftover: true, verdict: 'retry' },
+    { identity: 10, items: [{ n: 1, match: 5, issue: 'top is white, not light blue' }], framing: 10, verdict: 'retry' },
+    { identity: 9, items: [{ n: 1, match: 9, issue: '' }], framing: 9, verdict: 'pass' } ];
+  queueStatus = [];   // 全部回 COMPLETED
+  let r = await poll(); assert.equal(r.status, 'running'); assert.equal(fashn.length, 1, 'first poll submits FASHN without waiting for captions'); assert.equal(fashn[0].mode, 'balanced'); assert.equal(fashn[0].segmentation_free, undefined); assert.equal(calls.vision.length, 0);
+  r = await poll();   // 規格（與 FASHN 同時）→ FASHN 完成 → QA 不過（殘留舊袖子）→ 同一輪重送 FASHN 品質模式
+  assert.equal(r.status, 'running'); assert.equal(fashn.length, 2); assert.equal(fashn[1].mode, 'quality'); assert.equal(fashn[1].segmentation_free, false, 'leftover → segmentation on'); assert.notEqual(fashn[1].seed, fashn[0].seed);
+  assert.equal(r.progress.fixing, true); assert.equal(row.job.retries, 1); assert.equal(calls.vision.length, 2);
+  r = await poll();   // FASHN 第二次完成 → QA 還是不過 → 換整套引擎
+  assert.equal(row.job.retries, 2); assert.match(calls.submits[2].url, /nano-banana-2\/edit/); assert.match(calls.submits[2].prompt, /PREVIOUS ATTEMPT WAS REJECTED/);
+  r = await poll();   // 整套引擎完成 → QA 過關 → 收尾
+  assert.equal(r.status, 'ok'); assert.equal(r.result.quality.retried, true); assert.ok(Array.isArray(r.result.marks) && r.result.marks.some(m => m[0] === 'qa:pass'), 'step timing marks recorded');
+  assert.equal(calls.submits.length, 3, 'at most 3 generations');
+  // FASHN 直接失敗（照片被擋等）→ 不讓整筆失敗，改用整套引擎
+  calls.vision.length = 0; calls.submits.length = 0; fashn.length = 0;
+  row.status = 'working'; row.image_url = null; row.views = null;
+  row.job = { ...row.job, v: 1, lock_until: 0, touched: new Date().toISOString(), t0: Date.now(), tm: [], steps: [{ ...top }, { type: 'qa' }], chains: [{ i: 0, cur: PERSON, req: null }], front: undefined, qa: undefined, qa_history: undefined, cands: undefined, retries: 0, fix_notes: undefined, cap_done: false, captions: null, rejected: undefined, first_rejected: undefined, fashn_failed: undefined, t: undefined };
+  visionQueue = [{ items: [{ n: 1, description: 'Light blue sleeveless top' }] }, { identity: 9, items: [{ n: 1, match: 9 }], framing: 9, verdict: 'pass' }];
+  queueStatus = [];
+  r = await poll(); assert.equal(fashn.length, 1);
+  queueStatus = ['FAILED'];
+  r = await poll(); assert.equal(r.status, 'running', 'FASHN failure does not fail the job'); assert.ok(row.job.fashn_failed); assert.equal(row.job.steps[0].type, 'outfit');
+  queueStatus = [];
+  r = await poll(); r = r.status === 'ok' ? r : await poll();
+  assert.equal(r.status, 'ok'); assert.match(calls.submits[calls.submits.length - 1].url, /nano-banana-2\/edit/); assert.ok(r.result.fashn_failed);
+  globalThis.fetch = _f; console.log('fashn ladder + fallback: ok'); }
