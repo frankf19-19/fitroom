@@ -47,6 +47,11 @@ try:
       res = st.get('result') if st.get('status') == 'ok' else st.get('front')
       if res:
         r.update({'secs': round(time.time() - t0, 1), 'steps': seen, 'first_preview': first_pv, 'quality': res.get('quality'), 'timing': res.get('timing'), 'engine': res.get('engine'), 'dropped': res.get('extras_dropped'), 'marks': [(m[0], round(m[1] / 1000, 1)) for m in (res.get('marks') or [])]})
+        r['qa_log'] = [{k: v for k, v in q.items() if k != 'url'} for q in (res.get('qa_log') or [])]
+        for qi, q in enumerate(res.get('qa_log') or []):
+          if q.get('url'):
+            bb = call('GET', q['url'], None, None, raw=True)[1]
+            if isinstance(bb, bytes): open(f'out/{name}_try{qi}_{q.get("verdict")}.jpg', 'wb').write(bb)
         url = (res.get('image_urls') or [None])[0]
         if url:
           b = call('GET', url, None, None, raw=True)[1]

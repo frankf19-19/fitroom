@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.22.0';
+const VERSION = '2.22.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -931,6 +931,8 @@ async function finishJob(env, userId, g, job, cond = '') {
   if (job.extras_dropped) result.extras_dropped = job.extras_dropped;
   if (job.tm) result.marks = [...job.tm, ['finish', Date.now() - (job.t0 || new Date(g.created_at).getTime())]];
   if (job.fashn_failed) result.fashn_failed = job.fashn_failed;
+  // 追查用：每次品質檢查的結論與當時那張圖（被退回的也留著），方便事後看是真的壞還是檢查太嚴
+  if (job.qa_log) result.qa_log = job.qa_log;
   if (job.first === 'fashn' && !job.fashn_failed && !job.first_rejected && !(job.steps || []).some(st => st.type === 'outfit')) result.fashn_only = true;
   if (job.qa) { result.quality = { identity: job.qa.identity, items: (job.qa.items || []).map(x => x.match), framing: job.qa.framing, retried: !!(job.retries > 0) }; if ((job.qa.items || []).some(x => x.fit_match !== undefined)) result.quality.fit_match = job.qa.items.map(x => x.fit_match === undefined ? null : x.fit_match); }
   job.v += 1; job.lock_until = 0; job.touched = new Date().toISOString();
@@ -1095,6 +1097,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
           catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
           qa.chain = ci; qa.attempt = (job.retries || 0) + 1; mark('qa:' + qa.verdict + (qa.verdict === 'retry' ? '[' + ['mirrored', 'body_changed', 'pose_changed', 'zoomed', 'color_wrong', 'leftover'].filter(k => qa[k]).concat((qa.extra_items || []).length ? ['extra'] : [], (qa.items || []).filter(x => x.match != null && x.match < QA_MIN_ITEM).map(x => 'm' + x.match), qa.identity != null && qa.identity < QA_MIN_IDENTITY ? ['id' + qa.identity] : [], qa.framing != null && qa.framing < QA_MIN_FRAMING ? ['fr' + qa.framing] : [], qa.error ? ['err'] : []).join(',') + ']' : (qa.error ? '[err]' : '')));
           job.qa_for = ch.cur;
+          job.qa_log = [...(job.qa_log || []), { url: ch.cur, verdict: qa.verdict, identity: qa.identity, framing: qa.framing, items: (qa.items || []).map(x => ({ t: x.type, m: x.match, issue: x.issue })), flags: ['mirrored', 'body_changed', 'pose_changed', 'zoomed', 'color_wrong', 'leftover'].filter(k => qa[k]), extra: qa.extra_items || [], artifacts: qa.artifacts || [] }].slice(-4);
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
           job.cands = [...(job.cands || []), { url: ch.cur, s: qaScore(qa), qa }].slice(-3);
           // 換鞋／帽子／飾品那一步改到人（動作、身形、鏡像）→ 不重畫，直接退回 FASHN 換好衣服的那張
