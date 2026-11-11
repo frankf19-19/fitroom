@@ -45,7 +45,7 @@ for (const model of models) {
       try {
         const { json, secs } = await ask(model, T.qaPrompt(targets, null), [RAW + c.result, RAW + c.person, RAW + c.garment]);
         const qa = T.normalizeQa(json, targets);
-        rows.push({ id: c.id, expect: c.expect, got: qa.verdict, secs: +secs.toFixed(1), match: qa.items[0] && qa.items[0].match, identity: qa.identity, framing: qa.framing, flags: ['mirrored', 'body_changed', 'pose_changed', 'leftover'].filter(k => qa[k]).concat(qa.extra_items.length ? ['extra:' + qa.extra_items.join('/')] : []), issue: qa.items[0] && qa.items[0].issue });
+        rows.push({ id: c.id, expect: c.expect, got: qa.verdict, secs: +secs.toFixed(1), match: qa.items[0] && qa.items[0].match, identity: qa.identity, framing: qa.framing, flags: ['mirrored', 'body_changed', 'pose_changed', 'leftover', 'color_wrong', 'zoomed'].filter(k => qa[k]).concat(qa.extra_items.length ? ['extra:' + qa.extra_items.join('/')] : []), issue: qa.items[0] && qa.items[0].issue });
       } catch (e) { rows.push({ id: c.id, expect: c.expect, got: 'error', error: String(e.message).slice(0, 140) }); }
     }
   }));

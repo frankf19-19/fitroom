@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.21.1';
+const VERSION = '2.21.2';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -221,14 +221,16 @@ function qaPrompt(targets, captions) {
     'mirrored (true/false): is image 1 a left-right mirror of image 2 (background, objects or the hand holding the phone switched sides)?',
     'body_changed (true/false): does the person in image 1 look clearly bigger, wider, heavier, slimmer, taller or shorter than in image 2?',
     'pose_changed (true/false): is the pose different from image 2 (arms, hands, legs, head angle or body position moved)?',
+    'color_wrong (true/false): is any product a clearly different color in image 1 than in its product photo (for example a light blue top rendered white, olive trousers rendered black)? Judge the garment color itself and allow for the lighting of image 2.',
+    'zoomed (true/false): is the person noticeably larger or smaller in the frame than in image 2 (zoomed in or out, re-cropped, or moved to a different position)?',
     'leftover (true/false): are parts of the ORIGINAL garment that should have been replaced still visible in image 1 (old sleeves, collar, straps, hem or waistband poking out from under or around the new product)?',
     'extra_items: list garments the person wears in image 1 that are NOT one of the products AND were NOT already worn in image 2 (typically a jacket, coat or top copied from a product photo model), or [].',
-    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed, pose_changed, leftover or extra_items is not empty; otherwise "pass".`,
-    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"leftover":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
+    `verdict: "retry" if ANY product match < ${QA_MIN_ITEM}` + (fitT.length ? `, any fit_match < ${QA_MIN_FIT}` : '') + `, identity < ${QA_MIN_IDENTITY}, framing < ${QA_MIN_FRAMING}, mirrored, body_changed, pose_changed, color_wrong, zoomed, leftover or extra_items is not empty; otherwise "pass".`,
+    'Return ONLY JSON: {"identity":0-10,"items":[{"n":1,"match":0-10,' + (fitT.length ? '"fit_match":0-10|null,' : '') + '"issue":"..."}],"framing":0-10,"artifacts":["..."],"mirrored":false,"body_changed":false,"pose_changed":false,"color_wrong":false,"zoomed":false,"leftover":false,"extra_items":["..."],"verdict":"pass"|"retry"}'
   ].join('\n');
 }
 // 品質分數（挑最好的一張用）：鏡像／身形／動作改變重扣，多出衣服扣分，加上最差單品分與人物一致分
-const qaScore = qa => !qa ? -99 : (qa.mirrored || qa.body_changed || qa.pose_changed ? -20 : 0) - 5 * ((qa.extra_items || []).length) - (qa.leftover ? 3 : 0) + Math.min(10, ...(qa.items || []).map(x => x.match == null ? 10 : x.match)) + (qa.identity == null ? 8 : qa.identity);
+const qaScore = qa => !qa ? -99 : (qa.mirrored || qa.body_changed || qa.pose_changed || qa.zoomed ? -20 : 0) - (qa.color_wrong ? 6 : 0) - 5 * ((qa.extra_items || []).length) - (qa.leftover ? 3 : 0) + Math.min(10, ...(qa.items || []).map(x => x.match == null ? 10 : x.match)) + (qa.identity == null ? 8 : qa.identity);
 const clamp10 = v => { const n = Number(v); return Number.isFinite(n) ? Math.max(0, Math.min(10, Math.round(n))) : null; };
 // 正規化品質檢查結果；依規則重新判定 verdict（不完全信任模型自己的 verdict）
 function normalizeQa(json, targets) {
@@ -242,11 +244,11 @@ function normalizeQa(json, targets) {
   });
   const identity = clamp10(q.identity), framing = clamp10(q.framing);
   const artifacts = Array.isArray(q.artifacts) ? q.artifacts.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim().slice(0, 120)).slice(0, 6) : [];
-  const mirrored = q.mirrored === true, body_changed = q.body_changed === true, pose_changed = q.pose_changed === true, leftover = q.leftover === true;
+  const mirrored = q.mirrored === true, body_changed = q.body_changed === true, pose_changed = q.pose_changed === true, leftover = q.leftover === true, color_wrong = q.color_wrong === true, zoomed = q.zoomed === true;
   const extra_items = Array.isArray(q.extra_items) ? q.extra_items.filter(x => typeof x === 'string' && x.trim() && !/^(none|n\/a|-)$/i.test(x.trim())).map(x => x.trim().slice(0, 80)).slice(0, 4) : [];
-  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || pose_changed || leftover || extra_items.length > 0;
+  const bad = items.some(it => (it.match != null && it.match < QA_MIN_ITEM) || (it.fit_match != null && it.fit_match < QA_MIN_FIT)) || (identity != null && identity < QA_MIN_IDENTITY) || (framing != null && framing < QA_MIN_FRAMING) || mirrored || body_changed || pose_changed || leftover || color_wrong || zoomed || extra_items.length > 0;
   const verdict = bad || String(q.verdict).toLowerCase() === 'retry' ? 'retry' : 'pass';
-  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, leftover, extra_items, verdict, at: Date.now() };
+  return { identity, items, framing, artifacts, mirrored, body_changed, pose_changed, leftover, color_wrong, zoomed, extra_items, verdict, at: Date.now() };
 }
 // 由檢查結果組成「上次被退回的原因」（放進重做的提示詞）
 // targets（可省略）：帶入各商品的合身度，讓重做提示詞寫出「應該看到的合身樣子」
@@ -266,6 +268,8 @@ function qaCorrections(qa, targets) {
   if (qa.mirrored) out.push('the image was mirrored left-right — keep the exact orientation of Image 1 (background and the hand holding the phone on the same side)');
   if (qa.body_changed) out.push("the customer's body size changed — keep exactly the same body size and proportions as Image 1");
   if (qa.leftover) out.push("parts of the customer's ORIGINAL garment are still visible — fully remove the old garment in the replaced category (no old sleeves, collar, straps or hem showing)");
+  if (qa.color_wrong) out.push('a product has the wrong color — reproduce the exact garment color from its product photo');
+  if (qa.zoomed) out.push('the person was zoomed / re-cropped — keep the person at exactly the same size and position in the frame as Image 1');
   if (qa.pose_changed) out.push("the pose changed — keep exactly the same pose as Image 1 (arms, hands, legs, head angle, and the hand holding the phone)");
   if (qa.extra_items && qa.extra_items.length) out.push('remove garments that were not provided (they came from a product photo model): ' + qa.extra_items.join(', ') + " — keep the customer's own clothing in those areas");
   if (qa.artifacts && qa.artifacts.length) out.push('visible defects: ' + qa.artifacts.join(', '));
@@ -1086,12 +1090,12 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
           let qa = null;
           try { qa = normalizeQa(await visionJson(env, qaPrompt(targets, job.captions), [ch.cur, job.person_url, ...targets.map(t => t.url)], QA_TIMEOUT_MS), targets); }
           catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
-          qa.chain = ci; qa.attempt = (job.retries || 0) + 1; mark('qa:' + qa.verdict);
+          qa.chain = ci; qa.attempt = (job.retries || 0) + 1; mark('qa:' + qa.verdict + (qa.verdict === 'retry' ? '[' + ['mirrored', 'body_changed', 'pose_changed', 'zoomed', 'color_wrong', 'leftover'].filter(k => qa[k]).concat((qa.extra_items || []).length ? ['extra'] : [], (qa.items || []).filter(x => x.match != null && x.match < QA_MIN_ITEM).map(x => 'm' + x.match), qa.identity != null && qa.identity < QA_MIN_IDENTITY ? ['id' + qa.identity] : [], qa.framing != null && qa.framing < QA_MIN_FRAMING ? ['fr' + qa.framing] : [], qa.error ? ['err'] : []).join(',') + ']' : (qa.error ? '[err]' : '')));
           job.qa_for = ch.cur;
           job.qa = qa; job.qa_history = [...(job.qa_history || []), qa].slice(-4);
           job.cands = [...(job.cands || []), { url: ch.cur, s: qaScore(qa), qa }].slice(-3);
           // 換鞋／帽子／飾品那一步改到人（動作、身形、鏡像）→ 不重畫，直接退回 FASHN 換好衣服的那張
-          if (qa.verdict === 'retry' && ch.base && (qa.pose_changed || qa.body_changed || qa.mirrored || (qa.identity != null && qa.identity < QA_MIN_IDENTITY))) {
+          if (qa.verdict === 'retry' && ch.base && (qa.pose_changed || qa.body_changed || qa.mirrored || qa.zoomed || (qa.identity != null && qa.identity < QA_MIN_IDENTITY))) {
             const ost = job.steps.find(s => s.type === 'outfit' && Array.isArray(s.only));
             job.extras_dropped = ost ? ost.only : null; ch.cur = ch.base; job.qa = { ...qa, verdict: 'pass', fallback: 'base' }; ch.i++; continue;
           }
