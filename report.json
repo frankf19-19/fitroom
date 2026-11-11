@@ -1,0 +1,110 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "secs": 67.6,
+  "steps": [
+   [
+    "top",
+    11.3
+   ],
+   [
+    "outfit",
+    37.7
+   ]
+  ],
+  "first_preview": null,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T16:19:51.723286+00:00",
+   "queue_s": 3,
+   "gen_s": 22
+  },
+  "engine": "outfit",
+  "dropped": null
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "secs": 62.3,
+  "steps": [
+   [
+    "top",
+    11.8
+   ],
+   [
+    "bottom",
+    36.5
+   ]
+  ],
+  "first_preview": 36.5,
+  "quality": {
+   "identity": 8,
+   "items": [
+    8,
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null
+ },
+ {
+  "case": "three",
+  "items": [
+   "top",
+   "bottom",
+   "shoes"
+  ],
+  "submit": 202,
+  "secs": 75.3,
+  "steps": [
+   [
+    "top",
+    11.7
+   ],
+   [
+    "bottom",
+    33.7
+   ],
+   [
+    "shoes",
+    52.0
+   ]
+  ],
+  "first_preview": 33.7,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    8,
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-11T16:22:52.106234+00:00",
+   "queue_s": 3,
+   "gen_s": 16
+  },
+  "engine": "outfit",
+  "dropped": null
+ }
+]
