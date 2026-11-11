@@ -18,7 +18,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.23.2';
+const VERSION = '2.24.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -827,13 +827,16 @@ async function handleTryon(request, env, cors, ctx) {
       // 只試一件衣服（上衣／下身／洋裝）：先用 FASHN 專門試穿模型（只改衣服那一塊，人不會被重畫；實測人像最穩、也較便宜）。
       // 品質檢查不過關 → 自動改用整套引擎（Nano Banana）帶著原因重做。
       const clothing = steps.filter(x => x.category), extras = steps.filter(x => !x.category);
-      const fashnFirst = useOutfit && clothing.length >= 1 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      // 只有衣服：FASHN 逐件換（人完全不動）。含鞋子／帽子／飾品／髮型：先用整套引擎一次換好（約 35 秒；逐件換要 80 秒以上），
+      // 品質檢查發現動到人或衣服不對，再退回「FASHN 逐件換衣服＋最後只換配件」的保守做法（job.alt）。
+      const fashnFirst = useOutfit && clothing.length >= 1 && extras.length === 0 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      const fashnAlt = useOutfit && !fashnFirst && clothing.length >= 1 && extras.length >= 1 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
-        pv: (!prefetch && useOutfit && !fashnFirst && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null, first: fashnFirst ? 'fashn' : undefined,
+        pv: (!prefetch && useOutfit && !fashnFirst && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null, first: fashnFirst ? 'fashn' : undefined, alt: fashnAlt ? 'fashn' : undefined,
         // 整套引擎：付費（非預先合成）的工作多一個 qa 步驟（結果品質檢查，不過關自動重做一次）
         // 衣服（上衣／下身／洋裝）逐件用 FASHN（人不動）；鞋子、帽子、飾品、髮型最後才用整套引擎只換那幾樣
-        steps: fashnFirst ? [...clothing.map(x => ({ ...x })), ...(extras.length ? [{ type: 'outfit', engine: 0, only: extras.map(x => x.type) }] : []), { type: 'qa' }] : useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
+        steps: fashnFirst ? [...clothing.map(x => ({ ...x })), { type: 'qa' }] : useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
         want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
@@ -1123,6 +1126,17 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             //  ・人沒動、但衣服本身不對（FASHN 那幾步做壞了）→ 只重做配件救不回來，全部交給整套引擎從頭做
             const clothingBad = (qa.items || []).some(x => CLOTHING_TYPES.includes(x.type) && x.match != null && x.match < QA_MIN_ITEM) || qa.leftover || qa.color_wrong || (qa.extra_items || []).length > 0;
             if (ch.base) job.safe = ch.base;       // 記住「人沒被動過」的那張，最後萬一都不行可以退回它
+            // 整套引擎先做（含配件）的工作不過關，而且是動到人或衣服不對 → 改走保守做法：FASHN 逐件換衣服，最後才只換配件
+            if (job.alt === 'fashn' && !job.alt_used && (changed(qa) || clothingBad)) {
+              job.alt_used = true; job.first = 'fashn';
+              const cl = (job.item_steps || []).filter(x => x.category), ex = (job.item_steps || []).filter(x => !x.category);
+              job.steps = [...cl.map(x => ({ ...x })), ...(ex.length ? [{ type: 'outfit', engine: 0, only: ex.map(x => x.type) }] : []), { type: 'qa' }];
+              job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
+              job.chains.forEach(c => { c.req = null; c.cur = job.person_url; c.i = 0; c.base = null; });
+              mark('alt:fashn');
+              if (!canStart()) return;
+              continue;
+            }
             if (!job.steps.some(s => s.type === 'outfit') || (onlySt && clothingBad && !changed(qa))) { job.steps = [{ type: 'outfit', engine: 0 }, { type: 'qa' }]; job.first_rejected = 'fashn'; job.chains.forEach(c => { c.base = null; }); }   // FASHN 不過關 → 改用整套引擎
             const oi = job.steps.findIndex(s => s.type === 'outfit');
             const ost = job.steps[oi];

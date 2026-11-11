@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.23.2');
+assert.equal(T.VERSION, '2.24.0');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -286,4 +286,18 @@ console.log('vision calls in paid flow: captions 1 + QA per attempt; generations
     assert.equal(row.job.retries, 1); assert.equal(calls.submits.length, 3); assert.deepEqual(calls.submits[2].images, [base, 'https://img/shoes.jpg']); assert.match(calls.submits[2].prompt, /pose changed/);
     r = await poll(); r = r.status === 'ok' ? r : await poll();
     assert.equal(r.status, 'ok'); assert.deepEqual(r.result.extras_dropped, ['shoes']); assert.equal(r.result.dropped_not_charged, 1); assert.equal(r.result.charged, 1, 'only the top is charged'); assert.deepEqual(calls.rpc.map(x => x.p_amount), [1], 'the shoe point is refunded'); assert.equal(r.result.image_urls[0] === base || /front-0-/.test(r.result.image_urls[0]), true); assert.ok(!r.result.not_charged); assert.equal(calls.submits.length, 3); }
+  // 衣服＋鞋子（預設流程）：整套引擎一次換好 → 檢查發現姿勢變了 → 改走保守做法（FASHN 換衣服 → 只換鞋子）→ 過關
+  { const shoes = { type: 'shoes', image_url: 'https://img/shoes.jpg' };
+    fresh({ first: undefined, alt: 'fashn', steps: [{ type: 'outfit', engine: 0 }, { type: 'qa' }], item_steps: [top, shoes], meta: [{ type: 'top', fit: null }, { type: 'shoes', fit: null }], pay: 2, cost: 2 });
+    visionQueue = [ { items: [{ n: 1, description: 'Light blue top' }, { n: 2, description: 'White clogs' }] },
+      { identity: 9, items: [{ n: 1, match: 9 }, { n: 2, match: 9 }], framing: 10, pose_changed: true },
+      { identity: 10, items: [{ n: 1, match: 9 }, { n: 2, match: 8 }], framing: 10 } ];
+    r = await pollOnce();                       // 規格 → 送出整套引擎（人物＋上衣＋鞋子一次換）
+    assert.equal(calls.submits.length, 1); assert.match(calls.submits[0].url, /nano-banana-2/); assert.deepEqual(calls.submits[0].images, [PERSON, 'https://img/top.jpg', 'https://img/shoes.jpg']); assert.equal(fashn.length, 0);
+    r = await poll();                           // 完成 → 檢查：姿勢變了 → 改用 FASHN 逐件
+    assert.equal(row.job.alt_used, true); assert.equal(row.job.retries, 1); assert.equal(fashn.length, 1); assert.equal(fashn[0].model_image, PERSON, 'conservative path restarts from the original photo');
+    r = await pollOnce();                       // FASHN 上衣完成 → 送出「只換鞋子」
+    assert.equal(calls.submits.length, 3); assert.match(calls.submits[2].url, /nano-banana-2/); assert.equal(calls.submits[2].images.length, 2); assert.equal(calls.submits[2].images[1], 'https://img/shoes.jpg');
+    r = await poll(); r = r.status === 'ok' ? r : await poll();
+    assert.equal(r.status, 'ok'); assert.ok(!r.result.extras_dropped); assert.equal(r.result.quality.retried, true); assert.ok(r.result.marks.some(m => m[0] === 'alt:fashn')); assert.equal(calls.submits.length, 3); }
   globalThis.fetch = _f; console.log('fashn ladder + fallback: ok'); }
