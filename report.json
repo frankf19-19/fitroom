@@ -1,0 +1,550 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 4.4,
+  "body_kb": 422,
+  "secs": 27.1,
+  "steps": [
+   [
+    "top",
+    11.4
+   ],
+   [
+    "qa",
+    20.6
+   ]
+  ],
+  "first_preview": 20.6,
+  "quality": {
+   "identity": 10,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "submit:top",
+    1.3
+   ],
+   [
+    "captions",
+    7.1
+   ],
+   [
+    "done:top",
+    15.9
+   ],
+   [
+    "show",
+    15.9
+   ],
+   [
+    "qa:pass",
+    21.2
+   ],
+   [
+    "finish",
+    22.8
+   ]
+  ]
+ },
+ {
+  "case": "one_b",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 4.0,
+  "body_kb": 186,
+  "secs": 77.3,
+  "steps": [
+   [
+    "bottom",
+    12.6
+   ],
+   [
+    "qa",
+    19.2
+   ],
+   [
+    "bottom",
+    25.3
+   ],
+   [
+    "qa",
+    44.8
+   ],
+   [
+    "outfit",
+    49.1
+   ],
+   [
+    "qa",
+    70.7
+   ]
+  ],
+  "first_preview": 19.2,
+  "quality": {
+   "identity": 9,
+   "items": [
+    7
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:15:28.5931+00:00",
+   "queue_s": 3,
+   "gen_s": 19
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.1
+   ],
+   [
+    "submit:bottom",
+    1.2
+   ],
+   [
+    "captions",
+    8.2
+   ],
+   [
+    "done:bottom",
+    15.4
+   ],
+   [
+    "show",
+    15.4
+   ],
+   [
+    "qa:retry[m4]",
+    21.4
+   ],
+   [
+    "submit:bottom",
+    21.5
+   ],
+   [
+    "done:bottom",
+    41.0
+   ],
+   [
+    "show",
+    41.0
+   ],
+   [
+    "qa:retry[extra,m6]",
+    45.3
+   ],
+   [
+    "submit:outfit",
+    45.3
+   ],
+   [
+    "done:outfit",
+    66.9
+   ],
+   [
+    "show",
+    66.9
+   ],
+   [
+    "qa:pass",
+    71.4
+   ],
+   [
+    "finish",
+    73.5
+   ]
+  ]
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 5.2,
+  "body_kb": 525,
+  "secs": 146.9,
+  "steps": [
+   [
+    "top",
+    15.3
+   ],
+   [
+    "bottom",
+    34.9
+   ],
+   [
+    "qa",
+    51.1
+   ],
+   [
+    "top",
+    56.5
+   ],
+   [
+    "bottom",
+    80.1
+   ],
+   [
+    "qa",
+    103.1
+   ],
+   [
+    "outfit",
+    109.3
+   ],
+   [
+    "qa",
+    134.8
+   ]
+  ],
+  "first_preview": 34.9,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    8
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:17:10.469252+00:00",
+   "queue_s": 4,
+   "gen_s": 22
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "submit:top",
+    1.3
+   ],
+   [
+    "captions",
+    10.2
+   ],
+   [
+    "done:top",
+    29.4
+   ],
+   [
+    "submit:bottom",
+    29.5
+   ],
+   [
+    "done:bottom",
+    46.1
+   ],
+   [
+    "show",
+    46.1
+   ],
+   [
+    "qa:retry[extra]",
+    51.9
+   ],
+   [
+    "submit:top",
+    51.9
+   ],
+   [
+    "done:top",
+    75.4
+   ],
+   [
+    "submit:bottom",
+    75.5
+   ],
+   [
+    "done:bottom",
+    98.1
+   ],
+   [
+    "show",
+    98.1
+   ],
+   [
+    "qa:retry[extra,m6]",
+    104.2
+   ],
+   [
+    "submit:outfit",
+    104.2
+   ],
+   [
+    "done:outfit",
+    130.1
+   ],
+   [
+    "show",
+    130.1
+   ],
+   [
+    "qa:pass",
+    138.7
+   ],
+   [
+    "finish",
+    141.8
+   ]
+  ]
+ },
+ {
+  "case": "three",
+  "items": [
+   "top",
+   "bottom",
+   "shoes"
+  ],
+  "submit": 202,
+  "post_secs": 31.2,
+  "body_kb": 362,
+  "secs": 133.7,
+  "steps": [
+   [
+    "top",
+    41.5
+   ],
+   [
+    "bottom",
+    52.6
+   ],
+   [
+    "shoes",
+    65.9
+   ],
+   [
+    "qa",
+    92.2
+   ],
+   [
+    "shoes",
+    98.2
+   ],
+   [
+    "qa",
+    124.4
+   ]
+  ],
+  "first_preview": 52.6,
+  "quality": {
+   "identity": 8,
+   "items": [
+    8,
+    2,
+    5
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:20:28.974219+00:00",
+   "queue_s": 6,
+   "gen_s": 20
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    2.1
+   ],
+   [
+    "submit:top",
+    2.3
+   ],
+   [
+    "captions",
+    10.6
+   ],
+   [
+    "done:top",
+    21.8
+   ],
+   [
+    "submit:bottom",
+    21.8
+   ],
+   [
+    "done:bottom",
+    35.1
+   ],
+   [
+    "submit:outfit",
+    35.1
+   ],
+   [
+    "done:outfit",
+    61.4
+   ],
+   [
+    "show",
+    61.4
+   ],
+   [
+    "qa:retry[m2,m5]",
+    67.3
+   ],
+   [
+    "submit:outfit",
+    67.3
+   ],
+   [
+    "done:outfit",
+    93.2
+   ],
+   [
+    "show",
+    93.2
+   ],
+   [
+    "qa:retry[extra,m2]",
+    100.4
+   ],
+   [
+    "finish",
+    102.8
+   ]
+  ]
+ },
+ {
+  "case": "hard",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 4.0,
+  "body_kb": 296,
+  "secs": 98.0,
+  "steps": [
+   [
+    "top",
+    12.7
+   ],
+   [
+    "qa",
+    22.8
+   ],
+   [
+    "top",
+    28.8
+   ],
+   [
+    "qa",
+    51.8
+   ],
+   [
+    "outfit",
+    56.6
+   ],
+   [
+    "qa",
+    89.8
+   ]
+  ],
+  "first_preview": 22.8,
+  "quality": {
+   "identity": 10,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:22:41.929691+00:00",
+   "queue_s": 10,
+   "gen_s": 22
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    0.6
+   ],
+   [
+    "submit:top",
+    0.9
+   ],
+   [
+    "captions",
+    8.7
+   ],
+   [
+    "done:top",
+    19.0
+   ],
+   [
+    "show",
+    19.0
+   ],
+   [
+    "qa:retry[pose_changed]",
+    24.9
+   ],
+   [
+    "submit:top",
+    25.0
+   ],
+   [
+    "done:top",
+    48.0
+   ],
+   [
+    "show",
+    48.0
+   ],
+   [
+    "qa:retry[color_wrong,m5,id6]",
+    52.8
+   ],
+   [
+    "submit:outfit",
+    52.8
+   ],
+   [
+    "done:outfit",
+    85.2
+   ],
+   [
+    "show",
+    85.2
+   ],
+   [
+    "qa:pass",
+    91.0
+   ],
+   [
+    "finish",
+    94.2
+   ]
+  ]
+ }
+]
