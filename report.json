@@ -1,0 +1,667 @@
+[
+ {
+  "case": "one",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 6.5,
+  "body_kb": 422,
+  "secs": 33.0,
+  "steps": [
+   [
+    "top",
+    14.3
+   ],
+   [
+    "qa",
+    23.1
+   ]
+  ],
+  "first_preview": 23.1,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.8
+   ],
+   [
+    "submit:top",
+    2.2
+   ],
+   [
+    "captions",
+    7.8
+   ],
+   [
+    "done:top",
+    16.7
+   ],
+   [
+    "show",
+    16.7
+   ],
+   [
+    "qa:pass",
+    25.0
+   ],
+   [
+    "finish",
+    27.0
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 9,
+      "issue": "The neckline appears slightly higher and less wide than in the product photo."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "one_b",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.6,
+  "body_kb": 186,
+  "secs": 28.1,
+  "steps": [
+   [
+    "bottom",
+    12.7
+   ],
+   [
+    "qa",
+    20.7
+   ]
+  ],
+  "first_preview": 20.7,
+  "quality": {
+   "identity": 9,
+   "items": [
+    7
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.0
+   ],
+   [
+    "submit:bottom",
+    1.1
+   ],
+   [
+    "captions",
+    9.4
+   ],
+   [
+    "done:bottom",
+    17.1
+   ],
+   [
+    "show",
+    17.1
+   ],
+   [
+    "qa:pass",
+    23.4
+   ],
+   [
+    "finish",
+    24.9
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 7,
+      "issue": "Trousers are more fitted through the hips and legs, with a slightly darker, more olive beige color and more pronounced creasing. The black belt is missing."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "two",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 4.7,
+  "body_kb": 525,
+  "secs": 44.4,
+  "steps": [
+   [
+    "top",
+    16.4
+   ],
+   [
+    "bottom",
+    22.0
+   ],
+   [
+    "qa",
+    35.3
+   ]
+  ],
+  "first_preview": 22.0,
+  "quality": {
+   "identity": 9,
+   "items": [
+    8,
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.3
+   ],
+   [
+    "submit:top",
+    1.4
+   ],
+   [
+    "captions",
+    10.0
+   ],
+   [
+    "done:top",
+    17.2
+   ],
+   [
+    "submit:bottom",
+    17.3
+   ],
+   [
+    "done:bottom",
+    30.8
+   ],
+   [
+    "show",
+    30.8
+   ],
+   [
+    "qa:pass",
+    37.9
+   ],
+   [
+    "finish",
+    39.3
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The neckline is narrower and rounder, and the hem sits slightly higher than in the product photo."
+     },
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "The trousers appear slightly darker and more tapered, with the waistband and belt loops mostly obscured by the top."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "one_c",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 4.1,
+  "body_kb": 387,
+  "secs": 55.8,
+  "steps": [
+   [
+    "top",
+    12.7
+   ],
+   [
+    "qa",
+    19.9
+   ],
+   [
+    "outfit",
+    25.1
+   ],
+   [
+    "qa",
+    48.2
+   ]
+  ],
+  "first_preview": 19.9,
+  "quality": {
+   "identity": 9,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-11T17:41:29.081889+00:00",
+   "queue_s": 3,
+   "gen_s": 21
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "submit:top",
+    1.4
+   ],
+   [
+    "captions",
+    8.2
+   ],
+   [
+    "done:top",
+    16.1
+   ],
+   [
+    "show",
+    16.1
+   ],
+   [
+    "qa:retry[m5]",
+    21.2
+   ],
+   [
+    "submit:outfit",
+    21.2
+   ],
+   [
+    "done:outfit",
+    44.3
+   ],
+   [
+    "show",
+    44.3
+   ],
+   [
+    "qa:pass",
+    49.0
+   ],
+   [
+    "finish",
+    51.8
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [],
+    "flags": [],
+    "items": [
+     {
+      "m": 5,
+      "t": "top",
+      "issue": "Cardigan is largely unbuttoned and pulled open asymmetrically, exposing the midriff, rather than falling straight to the hips with a partially buttoned front. The knit texture and button details are i"
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 9,
+    "artifacts": [
+     "Cardigan front is unnaturally distorted around the waist."
+    ]
+   },
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "Cardigan is worn with a wider open neckline and a larger exposed midriff instead of the product's partially buttoned, close-fitting front."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "one_d",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.3,
+  "body_kb": 343,
+  "secs": 30.6,
+  "steps": [
+   [
+    "bottom",
+    10.6
+   ],
+   [
+    "qa",
+    23.4
+   ]
+  ],
+  "first_preview": 23.4,
+  "quality": {
+   "identity": 8,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "submit:bottom",
+    1.3
+   ],
+   [
+    "captions",
+    6.9
+   ],
+   [
+    "done:bottom",
+    20.2
+   ],
+   [
+    "show",
+    20.2
+   ],
+   [
+    "qa:pass",
+    25.9
+   ],
+   [
+    "finish",
+    27.3
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 8,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "Front pleats are narrower and more numerous, and the skirt has visible puckering near the waistband."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "hard",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 2.8,
+  "body_kb": 296,
+  "secs": 25.3,
+  "steps": [
+   [
+    "top",
+    9.3
+   ],
+   [
+    "qa",
+    17.1
+   ]
+  ],
+  "first_preview": 17.1,
+  "quality": {
+   "identity": 8,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.1
+   ],
+   [
+    "submit:top",
+    1.2
+   ],
+   [
+    "captions",
+    6.5
+   ],
+   [
+    "done:top",
+    14.3
+   ],
+   [
+    "show",
+    14.3
+   ],
+   [
+    "qa:pass",
+    21.7
+   ],
+   [
+    "finish",
+    22.6
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 8,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The top flares outward at the hips and has an uneven hem rather than the product's straighter, relaxed cut."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": [
+     "The measuring tape disappears across the torso and partially merges with the top."
+    ]
+   }
+  ]
+ },
+ {
+  "case": "three",
+  "items": [
+   "top",
+   "bottom",
+   "shoes"
+  ],
+  "submit": 202,
+  "post_secs": 3.3,
+  "body_kb": 362,
+  "secs": 55.0,
+  "steps": [
+   [
+    "top",
+    13.1
+   ],
+   [
+    "bottom",
+    15.7
+   ],
+   [
+    "shoes",
+    27.7
+   ],
+   [
+    "qa",
+    48.3
+   ]
+  ],
+  "first_preview": 15.7,
+  "quality": {
+   "identity": 7,
+   "items": [
+    9,
+    6,
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-11T17:44:36.631297+00:00",
+   "queue_s": 3,
+   "gen_s": 18
+  },
+  "engine": "outfit",
+  "dropped": [
+   "shoes"
+  ],
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "submit:top",
+    1.2
+   ],
+   [
+    "captions",
+    9.8
+   ],
+   [
+    "done:top",
+    12.4
+   ],
+   [
+    "submit:bottom",
+    12.4
+   ],
+   [
+    "done:bottom",
+    23.9
+   ],
+   [
+    "submit:outfit",
+    23.9
+   ],
+   [
+    "done:outfit",
+    45.0
+   ],
+   [
+    "show",
+    45.0
+   ],
+   [
+    "qa:retry[pose_changed,m6]",
+    50.7
+   ],
+   [
+    "finish",
+    51.7
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "retry",
+    "identity": 7,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 9,
+      "issue": "The neckline is slightly narrower and more rounded than the product's wide boat neckline."
+     },
+     {
+      "t": "bottom",
+      "m": 6,
+      "issue": "The trousers are noticeably slimmer and more tapered, with shorter hems than the wide, full-length product; the waistband and belt are not visible."
+     },
+     {
+      "t": "shoes",
+      "m": 8,
+      "issue": "The clogs have a different arrangement of ventilation holes and less prominent side openings."
+     }
+    ],
+    "flags": [
+     "pose_changed"
+    ],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ }
+]
