@@ -14,7 +14,7 @@ async function falRun(model, input) {
   const j = await r.json(); if (!j.status_url) throw new Error('submit ' + r.status + ' ' + JSON.stringify(j).slice(0, 300));
   const t0 = Date.now();
   while (Date.now() - t0 < 240000) {
-    await new Promise(z => setTimeout(z, 3000));
+    await new Promise(z => setTimeout(z, process.env.SERIAL ? 1000 : 3000));
     const s = await (await fetch(j.status_url, { headers: { Authorization: 'Key ' + KEY } })).json();
     if (s.status === 'COMPLETED') { const out = await (await fetch(j.response_url, { headers: { Authorization: 'Key ' + KEY } })).json(); return { out, secs: Math.round((Date.now() - t0) / 1000) }; }
     if (s.status === 'FAILED' || s.error) throw new Error('failed ' + JSON.stringify(s).slice(0, 300));
@@ -43,13 +43,14 @@ for (const [ci, [personPath, pid, type]] of CASES.entries()) {
     fmax2: () => falRun('fashn/tryon/max', { model_image: person, product_image: garment, generation_mode: 'fast', resolution: '1k', output_format: 'jpeg' }),
     fmax3: () => falRun('fal-ai/fashn/tryon-max', { model_image: person, product_image: garment, generation_mode: 'fast', resolution: '1k', output_format: 'jpeg' }),
   };
-  await Promise.all(ENGINES.map(async e => {
+  const runAll = process.env.SERIAL ? async f => { for (const e of ENGINES) await f(e); } : f => Promise.all(ENGINES.map(f));
+  await runAll(async e => {
     try {
       const { out, secs } = await jobs[e](); const u = pickUrl(out);
       const b = Buffer.from(await (await fetch(u)).arrayBuffer()); writeFileSync(`out/c${ci}_${e}.jpg`, b);
       report.push({ case: ci, engine: e, secs, ok: true });
     } catch (err) { report.push({ case: ci, engine: e, ok: false, error: String(err.message).slice(0, 300) }); }
-  }));
+  });
 }
 writeFileSync('out/report.json', JSON.stringify({ engines: ENGINES, cases: CASES, report }, null, 1));
 console.log(JSON.stringify(report));
