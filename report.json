@@ -1,0 +1,461 @@
+[
+ {
+  "case": "flare",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 4.0,
+  "body_kb": 275,
+  "secs": 67.4,
+  "steps": [
+   [
+    "outfit",
+    11.0
+   ],
+   [
+    "qa",
+    36.1
+   ],
+   [
+    "outfit",
+    40.0
+   ],
+   [
+    "qa",
+    60.4
+   ]
+  ],
+  "first_preview": 36.1,
+  "quality": {
+   "identity": 8,
+   "items": [
+    7
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-13T16:41:09.843423+00:00",
+   "queue_s": 3,
+   "gen_s": 18
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "captions",
+    6.9
+   ],
+   [
+    "submit:outfit",
+    6.9
+   ],
+   [
+    "done:outfit",
+    32.1
+   ],
+   [
+    "show",
+    32.1
+   ],
+   [
+    "qa:retry[m6]",
+    36.0
+   ],
+   [
+    "submit:outfit",
+    36.0
+   ],
+   [
+    "done:outfit",
+    56.5
+   ],
+   [
+    "show",
+    56.5
+   ],
+   [
+    "qa:pass",
+    61.4
+   ],
+   [
+    "finish",
+    63.4
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [],
+    "flags": [],
+    "items": [
+     {
+      "m": 6,
+      "t": "bottom",
+      "issue": "Legs are much narrower and straighter rather than distinctly flared; the silver-tone front button is not visible."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 9,
+    "artifacts": []
+   },
+   {
+    "verdict": "pass",
+    "identity": 8,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 7,
+      "issue": "The legs are narrower and less flared than the product, and the silver front button is not visible."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "skirt",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.3,
+  "body_kb": 429,
+  "secs": 46.3,
+  "steps": [
+   [
+    "outfit",
+    10.2
+   ],
+   [
+    "qa",
+    38.3
+   ]
+  ],
+  "first_preview": 38.3,
+  "quality": {
+   "identity": 10,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-13T16:42:44.459632+00:00",
+   "queue_s": 3,
+   "gen_s": 25
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.3
+   ],
+   [
+    "captions",
+    6.8
+   ],
+   [
+    "submit:outfit",
+    6.8
+   ],
+   [
+    "done:outfit",
+    35.0
+   ],
+   [
+    "show",
+    35.0
+   ],
+   [
+    "qa:pass",
+    40.3
+   ],
+   [
+    "finish",
+    42.9
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 10,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "The ruffled tiers are more evenly spaced and pronounced, and the skirt appears slightly fuller than in the product photo."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "top+flare",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 2.9,
+  "body_kb": 597,
+  "secs": 40.0,
+  "steps": [
+   [
+    "outfit",
+    10.8
+   ],
+   [
+    "qa",
+    33.8
+   ]
+  ],
+  "first_preview": 21.3,
+  "quality": {
+   "identity": 9,
+   "items": [
+    8,
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-13T16:43:55.981532+00:00",
+   "queue_s": 3,
+   "gen_s": 20
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "captions",
+    7.7
+   ],
+   [
+    "submit:outfit",
+    7.7
+   ],
+   [
+    "done:outfit",
+    30.9
+   ],
+   [
+    "show",
+    30.9
+   ],
+   [
+    "qa:pass",
+    35.0
+   ],
+   [
+    "finish",
+    37.1
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The cardigan appears darker and shorter, with a narrower neckline opening and fewer visible buttons."
+     },
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "The legs are less wide and flared, and the hems reveal more of the shoes."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "top+skirt+shoes",
+  "items": [
+   "top",
+   "bottom",
+   "shoes"
+  ],
+  "submit": 202,
+  "post_secs": 2.9,
+  "body_kb": 765,
+  "secs": 74.7,
+  "steps": [
+   [
+    "outfit",
+    12.0
+   ],
+   [
+    "qa",
+    34.5
+   ],
+   [
+    "top",
+    39.8
+   ],
+   [
+    "bottom",
+    49.9
+   ],
+   [
+    "qa",
+    67.7
+   ]
+  ],
+  "first_preview": 22.0,
+  "quality": {
+   "identity": 8,
+   "items": [
+    6,
+    9,
+    7
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-13T16:45:01.627904+00:00",
+   "queue_s": 3,
+   "gen_s": 15
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.3
+   ],
+   [
+    "captions",
+    8.9
+   ],
+   [
+    "submit:outfit",
+    8.9
+   ],
+   [
+    "done:outfit",
+    31.6
+   ],
+   [
+    "show",
+    31.6
+   ],
+   [
+    "qa:retry[pose_changed,m6,id5]",
+    36.9
+   ],
+   [
+    "alt:fashn",
+    36.9
+   ],
+   [
+    "submit:top",
+    36.9
+   ],
+   [
+    "done:top",
+    46.9
+   ],
+   [
+    "submit:outfit",
+    46.9
+   ],
+   [
+    "done:outfit",
+    64.8
+   ],
+   [
+    "show",
+    64.8
+   ],
+   [
+    "qa:retry[m6]",
+    69.6
+   ],
+   [
+    "finish",
+    71.8
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [],
+    "flags": [
+     "pose_changed"
+    ],
+    "items": [
+     {
+      "m": 8,
+      "t": "top",
+      "issue": "Cable-knit texture is less distinct and the button-front details are less visible."
+     },
+     {
+      "m": 8,
+      "t": "bottom",
+      "issue": "Skirt is somewhat less flared and its horizontal fringe tiers are less defined."
+     },
+     {
+      "m": 6,
+      "t": "shoes",
+      "issue": "Boots have prominent front lacing instead of the smooth front and ankle strap with silver ring hardware."
+     }
+    ],
+    "framing": 9,
+    "verdict": "retry",
+    "identity": 5,
+    "artifacts": []
+   },
+   {
+    "verdict": "retry",
+    "identity": 8,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 6,
+      "issue": "Cardigan is cropped at the waist rather than hip-length, with no open lower hem; cable-knit detail is subdued."
+     },
+     {
+      "t": "bottom",
+      "m": 9,
+      "issue": "Skirt appears slightly fuller and more uniformly tiered than the product."
+     },
+     {
+      "t": "shoes",
+      "m": 7,
+      "issue": "Ankle strap and silver ring hardware are not discernible; boots appear taller and narrower at the ankle."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ }
+]
