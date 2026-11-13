@@ -1,0 +1,78 @@
+{
+ "prefetch_start": {
+  "id": 150,
+  "prefetch": true
+ },
+ "prefetch_done": {
+  "status": "prefetched",
+  "secs": 38,
+  "error": null
+ },
+ "claim": {
+  "id": 150,
+  "async": true,
+  "cost": 3,
+  "claimed": true
+ },
+ "final": {
+  "status": "ok",
+  "secs_after_press": 0,
+  "quality": {
+   "items": [
+    9,
+    8,
+    8
+   ],
+   "framing": 10,
+   "retried": false,
+   "identity": 9
+  },
+  "charged": 0,
+  "error": null
+ },
+ "rows": [
+  {
+   "id": 149,
+   "status": "bonus",
+   "error": null,
+   "job_keys": []
+  },
+  {
+   "id": 150,
+   "status": "ok",
+   "error": null,
+   "job_keys": [
+    "alt",
+    "aspect",
+    "bkey",
+    "body",
+    "cands",
+    "cap_done",
+    "captions",
+    "chains",
+    "cost",
+    "engine",
+    "face_hint",
+    "free",
+    "free_left",
+    "front",
+    "hints",
+    "hires",
+    "item_steps",
+    "key",
+    "lock_until",
+    "meta",
+    "pay",
+    "person_url",
+    "pf",
+    "prefetch",
+    "pv",
+    "qa",
+    "qa_for",
+    "qa_history",
+    "qa_log",
+    "steps"
+   ]
+  }
+ ]
+}
