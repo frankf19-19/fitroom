@@ -1,0 +1,128 @@
+{
+ "engines": [
+  "fashn_b",
+  "fashn",
+  "fashn_seg",
+  "nb2"
+ ],
+ "cases": [
+  [
+   "qa/real_f.jpg",
+   4563,
+   "bottom"
+  ],
+  [
+   "qa/real_f.jpg",
+   4889,
+   "bottom"
+  ],
+  [
+   "qa/px_8811247.jpg",
+   4563,
+   "bottom"
+  ],
+  [
+   "qa/px_30998323.jpg",
+   4889,
+   "bottom"
+  ]
+ ],
+ "report": [
+  {
+   "case": 0,
+   "engine": "fashn_b",
+   "secs": 9,
+   "ok": true
+  },
+  {
+   "case": 0,
+   "engine": "fashn",
+   "secs": 15,
+   "ok": true
+  },
+  {
+   "case": 0,
+   "engine": "fashn_seg",
+   "secs": 15,
+   "ok": true
+  },
+  {
+   "case": 0,
+   "engine": "nb2",
+   "secs": 21,
+   "ok": true
+  },
+  {
+   "case": 1,
+   "engine": "fashn_b",
+   "secs": 9,
+   "ok": true
+  },
+  {
+   "case": 1,
+   "engine": "fashn_seg",
+   "secs": 15,
+   "ok": true
+  },
+  {
+   "case": 1,
+   "engine": "fashn",
+   "secs": 18,
+   "ok": true
+  },
+  {
+   "case": 1,
+   "engine": "nb2",
+   "secs": 18,
+   "ok": true
+  },
+  {
+   "case": 2,
+   "engine": "fashn_b",
+   "secs": 18,
+   "ok": true
+  },
+  {
+   "case": 2,
+   "engine": "nb2",
+   "secs": 18,
+   "ok": true
+  },
+  {
+   "case": 2,
+   "engine": "fashn",
+   "secs": 24,
+   "ok": true
+  },
+  {
+   "case": 2,
+   "engine": "fashn_seg",
+   "secs": 25,
+   "ok": true
+  },
+  {
+   "case": 3,
+   "engine": "fashn_b",
+   "secs": 9,
+   "ok": true
+  },
+  {
+   "case": 3,
+   "engine": "nb2",
+   "secs": 21,
+   "ok": true
+  },
+  {
+   "case": 3,
+   "engine": "fashn_seg",
+   "secs": 24,
+   "ok": true
+  },
+  {
+   "case": 3,
+   "engine": "fashn",
+   "secs": 27,
+   "ok": true
+  }
+ ]
+}
