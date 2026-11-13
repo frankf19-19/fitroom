@@ -227,6 +227,8 @@
   @media(min-width:900px){#resultActions{grid-template-columns:repeat(4,1fr)}}
   .cmp{position:relative;display:inline-block;max-width:100%;user-select:none;touch-action:pan-y;border-radius:var(--r-m);overflow:hidden}
   .cmp img{display:block;max-width:100%;max-height:680px}
+  .result .polaroid{min-width:0;box-sizing:border-box}
+  .result .cmp>img,.result .polaroid .view-img.on{max-width:min(100%,calc(100vw - 64px))}   /* iOS：寬照片在 inline-block 裡 max-width:100% 不生效，結果圖會比螢幕寬、整頁被撐大 */
   .cmp .after{position:absolute;inset:0;overflow:hidden;width:50%}
   .cmp .after img{position:absolute;left:0;top:0;height:100%;width:auto;max-width:none}
   .cmp .hd{position:absolute;top:0;bottom:0;left:50%;width:2px;background:rgba(255,255,255,.95);box-shadow:0 0 0 1px rgba(28,26,25,.06);pointer-events:none}
@@ -306,6 +308,7 @@
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
   .chip{display:inline-flex;align-items:center;padding:8px 14px;border:1px solid var(--line2);border-radius:999px;background:#fff;font-size:13px;letter-spacing:.5px;cursor:pointer;color:var(--ink2);transition:background var(--t),color var(--t),border-color var(--t)}
   .chip:hover{background:var(--bg2)}
+  .wear{margin:10px 0 2px;display:grid;gap:8px}.wear .wr{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.wear .wl{font-size:12px;letter-spacing:1px;color:var(--muted);min-width:64px}.wear .chip{padding:6px 12px;font-size:12px}
   .chip.on{background:var(--accent-s);border-color:#edbfb5;color:var(--accent-ink);font-weight:500}
   .switch{position:relative;width:46px;height:28px;border-radius:999px;background:#ddd4ce;cursor:pointer;flex:none;transition:background .2s}
   .switch::before{content:"";position:absolute;inset:-10px -8px}
@@ -740,6 +743,7 @@
           <h2>想試什麼？<span class="muted" style="font-weight:400">點格子放衣服，或到商店挑</span></h2>
           <div id="rackBox"></div>
           <div class="slots" id="slots"></div>
+          <div id="wearBox"></div>
           <details class="adv" id="advOpts"><summary>更多選項 <span class="muted" id="advSummary"></span></summary>
           <div class="opt-row"><span>360° 旋轉 <span class="muted">轉一圈看側面背面，+2 點</span></span><div class="switch" id="wantViews" aria-label="360° 旋轉"></div></div>
           <div class="opt-row" style="margin-top:0"><span>一次 2 張挑一張 <span class="muted">點數 ×2</span></span><div class="switch" id="twoVariants" aria-label="一次 2 張挑一張"></div></div>
@@ -983,7 +987,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-13-02';
+const BUILD = '2026-11-14-01';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1157,7 +1161,7 @@ async function verifyOtp(email, code, btn){
   if(btn) btn.disabled=false;
   if (error) { toast('驗證碼錯誤或已過期'); haptic('error'); } else { haptic('success'); }
 }
-function resetUserState(){ state.me=null; state.wardrobe=[]; state.history=[]; state.result=null; state.person=null; state.personOrig=null; state.slots={}; try{ ['tryon.person','tryon.slots'].forEach(k=>{ localStorage.removeItem(k); sessionStorage.removeItem(k); }); }catch{} }
+function resetUserState(){ state.me=null; state.wardrobe=[]; state.history=[]; state.result=null; state.person=null; state.personOrig=null; state.slots={}; try{ ['tryon.person','tryon.slots','tryon.last'].forEach(k=>{ localStorage.removeItem(k); sessionStorage.removeItem(k); }); }catch{} }
 $('btnLogout').onclick=async e=>{ if(e) e.preventDefault(); if(!await ask('要登出嗎？','',{ok:'登出'})) return; if(supa) await supa.auth.signOut(); resetUserState(); location.replace(location.pathname); };
 // 已寄出驗證碼的 Email 記 10 分鐘：底部選單關掉再開，不必重寄（Supabase 有 60 秒冷卻）
 let otpPending=null;
@@ -1343,8 +1347,14 @@ $('btnPersonFromHistory').onclick=async()=>{
   $('pickBody').querySelectorAll('.witem').forEach(el=>el.onclick=async()=>{ closePick(); try{ setPerson(await urlToDataUri(el.dataset.url)); toast('已設為底圖'); }catch{ toast('載入失敗'); } });
 };
 
+function saveLast(){ try{ if(!state.result) return; const o={ t:Date.now(), p:(state.resultPerson||'').length, items:(state.runItems||[]).map(i=>({type:i.type,name:i.name||null,product_id:i.product_id||null,buy_url:i.buy_url||null})), q:state.qaRetried, n:state.notCharged, x:state.extrasDropped||'' };
+  try{ localStorage.setItem('tryon.last', JSON.stringify({...o, img:state.result})); }catch{ if(state.lastUrl) localStorage.setItem('tryon.last', JSON.stringify({...o, img:state.lastUrl})); else localStorage.removeItem('tryon.last'); } }catch{} }
+function restoreLast(){ try{ const L=JSON.parse(localStorage.getItem('tryon.last')||'null'); if(!L||!L.img||!state.person||state.result||busy||Date.now()-L.t>86400000||L.p!==state.person.length) return;
+  state.result=L.img; state.resultPerson=state.person; state.runItems=L.items||[]; state.qaRetried=!!L.q; state.notCharged=!!L.n; state.extrasDropped=L.x||'';
+  renderCompare(state.person, L.img); $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); try{ renderBuyLinks(); }catch{} try{ updateSticky(); }catch{} }catch{} }
 function restoreSession(){
   try{ const p=localStorage.getItem('tryon.person')||sessionStorage.getItem('tryon.person'); if(p) setPerson(p); const sl=localStorage.getItem('tryon.slots')||sessionStorage.getItem('tryon.slots'); if(sl){ state.slots=JSON.parse(sl); renderSlots(); } }catch{}
+  setTimeout(restoreLast, 600);
 }
 // 只在單品真的改變時才寫入（data URI 很大，每次 renderSlots 都寫會卡）；超過容量就提醒
 let persistT=null;
@@ -1352,6 +1362,13 @@ function persistSlots(){ clearTimeout(persistT); persistT=setTimeout(()=>{ try{ 
 function setSlot(type, v){ if(v) state.slots[type]=v; else delete state.slots[type]; renderSlots(); persistSlots(); }
 
 /* ---------- 單品格子 ---------- */
+/* 穿法：上衣要不要紮進去、褲腳要放下還是反摺（不選＝照商品圖的穿法） */
+let wear={}; try{ wear=JSON.parse(localStorage.getItem('tryon.wear')||'{}')||{}; }catch{}
+const WEAR_DEF=[['tuck','top','上衣下襬',[['','照商品圖'],['in','紮進去'],['out','放外面']]],['hem','bottom','褲腳',[['','照商品圖'],['down','自然放下'],['cuff','反摺捲起']]]];
+function wearParam(){ const o={}; if(state.slots.top&&(wear.tuck==='in'||wear.tuck==='out')) o.tuck=wear.tuck; if(state.slots.bottom&&(wear.hem==='down'||wear.hem==='cuff')) o.hem=wear.hem; return Object.keys(o).length?o:undefined; }
+function renderWear(){ const box=$('wearBox'); if(!box) return; const rows=WEAR_DEF.filter(d=>state.slots[d[1]]);
+  box.innerHTML=rows.length?`<div class="wear">${rows.map(([k,,label,opts])=>`<div class="wr"><span class="wl">${label}</span>${opts.map(([v,t])=>`<button type="button" class="chip${(wear[k]||'')===v?' on':''}" data-wk="${k}" data-wv="${v}" aria-pressed="${(wear[k]||'')===v}">${t}</button>`).join('')}</div>`).join('')}</div>`:'';
+  box.querySelectorAll('[data-wk]').forEach(b=>b.onclick=()=>{ if(b.dataset.wv) wear[b.dataset.wk]=b.dataset.wv; else delete wear[b.dataset.wk]; try{ localStorage.setItem('tryon.wear',JSON.stringify(wear)); }catch{} haptic(); renderWear(); try{ schedulePrefetch(); }catch{} }); }
 function renderSlots(){
   $('slots').innerHTML = SLOT_DEFS.map(s=>{
     const v=state.slots[s.type];
@@ -1361,7 +1378,7 @@ function renderSlots(){
   }).join('');
   $('slots').querySelectorAll('.slot').forEach(el=>{ el.setAttribute('role','button'); el.setAttribute('tabindex','0'); el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }; });
   $('slots').querySelectorAll('.slot').forEach(el=>el.onclick=e=>{ if(e.target.dataset.x){ setSlot(e.target.dataset.x,null); return; } const v=state.slots[el.dataset.type]; if(v&&(v.image||v.text)) return openItemView({type:el.dataset.type,...v},'slot'); openSlotMenu(el.dataset.type); });
-  try{ renderRack(); }catch{} try{ schedulePrefetch(); }catch{}
+  try{ renderRack(); }catch{} try{ renderWear(); }catch{} try{ schedulePrefetch(); }catch{}
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
   const nItems=Object.keys(state.slots).length;
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0);
@@ -1425,7 +1442,49 @@ function loadImg(src){ return new Promise((res,rej)=>{ const im=new Image(); im.
 function loadImgCORS(src){ return new Promise((res,rej)=>{ const im=new Image(); if(/^https?:/.test(src)) im.crossOrigin='anonymous'; im.onload=()=>res(im); im.onerror=rej; im.src=src; }); }
 /* 頭部與頭髮還原：用身體關鍵點找頭的位置（對鏡自拍臉被手機擋住也能用），
    對齊後把原照片的頭和頭髮羽化貼回生成圖，讓人看起來就是本人。背景對不上（AI 改了構圖）就不貼。 */
+/* 生成圖被稍微放大／重新取景時（背景對不上）：用兩張圖各自的臉部定位點算出縮放與位移，把原圖的頭縮放後貼到生成圖上 */
+async function headRestoreZoom(originalUri, resultUri){
+  const [o,r]=await Promise.all([loadImgCORS(originalUri), loadImgCORS(resultUri)]);
+  const po=(await runPose(o)).lm, pr=(await runPose(r)).lm; if(!po||!pr) throw new Error('no pose');
+  const W=Math.min(1600,r.width), k=W/r.width, H=Math.round(r.height*k);
+  const vis=(l,i)=>(l[i].visibility==null?1:l[i].visibility);
+  const ids=[0,1,2,3,4,5,6,7,8,9,10].filter(i=>vis(po,i)>0.3&&vis(pr,i)>0.3); if(ids.length<6) throw new Error('face points');
+  const A=ids.map(i=>[po[i].x*o.width,po[i].y*o.height]), B=ids.map(i=>[pr[i].x*W,pr[i].y*H]);
+  const mean=a=>[a.reduce((t,p)=>t+p[0],0)/a.length,a.reduce((t,p)=>t+p[1],0)/a.length], ma=mean(A), mb=mean(B);
+  let num=0,den=0; A.forEach((p,i)=>{ const ax=p[0]-ma[0],ay=p[1]-ma[1]; num+=ax*(B[i][0]-mb[0])+ay*(B[i][1]-mb[1]); den+=ax*ax+ay*ay; });
+  const sc=num/den, ratio=sc/(W/o.width); if(!(ratio>0.8&&ratio<1.3)) throw new Error('scale '+ratio.toFixed(2));
+  const tx=mb[0]-sc*ma[0], ty=mb[1]-sc*ma[1];
+  const c0=document.createElement('canvas'); c0.width=W; c0.height=H; const x0=c0.getContext('2d'); x0.setTransform(sc,0,0,sc,tx,ty); x0.drawImage(o,0,0); x0.setTransform(1,0,0,1,0,0);
+  const c1=document.createElement('canvas'); c1.width=W; c1.height=H; const x1=c1.getContext('2d'); x1.drawImage(r,0,0,W,H);
+  // 頭的位置用原圖的定位點換算到生成圖座標（原圖的定位比較可靠）
+  const P=i=>({x:po[i].x*o.width*sc+tx,y:po[i].y*o.height*sc+ty,v:vis(po,i)});
+  const nose=P(0), eL=P(2), eR=P(5), aL=P(7), aR=P(8), mL=P(9), mR=P(10), sL=P(11), sR=P(12);
+  if(sL.v<0.3||sR.v<0.3) throw new Error('no shoulders');
+  const shY=(sL.y+sR.y)/2, shW=Math.abs(sL.x-sR.x);
+  const earW=(aL.v>0.3&&aR.v>0.3)?Math.abs(aL.x-aR.x):Math.max(Math.abs(eL.x-eR.x)*2.2, shW*0.42);
+  const cx=(aL.v>0.3&&aR.v>0.3)?(aL.x+aR.x)/2:nose.x;
+  const mouthY=(mL.y+mR.y)/2, chin=mouthY+(shY-mouthY)*0.32;
+  const rx=Math.max(earW*0.82, shW*0.3), top=Math.max(0, nose.y-earW*1.25);
+  const cy=(top+chin)/2, ry=(chin-top)/2; if(!(rx>8&&ry>8)) throw new Error('head too small');
+  // 微調位移：比較頭部內側（兩張圖的臉大致相同）
+  const Ad=x0.getImageData(0,0,W,H).data, Bd=x1.getImageData(0,0,W,H).data, d=Math.max(1,Math.round(rx/30));
+  const score=(dx,dy)=>{ let e=0,n=0; for(let y=Math.round(cy-ry*0.8);y<cy+ry*0.8;y+=d) for(let x=Math.round(cx-rx*0.7);x<cx+rx*0.7;x+=d){ const x2=x+dx,y2=y+dy; if(x<0||y<0||x>=W||y>=H||x2<0||y2<0||x2>=W||y2>=H) continue; const i=(y*W+x)*4,j=(y2*W+x2)*4; e+=Math.abs(Ad[i]-Bd[j])+Math.abs(Ad[i+1]-Bd[j+1])+Math.abs(Ad[i+2]-Bd[j+2]); n++; } return n?e/n/3:1e9; };
+  const R=Math.max(2,Math.round(rx*0.18)); let best={e:score(0,0),dx:0,dy:0};
+  for(let dy=-R;dy<=R;dy++) for(let dx=-R;dx<=R;dx++){ const e=score(dx,dy); if(e<best.e) best={e,dx,dy}; }
+  if(best.e>42) throw new Error('face mismatch '+Math.round(best.e));
+  const f=document.createElement('canvas'); f.width=W; f.height=H; const fx=f.getContext('2d');
+  fx.drawImage(c0,best.dx,best.dy); fx.globalCompositeOperation='destination-in';
+  fx.save(); fx.translate(cx+best.dx,cy+best.dy); fx.scale(1,ry/rx);
+  const g=fx.createRadialGradient(0,0,rx*0.72,0,0,rx); g.addColorStop(0,'rgba(0,0,0,1)'); g.addColorStop(1,'rgba(0,0,0,0)');
+  fx.fillStyle=g; fx.beginPath(); fx.arc(0,0,rx,0,Math.PI*2); fx.fill(); fx.restore();
+  x1.drawImage(f,0,0);
+  return c1.toDataURL('image/jpeg',0.92);
+}
 async function headRestore(originalUri, resultUri){
+  try{ return await headRestoreExact(originalUri, resultUri); }
+  catch(e){ if(!/scene changed/.test(String(e&&e.message))) throw e; return await headRestoreZoom(originalUri, resultUri); }
+}
+async function headRestoreExact(originalUri, resultUri){
   const [o,r]=await Promise.all([loadImgCORS(originalUri), loadImgCORS(resultUri)]);
   const p=await runPose(o); const lm=p.lm; if(!lm) throw new Error('no pose');
   const W=Math.min(1600,o.width), sc=W/o.width, H=Math.round(o.height*sc);
@@ -1742,7 +1801,7 @@ function renderRack(){
 renderRack();
 
 /* ---------- 預先合成：挑好就先在背景跑，按下「開始」才扣點 ---------- */
-async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, 'engine:'+(engineParam()||''), ...items.map(i=>i.type+':'+(i.fit&&i.fit.size?'@'+i.fit.size+':':'')+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', new TextEncoder().encode([state.person, 'engine:'+(engineParam()||''), 'wear:'+JSON.stringify(wearParam()||''), ...items.map(i=>i.type+':'+(i.fit&&i.fit.size?'@'+i.fit.size+':':'')+(i.image||i.text||''))].join('|'))); return [...new Uint8Array(h)].slice(0,16).map(b=>b.toString(16).padStart(2,'0')).join(''); }
 function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
 const pf={key:null,id:null,st:null,timer:null};
 /* 點數夠不夠：回傳還差幾點（0＝夠） */
@@ -1771,7 +1830,7 @@ async function doPrefetch(){
   if(pf.key===key) return;
   pf.key=key; pf.id=null; pf.st=null; pfHint();
   try{
-    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, body:run.body, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect(), engine:engineParam() })});
+    const d=await api('/api/tryon',{method:'POST',body:JSON.stringify({ person:state.person, items, body:run.body, variants:1, views:false, async:true, prefetch:true, key, aspect:await personAspect(), engine:engineParam(), wear:wearParam() })});
     if(pf.key!==key||!d||!d.id) return;
     pf.id=d.id; pf.st=d.ready?'ready':'running'; pfHint();
     while(pf.key===key && pf.st==='running' && !busy){
@@ -2563,7 +2622,7 @@ function showRun(R){
   state.qaRetried=!!(d.quality&&d.quality.retried); state.notCharged=!!d.not_charged; state.extrasDropped=d.extras_dropped?('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上（不扣點）：一換就會改變你的動作，所以先保留原本的'):'';
   if(curView!=='tryon') go('tryon');
   { const ui=$('usedItems'); if(ui) ui.remove(); const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); }
-  state.views=null; renderCompare(rec.person0, rec.img);
+  state.views=null; renderCompare(rec.person0, rec.img); state.lastUrl=(d.image_urls&&d.image_urls[0])||null; saveLast();
   $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems(); try{ renderFitResult(d.fit); }catch{} renderFit();
   $('runStatus').textContent='這是剛剛在背景試好的那套。';
   setTimeout(()=>$('result').scrollIntoView({behavior:'smooth',block:'start'}),200);
@@ -2617,7 +2676,7 @@ async function runTryon(opts={}){ let noCredit=false;
       let key; try{ key=await comboKey(items); }catch{}
       const nocache=(()=>{ try{ return !!localStorage.getItem('tryon.nocache'); }catch{ return false; } })() || !!opts.retry;
       wasReady=!opts.retry&&pf.key===key&&pf.st==='ready'; pf.key=null; pf.st=null; pfHint();
-      const body={ person: state.person, items, body:run.body, variants, views, async:true, aspect, key: opts.retry?undefined:key, nocache, engine: opts.retry?'pro':engineParam(), res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() };
+      const body={ person: state.person, items, body:run.body, wear:wearParam(), variants, views, async:true, aspect, key: opts.retry?undefined:key, nocache, engine: opts.retry?'pro':engineParam(), res:(()=>{ try{ return localStorage.getItem('tryon.res')||undefined; }catch{ return undefined; } })() };
       d = await api('/api/tryon', { method:'POST', body: JSON.stringify(body) });
       $('btnRun').disabled=false; try{ updateSticky(); }catch{}
       if (d && d.cached) { d = d.result; toast('這組之前試過，直接顯示（不扣點）'); }
@@ -2682,7 +2741,7 @@ async function runTryon(opts={}){ let noCredit=false;
       finalImg = await new Promise(res=>{ window.__pickResolve=()=>{ window.__pickResolve=null; res(imgs[0]); }; $('result').innerHTML=`<div style="padding:10px;width:100%"><div class="muted" style="margin-bottom:8px;text-align:center">點選你比較滿意的一張</div><div class="variants">${imgs.map((im,i)=>`<div class="v" data-i="${i}"><img src="${im}" alt="結果 ${i+1}"><span>${i+1}</span></div>`).join('')}</div><div style="text-align:center;margin-top:8px"><button class="btn sm ghost" id="pickFirst">都可以，用第 1 張</button></div></div>`; $('result').querySelectorAll('.v').forEach(el=>el.onclick=()=>{ window.__pickResolve=null; res(imgs[+el.dataset.i]); }); $('pickFirst').onclick=()=>window.__pickResolve&&window.__pickResolve(); });
     }
     state.result = finalImg; state.resultPerson = person0; state.qaRetried = !!(d.quality && d.quality.retried); state.notCharged = !!d.not_charged; state.extrasDropped = d.extras_dropped ? ('「'+d.extras_dropped.map(t=>TYPE_LABEL[t]||t).join('、')+'」這次沒有換上（不扣點）：一換就會改變你的動作，所以先保留原本的') : '';
-    renderCompare(person0, finalImg);
+    renderCompare(person0, finalImg); state.lastUrl=(d.image_urls&&d.image_urls[0])||null; saveLast();
     $('resultActions').classList.remove('hidden'); $('cmpHint').classList.remove('hidden'); renderBuyLinks(); renderUsedItems(); try{ renderFitResult(d.fit); }catch{}
     renderFit(); try{ updateSticky(); }catch{}
     if(isPhone) $('result').scrollIntoView({behavior:'smooth',block:'start'});
@@ -2812,7 +2871,7 @@ async function storyImage(before, after){
 async function makeStory(){ if(!state.result) return; track('story'); try{ try{ await Promise.all([document.fonts.load('900 64px "Noto Serif TC"','試穿前→後'),document.fonts.load('700 40px "Noto Sans TC"','試穿吧買之前先看看穿在你身上的樣子')]); }catch{} const img=await storyImage(state.resultPerson||state.personOrig, state.result); shareImage(img); }catch{ toast('製作分享圖失敗'); } }
 $('btnRetry').onclick=async()=>{ if(busy) return; if(!Object.keys(state.slots).length) return toast('單品已清空，請重新放入再試'); if(!await ask('再做一次？','會改用高品質模式重新合成同一組單品，結果會和這張不一樣；會再扣一次點數。',{ok:'再做一次'})) return; runTryon({retry:true}); };
 const RESULT_EMPTY='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8zM5 16l.6 1.4 1.4.6-1.4.6L5 20l-.6-1.4L3 18l1.4-.6z"/></svg></div>放好照片與單品，按「開始 AI 試穿」<br>結果會出現在這裡</div>';
-function resetResult(){ const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); const ui=$('usedItems'); if(ui) ui.remove(); state.result=null; state.views=null; state.qaRetried=false; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
+function resetResult(){ try{ localStorage.removeItem('tryon.last'); }catch{} const bb=$('buyBar'); if(bb) bb.remove(); const fr=$('fitResult'); if(fr) fr.remove(); const ui=$('usedItems'); if(ui) ui.remove(); state.result=null; state.views=null; state.qaRetried=false; stopSpin(); $('angles').classList.add('hidden'); $('resultActions').classList.add('hidden'); $('cmpHint').classList.add('hidden'); const r=$('result'); r.style.background=''; r.style.border=''; r.style.overflow=''; r.innerHTML=RESULT_EMPTY; $('runStatus').textContent=''; }
 $('btnContinue').onclick=()=>{ if(!state.result) return; const img=state.result; resetResult(); setPerson(img); state.slots={}; renderSlots(); persistSlots(); setStep(2); toast('已把結果當作底圖，繼續搭配吧'); window.scrollTo({top:0,behavior:'smooth'}); };
 
 /* ---------- 衣櫃 ---------- */

@@ -19,7 +19,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.26.0';
+const VERSION = '2.27.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -135,6 +135,16 @@ function fitSig(items) {
   return '-s' + h.toString(16).padStart(8, '0');
 }
 // opts.captions：與 steps 對齊的文字規格（看圖模型產生，可為 null）；opts.fixNotes：上一次品質檢查不通過的原因；opts.body：使用者身體尺寸
+// 使用者選的穿法（上衣紮不紮、褲腳放下或反摺）→ 給生圖與品質檢查的文字；沒選回傳 ''
+function wearOf(w) { const o = {}; if (w && (w.tuck === 'in' || w.tuck === 'out')) o.tuck = w.tuck; if (w && (w.hem === 'down' || w.hem === 'cuff')) o.hem = w.hem; return Object.keys(o).length ? o : null; }
+function wearLine(w, types) {
+  const out = [];
+  if (w && w.tuck === 'in' && types.has('top')) out.push('the top is worn TUCKED INTO the waistband of the trousers or skirt all the way round, so the waistband is fully visible');
+  if (w && w.tuck === 'out' && types.has('top')) out.push('the top is worn UNTUCKED, its hem hanging freely outside over the waistband');
+  if (w && w.hem === 'down' && types.has('bottom')) out.push('trouser hems are worn down at their natural full length, not rolled or cuffed');
+  if (w && w.hem === 'cuff' && types.has('bottom')) out.push('trouser hems are rolled up into a neat cuff (about 5 cm, one or two turns) so the ankle shows; ignore this if the bottom is a skirt or shorts');
+  return out.join('; ');
+}
 function outfitPrompt(steps, hints, faceHint, opts = {}) {
   const captions = Array.isArray(opts.captions) ? opts.captions : [];
   const lines = [], specs = [], fits = []; let k = 2;
@@ -177,6 +187,7 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
     body,
     fits.length ? 'SIZE AND FIT (the customer chose a specific size; the photo must visibly show how that size really fits this body):\n' + fits.join('\n') + '\nThe size only changes how the garment sits on the body (tension, wrinkles, drape, where seams, hems and cuffs land); it never changes the garment design, color, fabric, pattern or details. Do not "correct" a tight or loose fit into a perfect fit.' : '',
     hints ? 'Body notes: ' + hints : '', types.has('hair') && faceHint ? faceHint : '',
+    wearLine(opts.wear, types) ? 'HOW THE CUSTOMER WANTS TO WEAR IT (this overrides how the product photo is styled; the garment design itself does not change): ' + wearLine(opts.wear, types) + '.' : '',
     opts.keepOutfit ? 'The customer in Image 1 is already wearing their new clothes: keep every garment, the pose and the person exactly as they are and change ONLY the items listed above.' : '',
     fix ? 'PREVIOUS ATTEMPT WAS REJECTED FOR: ' + fix + '. Fix these specifically.' : ''
   ].filter(Boolean).join('\n');
@@ -217,12 +228,14 @@ function parseCaptions(json, steps) {
 }
 // 有沒有「看得出來」的合身度要求（有部位資料才算；只有尺寸名稱不評 fit_match）
 const hasFitZones = fit => !!(fit && Array.isArray(fit.zones) && fit.zones.length);
-function qaPrompt(targets, captions) {
+function qaPrompt(targets, captions, wear) {
+  const wl = wearLine(wear, new Set(targets.map(t => t.type)));
   const specs = targets.map(t => { const c = captions && captions[t.i]; return `product ${t.n} (${ITEM_LABEL[t.type] || t.type}) = image ${t.n + 2}` + (c && c.description ? ': ' + c.description : '') + (c && c.others && c.others.length ? ` (the model there also wears ${c.others.join(', ')}, which must NOT appear on the customer)` : ''); });
   const fitT = targets.filter(t => hasFitZones(t.fit));
   const fitSpec = fitT.map(t => `product ${t.n} is size ${t.fit.size || '?'} and should visibly show: ${fitPhrases(t.fit, t.type).join('; ')}`);
   return [
     'You are a strict QA inspector for a virtual try-on service. Image 1 is the GENERATED result. Image 2 is the ORIGINAL customer photo. The remaining images are the product photos: ' + specs.join('; ') + '.',
+    wl ? 'The customer asked for this styling: ' + wl + '. That styling is CORRECT even if the product photo is styled differently — do not lower any score for it; do lower the match score of that item if the requested styling is clearly NOT followed.' : '',
     'Score the result. identity (0-10): is the person in image 1 the same person as image 2 (face, expression, skin tone, hair unless a hairstyle product was given, body shape, pose, hands and held objects, background, lighting)? 10 = identical.',
     'For each product, match (0-10): does the garment worn in image 1 reproduce that product photo exactly (silhouette/cut, length on the body, color, fabric, pattern/logo/print, details, how it is worn)? 10 = exact copy. In "issue" state concretely what differs (e.g. "trousers are slim instead of wide-leg", "logo missing on chest"), or "" if nothing.',
     fitT.length ? 'EXPECTED SIZE FIT: ' + fitSpec.join('. ') + '. For each of these products also score fit_match (0-10): does the garment in image 1 visibly show this fit (tension and strain wrinkles where tight, extra fabric and drape where loose, hems and cuffs ending where stated)? A result that renders a clearly tight or loose size as a neutral regular fit gets fit_match 4 or lower. Mention a fit problem in "issue". For products without an expected fit, set fit_match to null.' : '',
@@ -844,7 +857,7 @@ async function handleTryon(request, env, cors, ctx) {
       // 品質檢查發現動到人或衣服不對，再退回「FASHN 逐件換衣服＋最後只換配件」的保守做法（job.alt）。
       // 下身（褲子／裙子）不交給 FASHN：2026-11-14 實測它會把喇叭褲做成直筒、長裙做成中間破洞或變短，整套引擎才畫得出正確的長度和版型。
       const hasBottom = clothing.some(x => x.type === 'bottom'), fashnable = clothing.filter(x => x.type !== 'bottom');
-      const fashnFirst = useOutfit && clothing.length >= 1 && !hasBottom && extras.length === 0 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      const fashnFirst = useOutfit && clothing.length >= 1 && !hasBottom && !wearOf(body.wear) && extras.length === 0 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const fashnAlt = useOutfit && !fashnFirst && fashnable.length >= 1 && (extras.length >= 1 || hasBottom) && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
@@ -853,7 +866,7 @@ async function handleTryon(request, env, cors, ctx) {
         // 衣服（上衣／下身／洋裝）逐件用 FASHN（人不動）；鞋子、帽子、飾品、髮型最後才用整套引擎只換那幾樣
         steps: fashnFirst ? [...clothing.map(x => ({ ...x })), { type: 'qa' }] : useOutfit ? [{ type: 'outfit', engine: (body.engine === 'pro' || body.quality === 'high') ? 1 : 0 }, { type: 'qa' }] : steps, item_steps: steps, engine: useOutfit ? 'outfit' : 'fashn',
         chains: Array.from({ length: variants }, () => ({ i: 0, cur: personUrl, req: null })),
-        want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody,
+        want_views: wantViews, views: null, views_error: null, hints, face_hint: faceHint, body: fitBody, wear: wearOf(body.wear) || undefined,
         pay: prefetch ? 0 : payCredits, free: prefetch ? 0 : useFree, free_left: freeLeft, cost };
       jobState.t0 = Date.now(); jobState.tm = [['ready', Date.now() - T_REQ]];
       // 不等第一次輪詢：衣服已上傳好就立刻送出第一件（描述衣服改成同時進行），省掉開始前約 7–10 秒的空等
@@ -1088,7 +1101,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             const sel = (job.item_steps || []).map((x, i) => [x, i]).filter(([x]) => !only || only.includes(x.type));
             const urls = [ch.cur, ...sel.filter(([x]) => x.image_url).map(([x]) => x.image_url)];
             const caps = Array.isArray(job.captions) ? sel.map(([, i]) => job.captions[i]) : null;
-            ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(sel.map(([x]) => x), job.hints, job.face_hint, { captions: caps, fixNotes: job.fix_notes, body: job.body, keepOutfit: !!only }), job.hires !== false, job.aspect); return;
+            ch.req = await outfitSubmit(env, st.engine || 0, urls, outfitPrompt(sel.map(([x]) => x), job.hints, job.face_hint, { captions: caps, fixNotes: job.fix_notes, body: job.body, wear: job.wear, keepOutfit: !!only }), job.hires !== false, job.aspect); return;
           }
           let r;
           try { r = await falCheck(env, ch.req, '換裝服務'); }
@@ -1118,7 +1131,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             mark('captions');
           }
           let qa = null;
-          try { qa = normalizeQa(await visionJson(env, qaPrompt(targets, job.captions), [ch.cur, job.person_url, ...targets.map(t => t.url)], QA_TIMEOUT_MS), targets); }
+          try { qa = normalizeQa(await visionJson(env, qaPrompt(targets, job.captions, job.wear), [ch.cur, job.person_url, ...targets.map(t => t.url)], QA_TIMEOUT_MS), targets); }
           catch (e) { qa = { identity: null, items: [], framing: null, artifacts: [], verdict: 'pass', error: String(e.message).slice(0, 120), at: Date.now() }; }
           qa.chain = ci; qa.attempt = (job.retries || 0) + 1; mark('qa:' + qa.verdict + (qa.verdict === 'retry' ? '[' + ['mirrored', 'body_changed', 'pose_changed', 'zoomed', 'color_wrong', 'leftover'].filter(k => qa[k]).concat((qa.extra_items || []).length ? ['extra'] : [], (qa.items || []).filter(x => x.match != null && x.match < QA_MIN_ITEM).map(x => 'm' + x.match), qa.identity != null && qa.identity < QA_MIN_IDENTITY ? ['id' + qa.identity] : [], qa.framing != null && qa.framing < QA_MIN_FRAMING ? ['fr' + qa.framing] : [], qa.error ? ['err'] : []).join(',') + ']' : (qa.error ? '[err]' : '')));
           job.qa_for = ch.cur;

@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.26.0');
+assert.equal(T.VERSION, '2.27.0');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -312,4 +312,6 @@ console.log('vision calls in paid flow: captions 1 + QA per attempt; generations
     assert.equal(fashn.length, 1, 'bottoms never go to FASHN'); assert.equal(calls.submits.length, 3); assert.match(calls.submits[2].url, /nano-banana-2/); assert.equal(calls.submits[2].images[1], 'https://img/pants.jpg'); assert.equal(calls.submits[2].images.length, 2);
     r = await poll(); r = r.status === 'ok' ? r : await poll();
     assert.equal(r.status, 'ok'); assert.ok(!r.result.extras_dropped); assert.ok(!r.result.fashn_only); }
+  { const pr = T.outfitPrompt([{ type: 'top', image_url: 'x' }, { type: 'bottom', image_url: 'y' }], '', '', { wear: { tuck: 'in', hem: 'cuff' } }); assert.match(pr, /TUCKED INTO the waistband/); assert.match(pr, /rolled up into a neat cuff/);
+    assert.ok(!/HOW THE CUSTOMER WANTS/.test(T.outfitPrompt([{ type: 'shoes', image_url: 'x' }], '', '', { wear: { tuck: 'in' } })), 'no top → no tuck line'); }
   globalThis.fetch = _f; console.log('fashn ladder + fallback: ok'); }

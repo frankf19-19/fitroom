@@ -1,5 +1,8 @@
 name: 商品縮圖（預先產生到自己的空間）
-on: { workflow_dispatch: {} }
+on:
+  workflow_dispatch:
+    inputs:
+      full: { description: '全部重查內容填 1', default: '', required: false }
 jobs:
   t:
     runs-on: ubuntu-latest
@@ -10,4 +13,5 @@ jobs:
       - env:
           SUPABASE_URL: https://oksutiyvzxgssmgppdbz.supabase.co
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          FULL: ${{ inputs.full }}
         run: python3 tools/build_thumbs.py

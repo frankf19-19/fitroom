@@ -4,7 +4,7 @@ import os, base64, json
 from playwright.sync_api import sync_playwright
 SITE = os.environ.get('SITE_URL', 'http://localhost:8765/index.html'); os.makedirs('qa-live', exist_ok=True)
 uri = lambda f: 'data:image/jpeg;base64,' + base64.b64encode(open(f, 'rb').read()).decode()
-pairs = [('qa/hr2_person.jpg', 'qa/hr2_result.jpg', 'plus'), ('qa/hr_person.jpg', 'qa/hr_result.jpg', 'demo'), ('qa/hr_person.jpg', 'qa/hr_result_shift.jpg', 'shift')]
+pairs = [('qa/hr2_person.jpg', 'qa/hr2_result.jpg', 'plus'), ('qa/hr_person.jpg', 'qa/hr_result.jpg', 'demo'), ('qa/hr_person.jpg', 'qa/hr_result_shift.jpg', 'shift'), ('qa/hr_person.jpg', 'qa/hr_result_zoom.jpg', 'zoom')]
 rep = {}
 with sync_playwright() as pw:
   b = pw.chromium.launch(channel='chrome'); pg = b.new_page(); logs = []
