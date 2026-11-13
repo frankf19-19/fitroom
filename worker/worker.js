@@ -19,7 +19,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.27.0';
+const VERSION = '2.27.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -140,7 +140,7 @@ function wearOf(w) { const o = {}; if (w && (w.tuck === 'in' || w.tuck === 'out'
 function wearLine(w, types) {
   const out = [];
   if (w && w.tuck === 'in' && types.has('top')) out.push('the top is worn TUCKED INTO the waistband of the trousers or skirt all the way round, so the waistband is fully visible');
-  if (w && w.tuck === 'out' && types.has('top')) out.push('the top is worn UNTUCKED, its hem hanging freely outside over the waistband');
+  if (w && w.tuck === 'out' && types.has('top')) out.push('the top is worn UNTUCKED: its whole hem is visible all the way round and lies on the OUTSIDE of the trousers or skirt, covering the waistband wherever the top is long enough; no part of the top goes inside the waistband, and do not add a belt');
   if (w && w.hem === 'down' && types.has('bottom')) out.push('trouser hems are worn down at their natural full length, not rolled or cuffed');
   if (w && w.hem === 'cuff' && types.has('bottom')) out.push('trouser hems are rolled up into a neat cuff (about 5 cm, one or two turns) so the ankle shows; ignore this if the bottom is a skirt or shorts');
   return out.join('; ');
