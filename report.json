@@ -1,0 +1,244 @@
+[
+ {
+  "case": "untucked",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.8,
+  "body_kb": 489,
+  "secs": 89.7,
+  "steps": [
+   [
+    "outfit",
+    14.2
+   ],
+   [
+    "qa",
+    36.6
+   ],
+   [
+    "top",
+    43.4
+   ],
+   [
+    "bottom",
+    57.8
+   ],
+   [
+    "qa",
+    79.4
+   ]
+  ],
+  "first_preview": 36.6,
+  "quality": {
+   "identity": 9,
+   "items": [
+    5,
+    7
+   ],
+   "framing": 10,
+   "retried": true
+  },
+  "timing": {
+   "created": "2026-11-13T17:37:59.994206+00:00",
+   "queue_s": 3,
+   "gen_s": 19
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "captions",
+    10.0
+   ],
+   [
+    "submit:outfit",
+    10.0
+   ],
+   [
+    "done:outfit",
+    32.7
+   ],
+   [
+    "show",
+    32.7
+   ],
+   [
+    "qa:retry[pose_changed]",
+    39.6
+   ],
+   [
+    "alt:fashn",
+    39.6
+   ],
+   [
+    "submit:top",
+    39.6
+   ],
+   [
+    "done:top",
+    53.9
+   ],
+   [
+    "submit:outfit",
+    53.9
+   ],
+   [
+    "done:outfit",
+    75.6
+   ],
+   [
+    "show",
+    75.6
+   ],
+   [
+    "qa:retry[m5]",
+    83.6
+   ],
+   [
+    "finish",
+    85.9
+   ]
+  ],
+  "qa_log": [
+   {
+    "extra": [],
+    "flags": [
+     "pose_changed"
+    ],
+    "items": [
+     {
+      "m": 9,
+      "t": "top",
+      "issue": "The top is slightly shorter and less boxy than the product."
+     },
+     {
+      "m": 8,
+      "t": "bottom",
+      "issue": "The trousers are somewhat narrower and less voluminous than the product."
+     }
+    ],
+    "framing": 10,
+    "verdict": "retry",
+    "identity": 7,
+    "artifacts": []
+   },
+   {
+    "verdict": "retry",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 5,
+      "issue": "Top is tucked into the trousers rather than worn untucked with its full hem visible; its fit is also less relaxed and boxy."
+     },
+     {
+      "t": "bottom",
+      "m": 7,
+      "issue": "Trousers are somewhat narrower and less relaxed than the product, and an unrequested black belt is added."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "untucked-long",
+  "items": [
+   "top",
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 3.9,
+  "body_kb": 495,
+  "secs": 39.8,
+  "steps": [
+   [
+    "outfit",
+    13.2
+   ],
+   [
+    "qa",
+    33.4
+   ]
+  ],
+  "first_preview": 33.4,
+  "quality": {
+   "identity": 9,
+   "items": [
+    9,
+    9
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-13T17:39:57.657988+00:00",
+   "queue_s": 3,
+   "gen_s": 17
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "captions",
+    9.2
+   ],
+   [
+    "submit:outfit",
+    9.2
+   ],
+   [
+    "done:outfit",
+    29.6
+   ],
+   [
+    "show",
+    29.6
+   ],
+   [
+    "qa:pass",
+    33.9
+   ],
+   [
+    "finish",
+    36.0
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 9,
+      "issue": "The top opening is narrower and the white inner T-shirt shown in the product photo is absent."
+     },
+     {
+      "t": "bottom",
+      "m": 9,
+      "issue": "The legs appear slightly less flared than in the product photo."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ }
+]
