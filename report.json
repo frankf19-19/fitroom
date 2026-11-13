@@ -1,0 +1,164 @@
+[
+ {
+  "case": "top",
+  "items": [
+   "top"
+  ],
+  "submit": 202,
+  "post_secs": 3.8,
+  "body_kb": 422,
+  "secs": 22.4,
+  "steps": [
+   [
+    "top",
+    9.3
+   ],
+   [
+    "qa",
+    16.8
+   ]
+  ],
+  "first_preview": 16.8,
+  "quality": {
+   "identity": 9,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": null,
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.3
+   ],
+   [
+    "submit:top",
+    1.4
+   ],
+   [
+    "captions",
+    6.0
+   ],
+   [
+    "done:top",
+    13.5
+   ],
+   [
+    "show",
+    13.5
+   ],
+   [
+    "qa:pass",
+    17.6
+   ],
+   [
+    "finish",
+    19.1
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 9,
+    "framing": 10,
+    "items": [
+     {
+      "t": "top",
+      "m": 8,
+      "issue": "The top appears flatter and more boxy, with a less wide neckline and less natural fabric drape than the product photo."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ },
+ {
+  "case": "bottom",
+  "items": [
+   "bottom"
+  ],
+  "submit": 202,
+  "post_secs": 2.8,
+  "body_kb": 371,
+  "secs": 38.3,
+  "steps": [
+   [
+    "outfit",
+    9.5
+   ],
+   [
+    "qa",
+    30.5
+   ]
+  ],
+  "first_preview": 30.5,
+  "quality": {
+   "identity": 10,
+   "items": [
+    8
+   ],
+   "framing": 10,
+   "retried": false
+  },
+  "timing": {
+   "created": "2026-11-13T18:15:30.341886+00:00",
+   "queue_s": 3,
+   "gen_s": 18
+  },
+  "engine": "outfit",
+  "dropped": null,
+  "marks": [
+   [
+    "ready",
+    1.2
+   ],
+   [
+    "captions",
+    6.7
+   ],
+   [
+    "submit:outfit",
+    6.7
+   ],
+   [
+    "done:outfit",
+    27.7
+   ],
+   [
+    "show",
+    27.7
+   ],
+   [
+    "qa:pass",
+    33.4
+   ],
+   [
+    "finish",
+    35.6
+   ]
+  ],
+  "qa_log": [
+   {
+    "verdict": "pass",
+    "identity": 10,
+    "framing": 10,
+    "items": [
+     {
+      "t": "bottom",
+      "m": 8,
+      "issue": "The legs are somewhat narrower and more tapered than the product's wide, relaxed silhouette."
+     }
+    ],
+    "flags": [],
+    "extra": [],
+    "artifacts": []
+   }
+  ]
+ }
+]
