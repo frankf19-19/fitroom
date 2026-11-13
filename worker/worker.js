@@ -19,7 +19,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.27.1';
+const VERSION = '2.27.2';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -858,7 +858,7 @@ async function handleTryon(request, env, cors, ctx) {
       // 下身（褲子／裙子）不交給 FASHN：2026-11-14 實測它會把喇叭褲做成直筒、長裙做成中間破洞或變短，整套引擎才畫得出正確的長度和版型。
       const hasBottom = clothing.some(x => x.type === 'bottom'), fashnable = clothing.filter(x => x.type !== 'bottom');
       const fashnFirst = useOutfit && clothing.length >= 1 && !hasBottom && !wearOf(body.wear) && extras.length === 0 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
-      const fashnAlt = useOutfit && !fashnFirst && fashnable.length >= 1 && (extras.length >= 1 || hasBottom) && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      const fashnAlt = useOutfit && !fashnFirst && !wearOf(body.wear) && fashnable.length >= 1 && (extras.length >= 1 || hasBottom) && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
         pv: (!prefetch && useOutfit && !fashnFirst && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null, first: fashnFirst ? 'fashn' : undefined, alt: fashnAlt ? 'fashn' : undefined,
