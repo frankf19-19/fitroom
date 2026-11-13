@@ -13,6 +13,8 @@ FREE_MODE = "1"            # 會員限時免費：試穿不扣點（要恢復收
 FREE_MODE_DAILY = "30"     # 限時免費期間，每人每天可免費試穿幾件
 FREE_MODE_GLOBAL = "400"   # 限時免費期間，全站每天最多幾筆免費試穿
 ADMIN_EMAILS = "frankccc199@gmail.com,frankccc199@hotmail.com"
+# 不限點數的會員編號（逗號分隔）；管理者本來就不限
+UNLIMITED_USERS = "25b78c12-d139-4aa0-b153-1342fe50831d"
 GEMINI_IMAGE_MODEL = "gemini-nano-banana-2.1"
 
 [triggers]

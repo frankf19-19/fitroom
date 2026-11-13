@@ -987,7 +987,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-14-02';
+const BUILD = '2026-11-14-03';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1120,7 +1120,7 @@ function renderUser(){
   const em = state.user.email || '';
   const hl=$('heroLogin'); if(hl) hl.classList.add('hidden');
   a.innerHTML = FM()
-    ? `<span class="free">會員限時免費</span><div class="userchip" title="限時免費：今天還可以試幾件"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span>免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b> 件<b id="chipCredits" hidden>${state.me?state.me.credits:''}</b></span></div>`
+    ? `<span class="free">會員限時免費</span><div class="userchip" title="限時免費：今天還可以試幾件"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span>${UL()?'不限次數<b id="chipFree" hidden></b>':`免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b> 件`}<b id="chipCredits" hidden>${state.me?state.me.credits:''}</b></span></div>`
     : `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點<span class="cf"> · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></span></div>`;
   a.querySelectorAll('.free,.userchip').forEach(el=>el.onclick=()=>go('credits'));
   if(curView==='me') renderMe();
@@ -1382,7 +1382,7 @@ function renderSlots(){
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
   const nItems=Object.keys(state.slots).length;
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0);
-  runCost=n; $('btnRun').textContent = n ? (FM() ? ('開始 AI 試穿'+(viewsCost()?' · 360° 2 點':' · 免費')) : `開始 AI 試穿 · ${n} 點`) : '開始 AI 試穿';
+  runCost=n; $('btnRun').textContent = n ? (FM() ? ('開始 AI 試穿'+(viewsCost()&&!UL()?' · 360° 2 點':' · 免費')) : `開始 AI 試穿 · ${n} 點`) : '開始 AI 試穿';
   if (state.me && state.me.views_available===false){ $('wantViews').classList.remove('on'); $('wantViews').closest('.opt-row').classList.add('hidden'); }
   renderFit(); pfHint(); try{ renderFitNudge(); }catch{}
   $('btnRun').disabled = !n || busy;
@@ -1807,9 +1807,10 @@ const pf={key:null,id:null,st:null,timer:null};
 /* 點數夠不夠：回傳還差幾點（0＝夠） */
 /* 會員限時免費：伺服器的 FREE_MODE 開著時，試穿不扣點（每人每天有免費件數上限），360° 仍要 2 點。登入前先用這裡的預設值。 */
 const FREE_MODE_DEFAULT=true;
-const FM=()=> state.me ? !!state.me.free_mode : FREE_MODE_DEFAULT;
+function UL(){ try{ return !!(state.me&&state.me.unlimited); }catch{ return false; } }   // 不限點數名單：試穿與 360° 都不扣點、沒有每日上限
+const FM=()=> state.me ? (!!state.me.free_mode||UL()) : FREE_MODE_DEFAULT;
 const viewsCost=()=>{ try{ return (Object.keys(state.slots).length && $('wantViews').classList.contains('on')) ? 2 : 0; }catch{ return 0; } };
-function creditShort(){ if(!state.me||!runCost) return 0;
+function creditShort(){ if(!state.me||!runCost||UL()) return 0;
   if(FM()){ const v=viewsCost(), itemsCost=runCost-v; return Math.max(0, Math.max(0,itemsCost-(state.me.free_left||0)) + v - (state.me.credits||0)); }
   const free=Math.min(state.me.free_left||0,runCost); return Math.max(0, runCost-free-(state.me.credits||0)); }
 function shortText(){ const m=state.me, short=creditShort(), free=Math.min(m.free_left||0,runCost), n=Object.keys(state.slots).length;
@@ -1818,7 +1819,7 @@ function shortText(){ const m=state.me, short=creditShort(), free=Math.min(m.fre
     return (m.free_left>0) ? `今天還可以免費試 ${m.free_left} 件，這次放了 ${itemsCost} 件。拿掉 ${itemsCost-m.free_left} 件就能試，明天會再補滿 ${m.free_daily} 件。` : `今天的免費試穿用完了（每天 ${m.free_daily} 件），明天會再補滿。`; }
   if(!(m.free_left>0)) return `今天的免費額度用完了（明天會再送），目前點數 ${m.credits||0} 點，這次需要 ${runCost} 點。`;
   return short<=n-1 ? `免費額度今天剩 ${free} 張、點數 ${m.credits||0} 點，這次需要 ${runCost} 點。拿掉 ${short} 件單品就能先免費試。` : `這次需要 ${runCost} 點，免費額度今天剩 ${free} 張、點數 ${m.credits||0} 點。關掉加價選項或少放幾件，就能先用免費額度試。`; }
-function pfHint(){ const h=$('pfHint'); if(!h) return; const sh=creditShort(); h.classList.toggle('warn',sh>0); if(sh>0){ h.textContent=shortText(); return; } const parts=[]; if(runCost&&FM()){ parts.push('會員限時免費，不扣點'); if(state.me) parts.push(`今天還可以試 ${state.me.free_left} 件`); if(viewsCost()) parts.push('360° 另扣 2 點'); } else if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
+function pfHint(){ const h=$('pfHint'); if(!h) return; const sh=creditShort(); h.classList.toggle('warn',sh>0); if(sh>0){ h.textContent=shortText(); return; } const parts=[]; if(runCost&&UL()){ parts.push('不限次數，不扣點'); } else if(runCost&&FM()){ parts.push('會員限時免費，不扣點'); if(state.me) parts.push(`今天還可以試 ${state.me.free_left} 件`); if(viewsCost()) parts.push('360° 另扣 2 點'); } else if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
 function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 4000); }
 async function doPrefetch(){
   try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
@@ -2734,7 +2735,7 @@ async function runTryon(opts={}){ let noCredit=false;
     }
     R.done=true; R.rec={ person0, img:imgs[0], d };
     const charged=d.charged!=null?d.charged:null;
-    $('runStatus').textContent = (FM() && !charged ? `完成！限時免費，不扣點` + (d.free_left!=null?`，今天還可以試 ${d.free_left} 件。`:'。') : charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.not_charged ? ' 這張不夠準，這次不扣點。' : (d.quality&&d.quality.retried ? ' 已自動檢查並重做一次。' : ''));
+    $('runStatus').textContent = (UL() ? '完成！不扣點。' : FM() && !charged ? `完成！限時免費，不扣點` + (d.free_left!=null?`，今天還可以試 ${d.free_left} 件。`:'。') : charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.not_charged ? ' 這張不夠準，這次不扣點。' : (d.quality&&d.quality.retried ? ' 已自動檢查並重做一次。' : ''));
     if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
     let finalImg = imgs[0];
     if (imgs.length > 1) {

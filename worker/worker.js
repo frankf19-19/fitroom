@@ -19,7 +19,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.27.2';
+const VERSION = '2.28.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -493,6 +493,8 @@ async function requireUser(request, env) {
 async function optionalUser(request, env) { try { return await requireUser(request, env); } catch { return null; } }
 function isAdminEmail(env, email) { return !!email && (env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean).includes(String(email).toLowerCase()); }
 // 管理者：Email 在名單內且已驗證（避免有人用未驗證的同名 Email 註冊）
+// 不限點數名單：管理者，以及 UNLIMITED_USERS（會員編號，逗號分隔）裡的會員。試穿與 360° 都不扣點、不受每日件數限制。
+function isUnlimited(env, user) { return !!user && (isAdmin(env, user) || (env.UNLIMITED_USERS || '').split(',').map(x => x.trim()).filter(Boolean).includes(user.id)); }
 function isAdmin(env, user) { return !!(user && user.email_confirmed_at) && isAdminEmail(env, user.email); }
 
 /* ---- 預先合成狀態加密（使用者能直接讀自己的 generations 列，付款前不能看到結果網址） ---- */
@@ -583,7 +585,7 @@ async function handleMe(request, env, cors) {
   const used = await freeUsedToday(env, user.id);
   const packs = Object.fromEntries(Object.entries(PACKS).map(([k, v]) => [k, { name: v.name + ' 點', credits: v.credits, price: v.price }]));
   let payEnabled = false; try { payEnabled = !ecpayCfg(env).test || isAdmin(env, user); } catch { payEnabled = false; }
-  return json({ free_mode: freeMode(env) || undefined, welcome_bonus: p.welcome_bonus || 0, email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), pay_enabled: payEnabled, views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
+  return json({ unlimited: isUnlimited(env, user) || undefined, free_mode: freeMode(env) || undefined, welcome_bonus: p.welcome_bonus || 0, email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), pay_enabled: payEnabled, views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
 }
 
 /* ---------------- /api/analyze：身形與臉型分析（免費，不扣點；每天最多 5 次） ---------------- */
@@ -728,14 +730,15 @@ async function handleTryon(request, env, cors, ctx) {
   const u1 = await P_used; if (u1.e) throw u1.e; const used = u1.v;
   const freeLeft = Math.max(0, freeDaily - used);
   const FM = freeMode(env);
-  const useFree = Math.min(freeLeft, FM && wantViews ? cost - 2 : cost);   // 限時免費期間：360° 的 2 點不能用免費額度抵
-  const payCredits = cost - useFree;
+  const UL = isUnlimited(env, user);
+  const useFree = UL ? 0 : Math.min(freeLeft, FM && wantViews ? cost - 2 : cost);   // 限時免費期間：360° 的 2 點不能用免費額度抵
+  const payCredits = UL ? 0 : cost - useFree;
   if (prefetch && payCredits > profile.credits) return json({ skip: true, reason: 'credits' }, 200, cors);
   if (payCredits > profile.credits) {
     if (FM) return json({ error: wantViews && freeLeft >= cost - 2 ? `360° 需要 2 點，你目前有 ${profile.credits} 點。關掉 360° 就能免費試穿。` : `今天的免費試穿用完了（每天 ${freeDaily} 件，今天還剩 ${freeLeft} 件，這次要 ${cost - (wantViews ? 2 : 0)} 件）。明天會再補滿。`, need_credits: true, free_mode: true }, 402, cors);
     return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
   }
-  if (FM && !prefetch) {
+  if (FM && !prefetch && !UL) {
     const cap = Number(env.FREE_MODE_GLOBAL || 400);
     const today = await sb(env, `/rest/v1/generations?created_at=gte.${encodeURIComponent(taipeiDayStart())}&free_used=gt.0&select=id&limit=${cap + 1}`).catch(() => []);
     if (Array.isArray(today) && today.length >= cap && payCredits < cost) return json({ error: '今天免費試穿的名額已經滿了，明天再來，或用點數試穿。', busy: true }, 429, cors);
@@ -903,8 +906,9 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
   const used = await freeUsedToday(env, user.id);
   const freeLeft = Math.max(0, freeDaily - used);
   const FM = freeMode(env);
-  const useFree = Math.min(freeLeft, FM && wantViews ? cost - 2 : cost);
-  const payCredits = cost - useFree;
+  const UL = isUnlimited(env, user);
+  const useFree = UL ? 0 : Math.min(freeLeft, FM && wantViews ? cost - 2 : cost);
+  const payCredits = UL ? 0 : cost - useFree;
   if (payCredits > profile.credits) return json({ error: FM ? (wantViews && freeLeft >= cost - 2 ? `360° 需要 2 點，你目前有 ${profile.credits} 點。關掉 360° 就能免費試穿。` : `今天的免費試穿用完了（每天 ${freeDaily} 件，今天還剩 ${freeLeft} 件）。明天會再補滿。`) : `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true, free_mode: FM || undefined }, 402, cors);
   // 等輪詢放開鎖再改（避免被覆寫）；最多 10 輪、總計約 40 秒（長步驟的輪詢可能鎖較久）
   let row = g;
