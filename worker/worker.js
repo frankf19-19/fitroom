@@ -19,7 +19,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.25.2';
+const VERSION = '2.26.0';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -167,6 +167,7 @@ function outfitPrompt(steps, hints, faceHint, opts = {}) {
     '- worn the same way as in the product photo (jacket open or closed, sleeves, tucked or untucked). A hood stays DOWN behind the neck unless it is worn up in the product photo. Do not add hats, scarves or extra layers that were not provided.',
     'From each product photo use ONLY that product. Ignore the model wearing it, any other clothes they wear, the background and any text overlays.',
     refs.filter(Boolean).length ? 'STRICT: the models in the product photos often also wear OTHER garments (for example a jacket, coat, hoodie or top over trousers). Those are NOT products here and must NOT appear on the customer. ' + steps.filter(st => st.image_url).map((st, i) => `From Image ${refs.filter(Boolean)[i]} take only the ${ITEM_LABEL[st.type]}.`).join(' ') : '',
+    types.has('bottom') ? 'BOTTOMS: the leg or skirt outline from hip to hem must match the product photo — flared or bootcut legs widen clearly below the knee exactly as much as in the product, wide legs stay wide, straight stays straight, skinny stays skinny. The hem ends at the same point on the body as on the product model (floor-length trousers cover the ankle and most of the shoe; a maxi skirt stays maxi; a mini stays mini). Never shorten, crop, taper or narrow them to follow the shape of what the customer wore before. A skirt is one continuous piece of fabric: no gap or hole between the legs.' : '',
     types.has('top') ? 'If the top is outerwear shown open over another garment, the customer keeps their own top underneath.' : '',
     "Fully replace the customer's current clothing in the provided categories (for example shorts become full-length trousers when the product is trousers). Keep the customer's clothing in categories that were not provided unchanged.",
     'IDENTITY AND SCENE MUST NOT CHANGE: same face, facial expression, ' + (types.has('hair') ? '' : 'hairstyle, ') + 'skin tone, body shape and proportions, pose, hands and anything held in the hands (for example a phone), background, mirror, lighting, camera angle and framing.',
@@ -841,8 +842,10 @@ async function handleTryon(request, env, cors, ctx) {
       const clothing = steps.filter(x => x.category), extras = steps.filter(x => !x.category);
       // 只有衣服：FASHN 逐件換（人完全不動）。含鞋子／帽子／飾品／髮型：先用整套引擎一次換好（約 35 秒；逐件換要 80 秒以上），
       // 品質檢查發現動到人或衣服不對，再退回「FASHN 逐件換衣服＋最後只換配件」的保守做法（job.alt）。
-      const fashnFirst = useOutfit && clothing.length >= 1 && extras.length === 0 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
-      const fashnAlt = useOutfit && !fashnFirst && clothing.length >= 1 && extras.length >= 1 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      // 下身（褲子／裙子）不交給 FASHN：2026-11-14 實測它會把喇叭褲做成直筒、長裙做成中間破洞或變短，整套引擎才畫得出正確的長度和版型。
+      const hasBottom = clothing.some(x => x.type === 'bottom'), fashnable = clothing.filter(x => x.type !== 'bottom');
+      const fashnFirst = useOutfit && clothing.length >= 1 && !hasBottom && extras.length === 0 && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
+      const fashnAlt = useOutfit && !fashnFirst && fashnable.length >= 1 && (extras.length >= 1 || hasBottom) && body.engine !== 'pro' && body.quality !== 'high' && env.FASHN_FIRST !== '0';
       const jobState = { v: 1, lock_until: 0, touched: new Date().toISOString(), tok, person_url: personUrl, meta, prefetch: prefetch ? true : false, pf: prefetch ? 1 : 0, bkey,
         aspect: typeof body.aspect === 'string' ? body.aspect : 'auto', hires: body.res !== '1K', key: prefetch ? null : ckey,
         pv: (!prefetch && useOutfit && !fashnFirst && steps.some(x => x.category)) ? { i: 0, cur: personUrl, req: null } : null, first: fashnFirst ? 'fashn' : undefined, alt: fashnAlt ? 'fashn' : undefined,
@@ -1142,7 +1145,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             // 整套引擎先做（含配件）的工作不過關，而且是動到人或衣服不對 → 改走保守做法：FASHN 逐件換衣服，最後才只換配件
             if (job.alt === 'fashn' && !job.alt_used && (changed(qa) || clothingBad)) {
               job.alt_used = true; job.first = 'fashn';
-              const cl = (job.item_steps || []).filter(x => x.category), ex = (job.item_steps || []).filter(x => !x.category);
+              const cl = (job.item_steps || []).filter(x => x.category && x.type !== 'bottom'), ex = (job.item_steps || []).filter(x => !x.category || x.type === 'bottom');
               job.steps = [...cl.map(x => ({ ...x })), ...(ex.length ? [{ type: 'outfit', engine: 0, only: ex.map(x => x.type) }] : []), { type: 'qa' }];
               job.rejected = [...(job.rejected || []), ch.cur].slice(-2);
               job.chains.forEach(c => { c.req = null; c.cur = job.person_url; c.i = 0; c.base = null; });
@@ -1164,7 +1167,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
             const best = (job.cands || []).reduce((a, b) => (b.s > a.s ? b : a), { s: -1e9, qa: qa, url: ch.cur });
             const safe = ch.base || job.safe;
             if (safe && changed(best.qa)) {
-              job.extras_dropped = (job.item_steps || []).filter(x => !x.category).map(x => x.type); if (!job.extras_dropped.length) job.extras_dropped = null;
+              job.extras_dropped = onlySt ? onlySt.only.slice() : (job.item_steps || []).filter(x => !x.category).map(x => x.type); if (!job.extras_dropped.length) job.extras_dropped = null;
               ch.cur = safe; job.qa = { ...best.qa, verdict: 'pass', fallback: 'base' };
             } else if (best.url && best.url !== ch.cur && best.s > qaScore(qa)) { ch.cur = best.url; job.qa = { ...best.qa, picked: 'earlier' }; }
           }
@@ -1201,7 +1204,7 @@ async function handleTryonStatus(request, env, cors, url, internal = null) {
     }));
     // 快速預覽：付費（非預先合成）才做，而且只做一次 FASHN（主要那件衣服）
     if (job.pv && !job.pv.done && !job.front && !job.prefetch && canStart()) {
-      const pv = job.pv, cl = job.item_steps.filter(x => x.category);
+      const pv = job.pv, cl = job.item_steps.filter(x => x.category && x.type !== 'bottom');
       try {
         if (!cl.length) pv.done = true;
         else if (!pv.req) pv.req = await falSubmit(env, pv.cur || job.person_url, cl[0].image_url, cl[0].category, cl[0].photo_type, 'performance');

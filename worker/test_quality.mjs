@@ -55,7 +55,7 @@ const modPath = join(dir, 'worker.mjs'); writeFileSync(modPath, src);
 await import(pathToFileURL(modPath).href);
 const T = globalThis.__tryonTest;
 assert.ok(T, 'test hook not exposed');
-assert.equal(T.VERSION, '2.25.2');
+assert.equal(T.VERSION, '2.26.0');
 
 /* ---------- 單元：提示詞與解析 ---------- */
 const items = [
@@ -300,4 +300,16 @@ console.log('vision calls in paid flow: captions 1 + QA per attempt; generations
     assert.equal(calls.submits.length, 3); assert.match(calls.submits[2].url, /nano-banana-2/); assert.equal(calls.submits[2].images.length, 2); assert.equal(calls.submits[2].images[1], 'https://img/shoes.jpg');
     r = await poll(); r = r.status === 'ok' ? r : await poll();
     assert.equal(r.status, 'ok'); assert.ok(!r.result.extras_dropped); assert.equal(r.result.quality.retried, true); assert.ok(r.result.marks.some(m => m[0] === 'alt:fashn')); assert.equal(calls.submits.length, 3); }
+  // 上衣＋下身：下身不交給 FASHN。整套引擎先做 → 姿勢變了 → FASHN 只換上衣 → 整套引擎只換下身
+  { const bottom = { type: 'bottom', category: 'bottoms', image_url: 'https://img/pants.jpg', photo_type: null };
+    fresh({ first: undefined, alt: 'fashn', steps: [{ type: 'outfit', engine: 0 }, { type: 'qa' }], item_steps: [top, bottom], meta: [{ type: 'top', fit: null }, { type: 'bottom', fit: null }], pay: 2, cost: 2 });
+    visionQueue = [ { items: [{ n: 1, description: 'Light blue top' }, { n: 2, description: 'Brown flared trousers' }] },
+      { identity: 9, items: [{ n: 1, match: 9 }, { n: 2, match: 9 }], framing: 10, pose_changed: true },
+      { identity: 10, items: [{ n: 1, match: 9 }, { n: 2, match: 9 }], framing: 10 } ];
+    r = await pollOnce(); assert.equal(fashn.length, 0); assert.match(calls.submits[0].prompt, /BOTTOMS: the leg or skirt outline/);
+    r = await poll(); assert.equal(row.job.alt_used, true); assert.equal(fashn.length, 1); assert.equal(fashn[0].category, 'tops');
+    r = await pollOnce();
+    assert.equal(fashn.length, 1, 'bottoms never go to FASHN'); assert.equal(calls.submits.length, 3); assert.match(calls.submits[2].url, /nano-banana-2/); assert.equal(calls.submits[2].images[1], 'https://img/pants.jpg'); assert.equal(calls.submits[2].images.length, 2);
+    r = await poll(); r = r.status === 'ok' ? r : await poll();
+    assert.equal(r.status, 'ok'); assert.ok(!r.result.extras_dropped); assert.ok(!r.result.fashn_only); }
   globalThis.fetch = _f; console.log('fashn ladder + fallback: ok'); }
