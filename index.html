@@ -987,7 +987,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-14-01';
+const BUILD = '2026-11-14-02';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -2771,6 +2771,12 @@ $('btnRun').onclick=async()=>{
   if(!busy && creditShort()>0){
     const canFree=(state.me.free_left||0)>0;
     const fm=FM();
+    // 限時免費期間，只差在 360°（要 2 點）：一鍵關掉 360° 直接試穿
+    if(fm && viewsCost()>0 && (runCost-viewsCost())<=(state.me.free_left||0)){
+      const off=await ask('360° 旋轉需要 2 點', `試穿本身免費，只有 360° 旋轉要 2 點，你目前有 ${state.me.credits||0} 點。要先關掉 360°，直接免費試穿嗎？`, {ok:'關掉 360°，直接試穿', cancel:'先不要'});
+      if(off){ $('wantViews').classList.remove('on'); renderSlots(); runTryon(); }
+      return;
+    }
     const go2=await ask(fm?'今天的免費次數不夠':'點數不夠', shortText(), fm?{ok:canFree?'我拿掉幾件':'知道了', cancel:null}:{ok:'去買點數', cancel:canFree?'我拿掉幾件':'先不要'});
     if(go2 && !fm) go('credits'); else if(canFree){ const sl=$('slots'); if(sl){ sl.scrollIntoView({behavior:'smooth',block:'center'}); sl.classList.add('flash'); setTimeout(()=>sl.classList.remove('flash'),1600); } }
     return;
