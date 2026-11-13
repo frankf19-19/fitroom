@@ -19,7 +19,7 @@
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.25.1';
+const VERSION = '2.25.2';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -1521,7 +1521,7 @@ async function handleProducts(request, env, cors, url) {
   const hit = PROD_CACHE.get(ck); if (hit && Date.now() - hit.t < 60000) return new Response(hit.body, { status: 200, headers: { ...cors, ...CC, 'X-Cache': 'HIT' } });
   const type = url.searchParams.get('type'), gender = url.searchParams.get('gender'), q = (url.searchParams.get('q') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 40);
   const page = Math.min(10000, Math.max(0, Math.floor(Number(url.searchParams.get('page')) || 0))), size = Math.min(24, Math.max(6, Math.floor(Number(url.searchParams.get('size')) || 24)));
-  let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
+  let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=${(gender === 'f' || gender === 'm') ? 'gender.asc,' : ''}featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;   // 選了男／女：該性別的商品排前面，不分男女的（鞋、帽、包、男女適穿）排後面（'f'、'm' 的字母順序都在 'u' 前）
   if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
   if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)` + (gender === 'm' && !type ? '&type=neq.dress' : '');   // 男生不顯示洋裝
   const brand = (url.searchParams.get('brand') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 60);

@@ -983,7 +983,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-13-01';
+const BUILD = '2026-11-13-02';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1649,11 +1649,11 @@ function filtEdges(f){
   w.classList.toggle('ovr-l', f.scrollLeft>4); w.classList.toggle('ovr-r', f.scrollLeft<max-4);
 }
 window.addEventListener('resize',()=>document.querySelectorAll('#shopFilt,#shopBrand').forEach(filtEdges));
-function shopTypeChips(){ setTimeout(()=>filtEdges($('shopFilt')||$('shopType')),0); const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
+function shopTypeChips(){ setTimeout(()=>filtEdges($('shopFilt')||$('shopType')),0); const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.filter(d=>!(shopGender==='m'&&d.type==='dress')).map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
 /* 商店男女分開：不再有「全部」。先用使用者選過的，其次用「我的身形」填的性別；都沒有就先問一次。 */
 function userGender(){ try{ const g=localStorage.getItem('tryon.shopg'); if(g==='f'||g==='m') return g; }catch{} try{ const g=(getBody()||{}).gender; if(g==='f'||g==='m') return g; }catch{} try{ const g=state.me&&state.me.body&&state.me.body.gender; if(g==='f'||g==='m') return g; }catch{} return ''; }
 function setShopGender(g, save){ shopGender=g; if(save){ try{ localStorage.setItem('tryon.shopg',g); }catch{} } $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g===g)); }
-$('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ setShopGender(c.dataset.g,true); shopBrand=''; loadShop(true); });
+$('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ setShopGender(c.dataset.g,true); shopBrand=''; if(c.dataset.g==='m'&&shopFilterType==='dress') shopFilterType=''; loadShop(true); });
 let shopQT; const shopQ=$('shopQ');
 function syncShopClear(){ const c=$('shopQClear'); if(c) c.classList.toggle('hidden',!shopQ.value); }
 shopQ.addEventListener('input',()=>{ syncShopClear(); clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
