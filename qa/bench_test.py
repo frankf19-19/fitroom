@@ -30,9 +30,10 @@ try:
   def item(pid, t):
     if pid not in cache: cache[pid] = call('GET', f'{API}/api/img?id={pid}', None, {'Origin': 'https://frankf19-19.github.io'}, raw=True)[1]
     return {'type': t, 'image': ju(cache[pid], 900), 'product_id': pid}
-  for name, ppath, its in CASES:
+  for name, ppath, its, *rest in CASES:
     person = ju(open(ppath, 'rb').read())
     body = {'person': person, 'items': [item(p, t) for p, t in its], 'body': {'height_cm': 165, 'weight_kg': 55}, 'variants': 1, 'views': False, 'async': True, 'key': secrets.token_hex(16), 'aspect': 'auto', 'nocache': True}
+    if rest and rest[0]: body['wear'] = rest[0]   # 第 4 欄：穿法，例如 {"tuck":"in","hem":"cuff"}
     t0 = time.time(); s, d = call('POST', API + '/api/tryon', body, H); r = {'case': name, 'items': [t for _, t in its], 'submit': s, 'post_secs': round(time.time() - t0, 1), 'body_kb': len(json.dumps(body)) // 1024}
     if not (isinstance(d, dict) and d.get('id')): r['error'] = str(d)[:200]; rep.append(r); print(r); time.sleep(25); continue
     seen = []; first_pv = None; fast = False; last_fast = 0
