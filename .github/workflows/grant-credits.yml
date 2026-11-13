@@ -2,7 +2,7 @@ name: 管理：送點數給某個 Email
 on:
   workflow_dispatch:
     inputs:
-      email:  { description: '會員 Email', required: true }
+      email:  { description: '會員 Email 或會員編號', required: true }
       amount: { description: '要加的點數（可負數扣回）', required: true, default: '200' }
       welcome: { description: '當作新會員見面禮（yes＝已領過就不再送，之後也不會自動再送）', required: false, default: 'no' }
 jobs:
@@ -19,10 +19,11 @@ jobs:
           url, key = os.environ['URL'], os.environ['KEY']
           email, amount = "${{ inputs.email }}".strip().lower(), int("${{ inputs.amount }}")
           h = {'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'}
-          q = urllib.request.Request(f"{url}/rest/v1/profiles?select=id,email,credits&email=ilike.{urllib.parse.quote(email)}", headers=h)
+          flt = f"email=ilike.{urllib.parse.quote(email)}" if '@' in email else f"id=eq.{urllib.parse.quote(email)}"   # 也可以填會員編號（紀錄裡不會留下 Email）
+          q = urllib.request.Request(f"{url}/rest/v1/profiles?select=id,email,credits&{flt}", headers=h)
           rows = json.load(urllib.request.urlopen(q))
           if not rows: raise SystemExit(f'找不到會員 {email}（要先在網站登入過一次）')
-          r = rows[0]
+          r = rows[0]; email = r['id'][:6] + '…'   # 輸出不顯示 Email
           if "${{ inputs.welcome }}".strip().lower() == 'yes':
             q = urllib.request.Request(f"{url}/rest/v1/generations?user_id=eq.{r['id']}&status=eq.bonus&select=id", headers=h)
             if json.load(urllib.request.urlopen(q)): raise SystemExit(f'{email} 已經領過見面禮，不再重複送（目前 {r["credits"]} 點）')
