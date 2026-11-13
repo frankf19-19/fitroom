@@ -9,6 +9,9 @@ SUPABASE_URL = "https://oksutiyvzxgssmgppdbz.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_3XnPxz8D1X8OTv5a6-Ku5Q_7v8zx7_K"
 SITE_URL = "https://frankf19-19.github.io/fitroom"
 FREE_DAILY = "2"
+FREE_MODE = "1"            # 會員限時免費：試穿不扣點（要恢復收點數改成 "0"）
+FREE_MODE_DAILY = "30"     # 限時免費期間，每人每天可免費試穿幾件
+FREE_MODE_GLOBAL = "400"   # 限時免費期間，全站每天最多幾筆免費試穿
 ADMIN_EMAILS = "frankccc199@gmail.com,frankccc199@hotmail.com"
 GEMINI_IMAGE_MODEL = "gemini-nano-banana-2.1"
 

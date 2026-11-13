@@ -54,6 +54,7 @@ def gender_of(t, d):
   w = bool(re.search(r'女|women|ladies|WMNS|wmns', t, re.I)); m = bool(re.search(r'男|(?<!wo)men\b|(?<!WO)MEN\b', t))
   if w and not m: return 'f'
   if m and not w: return 'm'
+  if d == 'u' and not m and re.search(r'裙|洋裝|連身', t): return 'f'   # 沒寫男女、但明顯是女裝的品項
   return d
 SIZE_ORDER = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL']
 def norm_sizes(vals):
@@ -253,7 +254,7 @@ LD_SITES = [('www.lativ.com.tw', 'lativ', 'u', None, r'/product/\d+', 360), ('ww
             # PAZZO／MEIER.Q／Mercci22 同一套系統：/market/n/<id>（網站地圖另有 /zh-tw/、/en-us/ 重複網址，會去重）
             ('www.pazzo.com.tw', 'PAZZO', 'f', None, r'\.tw/market/n/\d+$', 240, 'id_desc'), ('www.meierq.com', 'MEIER.Q', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'), ('www.mercci22.com', 'Mercci22', 'f', None, r'\.com/market/n/\d+$', 240, 'id_desc'),
             # Shopline：/zh-hant/products/<handle>；robots.txt 有 Crawl-delay: 5（SC.urlopen 會照做），商品頁數壓在 150 內才跑得完
-            ('www.50-shop.com', '50% FIFTY PERCENT', 'u', None, r'/(zh-hant/)?products/', 150), ('www.lulus.com.tw', 'Lulus', 'f', None, r'/(zh-hant/)?products/', 150),
+            ('www.50-shop.com', '50% FIFTY PERCENT', 'f', None, r'/(zh-hant/)?products/', 150), ('www.lulus.com.tw', 'Lulus', 'f', None, r'/(zh-hant/)?products/', 150),
             # Cyberbiz：/products/<handle>
             ('www.fila.com.tw', 'FILA', 'u', None, r'/products/', 240),
             # GAP 台灣：/pdp/<id>/<sku>，JSON-LD 沒價格、用 itemprop=price 補

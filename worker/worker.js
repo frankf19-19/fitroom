@@ -12,13 +12,14 @@
  *   GEMINI_IMAGE_MODEL    預設 gemini-nano-banana-2.1（Text，可改）
  *   SITE_URL              https://frankf19-19.github.io/fitroom（Text，允許來源與付款後導回；App 來源自動允許）
  *   FREE_DAILY            每日免費點數，預設 2（Text）
+ *   FREE_MODE             "1"＝會員限時免費（試穿不扣點）；FREE_MODE_DAILY 每人每天件數（預設 30）、FREE_MODE_GLOBAL 全站每天筆數（預設 400）
  *   ADMIN_EMAILS          管理者 Email，逗號分隔（Text）
  *   ECPAY_MERCHANT_ID     綠界特店編號（Text）；留空則使用綠界測試環境
  *   ECPAY_HASH_KEY        綠界 HashKey（Secret）
  *   ECPAY_HASH_IV         綠界 HashIV（Secret）
  */
 
-const VERSION = '2.24.0';
+const VERSION = '2.25.1';
 const RUNNING_STALE_MS = 3 * 60 * 1000;    // 進行中超過 3 分鐘沒有進度視為失敗並退點
 const TRYON_BUDGET_MS = 8 * 60 * 1000;      // 單次合成整體上限
 const POLL_BUDGET_MS = 25000;                // 單次輪詢：超過就不再開始新步驟
@@ -29,6 +30,10 @@ const FAL_QUEUE = 'https://queue.fal.run/fal-ai/fashn/tryon/v1.6';
 // 整套換裝引擎（一次把所有單品穿上；可改變版型，如短褲→寬褲）。依序備援
 const FASHN_MODE = 'balanced';   // 第一次用 FASHN 平衡模式（實測畫質與 quality 相近、每件快 5–10 秒）；重做時才用 quality
 const JOB_MAX_AGE_MS = 12 * 60 * 1000;   // 一筆試穿從開始（或認領）起最久 12 分鐘，超過就收尾／退點
+// 會員限時免費（FREE_MODE=1）：試穿不扣點，改用「每人每天免費件數」(FREE_MODE_DAILY，預設 30) 當上限；
+// 另有全站每天上限 (FREE_MODE_GLOBAL，預設 400 筆) 保護儲值不被刷爆。360° 影片成本高，仍然要用點數。
+const freeMode = env => String(env.FREE_MODE || '') === '1';
+const freeDailyOf = env => freeMode(env) ? Number(env.FREE_MODE_DAILY || 30) : Number(env.FREE_DAILY || 2);
 const MAX_CONCURRENT = 3;   // 每人同時進行中的試穿上限
 const OUTFIT_ENGINES = ['https://queue.fal.run/fal-ai/nano-banana-2/edit', 'https://queue.fal.run/fal-ai/nano-banana-pro/edit'];
 const ITEM_LABEL = { top: 'TOP or OUTERWEAR (upper body garment)', bottom: 'BOTTOM (trousers / skirt / shorts)', dress: 'ONE-PIECE (dress / jumpsuit)', shoes: 'SHOES', hat: 'HAT', accessory: 'ACCESSORY (bag / jewelry / glasses / watch)', hair: 'HAIRSTYLE reference' };
@@ -397,7 +402,7 @@ export default {
       if (p === '/api/outfit' && m === 'POST') return await handleOutfit(request, env, cors);
       if (p === '/api/analyze' && m === 'POST') return await handleAnalyze(request, env, cors, ctx);
       if (p === '/api/products' && m === 'GET') return await handleProducts(request, env, cors, url);
-      if (p === '/api/brands' && m === 'GET') return await handleBrands(env, cors);
+      if (p === '/api/brands' && m === 'GET') return await handleBrands(env, cors, url);
       if (p === '/api/sizechart' && m === 'GET') return await handleSizechart(env, cors, url);
       if (p === '/api/img' && m === 'GET') return await handleImgProxy(request, env, cors, url);
       if (p === '/api/product-click' && m === 'POST') return await handleProductClick(request, env, cors);
@@ -560,11 +565,11 @@ async function handleMe(request, env, cors) {
   // 開啟 App 時順便清掉卡住的「進行中」（Worker 被終止、關掉頁面等），一次便宜查詢，有才處理
   try { await sweepStale(env, user.id, true); } catch { /* ignore */ }
   const p = await getProfile(env, user);
-  const freeDaily = Number(env.FREE_DAILY || 2);
+  const freeDaily = freeDailyOf(env);
   const used = await freeUsedToday(env, user.id);
   const packs = Object.fromEntries(Object.entries(PACKS).map(([k, v]) => [k, { name: v.name + ' 點', credits: v.credits, price: v.price }]));
   let payEnabled = false; try { payEnabled = !ecpayCfg(env).test || isAdmin(env, user); } catch { payEnabled = false; }
-  return json({ welcome_bonus: p.welcome_bonus || 0, email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), pay_enabled: payEnabled, views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
+  return json({ free_mode: freeMode(env) || undefined, welcome_bonus: p.welcome_bonus || 0, email: user.email, credits: p.credits, free_daily: freeDaily, free_left: Math.max(0, freeDaily - used), packs, is_admin: isAdmin(env, user), pay_enabled: payEnabled, views_available: !!env.FAL_KEY, analyze_available: !!(env.GEMINI_KEY || env.FAL_KEY), body: p.body || null, analysis: p.analysis || null, free_daily_reset: '00:00 Asia/Taipei' }, 200, cors);
 }
 
 /* ---------------- /api/analyze：身形與臉型分析（免費，不扣點；每天最多 5 次） ---------------- */
@@ -683,7 +688,7 @@ async function handleTryon(request, env, cors, ctx) {
   if (useCache) {
     const hit = await P_hit;
     const r = hit[0] && hit[0].views && hit[0].views.result;
-    if (r) { const u0 = await P_used, p0 = await P_profile; const used = u0.e ? 0 : u0.v; const pr = p0.e ? null : p0.v; return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, Number(env.FREE_DAILY || 2) - used) } }, 200, cors); }
+    if (r) { const u0 = await P_used, p0 = await P_profile; const used = u0.e ? 0 : u0.v; const pr = p0.e ? null : p0.v; return json({ cached: true, result: { ...r, charged: 0, free_used: 0, credits: pr ? pr.credits : null, free_left: Math.max(0, freeDailyOf(env) - used) } }, 200, cors); }
   }
   // ---- 預先合成（使用者還在挑尺寸時就先跑；按下「開始」才扣點）----
   if (bkey && stepMode) {
@@ -704,15 +709,22 @@ async function handleTryon(request, env, cors, ctx) {
   }
   // 扣點：每個品項 1 點 × 張數；先用今日免費點數，不足再扣點數
   const cost = items.length * variants + (wantViews ? 2 : 0);
-  const freeDaily = Number(env.FREE_DAILY || 2);
+  const freeDaily = freeDailyOf(env);
   const p1 = await P_profile; if (p1.e) throw p1.e; const profile = p1.v;
   const u1 = await P_used; if (u1.e) throw u1.e; const used = u1.v;
   const freeLeft = Math.max(0, freeDaily - used);
-  const useFree = Math.min(freeLeft, cost);
+  const FM = freeMode(env);
+  const useFree = Math.min(freeLeft, FM && wantViews ? cost - 2 : cost);   // 限時免費期間：360° 的 2 點不能用免費額度抵
   const payCredits = cost - useFree;
   if (prefetch && payCredits > profile.credits) return json({ skip: true, reason: 'credits' }, 200, cors);
   if (payCredits > profile.credits) {
+    if (FM) return json({ error: wantViews && freeLeft >= cost - 2 ? `360° 需要 2 點，你目前有 ${profile.credits} 點。關掉 360° 就能免費試穿。` : `今天的免費試穿用完了（每天 ${freeDaily} 件，今天還剩 ${freeLeft} 件，這次要 ${cost - (wantViews ? 2 : 0)} 件）。明天會再補滿。`, need_credits: true, free_mode: true }, 402, cors);
     return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
+  }
+  if (FM && !prefetch) {
+    const cap = Number(env.FREE_MODE_GLOBAL || 400);
+    const today = await sb(env, `/rest/v1/generations?created_at=gte.${encodeURIComponent(taipeiDayStart())}&free_used=gt.0&select=id&limit=${cap + 1}`).catch(() => []);
+    if (Array.isArray(today) && today.length >= cap && payCredits < cost) return json({ error: '今天免費試穿的名額已經滿了，明天再來，或用點數試穿。', busy: true }, 429, cors);
   }
   // 先登記進行中（鎖住免費額度與限流），再扣點，失敗再退
   let gen;
@@ -870,13 +882,14 @@ async function claimPrefetch(env, cors, user, g, { items, wantViews, ckey }) {
     return json({ error: '這次的單品和預先準備的不一致，請再按一次「開始」' }, 409, cors);
   }
   const cost = meta.length * (Number(g.variants) || 1) + (wantViews ? 2 : 0);
-  const freeDaily = Number(env.FREE_DAILY || 2);
+  const freeDaily = freeDailyOf(env);
   const profile = await getProfile(env, user);
   const used = await freeUsedToday(env, user.id);
   const freeLeft = Math.max(0, freeDaily - used);
-  const useFree = Math.min(freeLeft, cost);
+  const FM = freeMode(env);
+  const useFree = Math.min(freeLeft, FM && wantViews ? cost - 2 : cost);
   const payCredits = cost - useFree;
-  if (payCredits > profile.credits) return json({ error: `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true }, 402, cors);
+  if (payCredits > profile.credits) return json({ error: FM ? (wantViews && freeLeft >= cost - 2 ? `360° 需要 2 點，你目前有 ${profile.credits} 點。關掉 360° 就能免費試穿。` : `今天的免費試穿用完了（每天 ${freeDaily} 件，今天還剩 ${freeLeft} 件）。明天會再補滿。`) : `點數不足：這次需要 ${cost} 點（免費額度可抵 ${useFree} 點），你目前有 ${profile.credits} 點。`, need_credits: true, free_mode: FM || undefined }, 402, cors);
   // 等輪詢放開鎖再改（避免被覆寫）；最多 10 輪、總計約 40 秒（長步驟的輪詢可能鎖較久）
   let row = g;
   const CLAIM_WAITS = [1500, 2000, 3000, 4000, 4500, 5000, 5000, 5000, 5000, 5000];
@@ -1510,7 +1523,7 @@ async function handleProducts(request, env, cors, url) {
   const page = Math.min(10000, Math.max(0, Math.floor(Number(url.searchParams.get('page')) || 0))), size = Math.min(24, Math.max(6, Math.floor(Number(url.searchParams.get('size')) || 24)));
   let qs = `/rest/v1/products?active=eq.true&select=id,source,brand,name,type,gender,price,currency,image_url,buy_url,tags,sizes,featured&order=featured.desc,created_at.desc&limit=${size}&offset=${page * size}`;
   if (type && ['top','bottom','dress','shoes','hat','accessory','hair'].includes(type)) qs += `&type=eq.${type}`;
-  if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)`;
+  if (gender === 'f' || gender === 'm') qs += `&gender=in.(${gender},u)` + (gender === 'm' && !type ? '&type=neq.dress' : '');   // 男生不顯示洋裝
   const brand = (url.searchParams.get('brand') || '').replace(/[(),"*\\]/g, ' ').trim().slice(0, 60);
   if (brand) qs += `&brand=eq.${encodeURIComponent(brand)}`;
   if (q) qs += `&or=(name.ilike.*${encodeURIComponent(q)}*,brand.ilike.*${encodeURIComponent(q)}*)`;
@@ -1533,11 +1546,13 @@ async function thumbIndex(env) {
   } catch {}
   return THUMB_IDX;
 }
-async function handleBrands(env, cors) {
+async function handleBrands(env, cors, url) {
   // Supabase 一次最多回 1000 筆，商品超過後要分頁，否則品牌清單會少
+  // gender=f|m：只算那一邊（含不分男女）的商品，男生就不會看到只有女裝的品牌
+  const g = url && url.searchParams.get('gender'); const gq = (g === 'f' || g === 'm') ? `&gender=in.(${g},u)` + (g === 'm' ? '&type=neq.dress' : '') : '';
   const rows = [];
   for (let off = 0; off < 10000; off += 1000) {
-    const page = await sb(env, `/rest/v1/products?active=eq.true&select=brand&order=id&limit=1000&offset=${off}`).catch(() => []);
+    const page = await sb(env, `/rest/v1/products?active=eq.true${gq}&select=brand&order=id&limit=1000&offset=${off}`).catch(() => []);
     rows.push(...page);
     if (page.length < 1000) break;
   }

@@ -79,7 +79,7 @@ with sync_playwright() as pw:
   for phone in (True, False):
     st, link = admin('POST', '/auth/v1/admin/generate_link', {'type': 'magiclink', 'email': EMAIL, 'options': {'redirect_to': SITE}})
     tag = 'user_' + ('phone' if phone else 'pc')
-    pg = mkpage(phone); pg.add_init_script("try{localStorage.setItem('tryon.onb','1');localStorage.setItem('tryon.noprefetch','1')}catch(e){}")
+    pg = mkpage(phone); pg.add_init_script("try{localStorage.setItem('tryon.onb','1');localStorage.setItem('tryon.noprefetch','1');localStorage.setItem('tryon.shopg', '%s')}catch(e){}" % ('f' if phone else 'm'))
     pg.goto(link['action_link'], wait_until='load'); pg.wait_for_timeout(5000)
     tour(pg, tag, ['home', 'tryon', 'shop', 'wardrobe', 'history', 'me', 'credits', 'body', 'settings', 'admin'])
     # 試衣間：放照片 + 從商店放兩件（不按生成）

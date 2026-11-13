@@ -698,7 +698,7 @@
         <h1>買之前，<br>先看看穿在你身上的樣子</h1>
         <p class="sub">一張全身照，放進想試的上衣、褲子、裙子、洋裝、鞋子、帽子、飾品，連髮型都能換。30 秒內看到合成好的真實穿搭照，還能轉到側面與背面看整體。</p>
         <div class="herocta"><button class="btn primary lg" data-go="tryon">開始試穿</button><button class="btn lg" id="heroLogin">登入 / 註冊</button></div>
-        <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入。新會員送 10 點，每天再送免費額度。</div>
+        <div class="muted herocta-note">免密碼，用 Email 收驗證碼就能登入。會員現在限時免費試穿，不用點數。</div>
       </div>
       <div class="demo photo" id="demo" aria-label="拖曳比較試穿前後">
         <img class="ph" id="demoPhAfter" src="demo/f-after.webp?v=20261106" alt="試穿後" width="749" height="1125" fetchpriority="high" decoding="async" loading="lazy">
@@ -831,7 +831,7 @@
     <div class="shopbar">
       <div class="search"><input type="text" id="shopQ" placeholder="搜尋品牌或商品" inputmode="search" enterkeyhint="search" autocomplete="off"><button class="sclear hidden" id="shopQClear" aria-label="清除搜尋">✕</button></div>
     </div>
-    <div class="filt" id="shopFilt"><div class="chips cgroup" id="shopGender"><span class="chip on" data-g="">全部</span><span class="chip" data-g="f">女</span><span class="chip" data-g="m">男</span></div><i class="fdiv"></i><div class="chips cgroup" id="shopType"></div></div>
+    <div class="filt" id="shopFilt"><div class="chips cgroup" id="shopGender"><span class="chip" data-g="f">女生</span><span class="chip" data-g="m">男生</span></div><i class="fdiv"></i><div class="chips cgroup" id="shopType"></div></div>
     <div class="filt brandfilt" id="shopBrand"></div>
     <div id="shopList"><div class="skel"><i></i><i></i><i></i><i></i></div></div>
     <div class="row" style="justify-content:center;margin-top:14px"><button class="btn hidden" id="shopMore">載入更多</button></div>
@@ -983,7 +983,7 @@ const CONFIG = {
   GOOGLE_IOS_CLIENT_ID: ''  // App 內 Google 登入用（iOS client ID）
 };
 const APP_VERSION = '6.1.0';
-const BUILD = '2026-11-12-05';
+const BUILD = '2026-11-13-01';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 /* ===================================================== */
 
@@ -1115,7 +1115,9 @@ function renderUser(){
   if (!state.user) { a.innerHTML='<button class="btn sm primary">登入</button>'; a.firstChild.onclick=()=>openLogin(); const hl=$('heroLogin'); if(hl) hl.classList.remove('hidden'); if(curView==='me') renderMe(); return; }
   const em = state.user.email || '';
   const hl=$('heroLogin'); if(hl) hl.classList.add('hidden');
-  a.innerHTML = `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點<span class="cf"> · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></span></div>`;
+  a.innerHTML = FM()
+    ? `<span class="free">會員限時免費</span><div class="userchip" title="限時免費：今天還可以試幾件"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span>免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b> 件<b id="chipCredits" hidden>${state.me?state.me.credits:''}</b></span></div>`
+    : `<span class="free">今天還有 ${state.me?state.me.free_left:'–'} 張免費</span><div class="userchip" title="點數"><span class="dot">${(em[0]||'U').toUpperCase()}</span><span><b id="chipCredits">${state.me?state.me.credits:'–'}</b> 點<span class="cf"> · 免費 <b id="chipFree">${state.me?state.me.free_left:'–'}</b></span></span></div>`;
   a.querySelectorAll('.free,.userchip').forEach(el=>el.onclick=()=>go('credits'));
   if(curView==='me') renderMe();
 }
@@ -1162,7 +1164,7 @@ let otpPending=null;
 function openLogin(){
   if(!supa) return showSetup(true);
   if(otpPending && Date.now()-otpPending.at > 10*60*1000) otpPending=null;
-  openPick('登入後繼續', `<div class="muted" style="margin-bottom:10px">登入後才能合成、使用衣櫃與紀錄。新會員送 10 點，每天再送免費額度。</div>
+  openPick('登入後繼續', `<div class="muted" style="margin-bottom:10px">登入後才能合成、使用衣櫃與紀錄。會員現在限時免費試穿，不用點數。</div>
     <button class="btn block gbtn" id="sheetGoogle">使用 Google 登入</button>
     <div class="or">或用 Email</div>
     <div class="row" style="flex-wrap:nowrap"><input type="email" id="sheetEmail" placeholder="你的 Email"><button class="btn" id="sheetEmailBtn">寄驗證碼</button></div>
@@ -1254,7 +1256,7 @@ async function api(path, opts={}){
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&state.user&&!busy) refreshMe(); });
 async function refreshMe(){
   if (!state.user) return;
-  try { state.me = await api('/api/me'); if(state.me&&state.me.welcome_bonus>0) setTimeout(()=>toast(`歡迎加入！送你 ${state.me.welcome_bonus} 點，可以試穿 ${state.me.welcome_bonus} 件`),600); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+friendlyErr(e.message)); }
+  try { state.me = await api('/api/me'); if(state.me&&state.me.welcome_bonus>0) setTimeout(()=>toast(state.me.free_mode?'歡迎加入！會員現在限時免費試穿':`歡迎加入！送你 ${state.me.welcome_bonus} 點，可以試穿 ${state.me.welcome_bonus} 件`),600); } catch(e){ state.me=null; if(/登入已過期|401/.test(e.message)&&supa){ toast('登入已過期，請重新登入'); supa.auth.signOut().catch(()=>{}); } else toast('讀取帳號資料失敗：'+friendlyErr(e.message)); }
   renderUser(); renderCredits(); renderSlots(); updateAnalyzeCta();
 }
 
@@ -1363,7 +1365,7 @@ function renderSlots(){
   const mult = $('twoVariants').classList.contains('on') ? 2 : 1;
   const nItems=Object.keys(state.slots).length;
   const n=nItems * mult + (nItems && $('wantViews').classList.contains('on') ? 2 : 0);
-  runCost=n; $('btnRun').textContent = n ? `開始 AI 試穿 · ${n} 點` : '開始 AI 試穿';
+  runCost=n; $('btnRun').textContent = n ? (FM() ? ('開始 AI 試穿'+(viewsCost()?' · 360° 2 點':' · 免費')) : `開始 AI 試穿 · ${n} 點`) : '開始 AI 試穿';
   if (state.me && state.me.views_available===false){ $('wantViews').classList.remove('on'); $('wantViews').closest('.opt-row').classList.add('hidden'); }
   renderFit(); pfHint(); try{ renderFitNudge(); }catch{}
   $('btnRun').disabled = !n || busy;
@@ -1608,10 +1610,10 @@ $('onbAgain').onclick=e=>{ e.preventDefault(); showOnb(0); };
 try{ if(!localStorage.getItem('tryon.onb') && (IS_APP || matchMedia('(max-width:899px)').matches)) setTimeout(()=>showOnb(0),400); }catch{}
 
 /* ---------- 商店 ---------- */
-let shopSeq=0, shopLoaded=false, shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false, shopBrand='', shopBrands=null;
+let shopSeq=0, shopLoaded=false, shopFilterType='', shopGender='', shopPage=0, shopItems=[], shopBusy=false, shopBrand='', shopBrands=null, shopBrandsG=null;
 async function shopBrandChips(){
   const f=$('shopBrand'); if(!f) return;
-  if(!shopBrands){ try{ const r=await fetch(CONFIG.WORKER_URL+'/api/brands'); shopBrands=(await r.json()).brands||[]; }catch{ shopBrands=[]; } }
+  if(!shopBrands || shopBrandsG!==shopGender){ try{ const r=await fetch(CONFIG.WORKER_URL+'/api/brands'+(shopGender?'?gender='+shopGender:'')); shopBrands=(await r.json()).brands||[]; shopBrandsG=shopGender; }catch{ shopBrands=[]; } }
   if(!shopBrands.length){ f.innerHTML=''; return; }
   // 只放熱門的前幾家＋目前選的；其餘收進「全部品牌」選單，品牌再多也不會被切掉
   const TOP=window.matchMedia('(min-width:900px)').matches?10:8;
@@ -1648,7 +1650,10 @@ function filtEdges(f){
 }
 window.addEventListener('resize',()=>document.querySelectorAll('#shopFilt,#shopBrand').forEach(filtEdges));
 function shopTypeChips(){ setTimeout(()=>filtEdges($('shopFilt')||$('shopType')),0); const f=$('shopType'); f.innerHTML=`<span class="chip ${!shopFilterType?'on':''}" data-t="">全部</span>`+SLOT_DEFS.map(d=>`<span class="chip ${shopFilterType===d.type?'on':''}" data-t="${d.type}">${d.label}</span>`).join(''); f.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopFilterType=c.dataset.t; loadShop(true); }); }
-$('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ shopGender=c.dataset.g; $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x===c)); loadShop(true); });
+/* 商店男女分開：不再有「全部」。先用使用者選過的，其次用「我的身形」填的性別；都沒有就先問一次。 */
+function userGender(){ try{ const g=localStorage.getItem('tryon.shopg'); if(g==='f'||g==='m') return g; }catch{} try{ const g=(getBody()||{}).gender; if(g==='f'||g==='m') return g; }catch{} try{ const g=state.me&&state.me.body&&state.me.body.gender; if(g==='f'||g==='m') return g; }catch{} return ''; }
+function setShopGender(g, save){ shopGender=g; if(save){ try{ localStorage.setItem('tryon.shopg',g); }catch{} } $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g===g)); }
+$('shopGender').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ setShopGender(c.dataset.g,true); shopBrand=''; loadShop(true); });
 let shopQT; const shopQ=$('shopQ');
 function syncShopClear(){ const c=$('shopQClear'); if(c) c.classList.toggle('hidden',!shopQ.value); }
 shopQ.addEventListener('input',()=>{ syncShopClear(); clearTimeout(shopQT); shopQT=setTimeout(()=>loadShop(true),350); });
@@ -1658,6 +1663,11 @@ $('shopQClear').onclick=()=>{ shopQ.value=''; syncShopClear(); clearTimeout(shop
 let shopIO=null;
 if(window.IntersectionObserver){ shopIO=new IntersectionObserver(es=>{ if(es.some(e=>e.isIntersecting) && curView==='shop' && !shopBusy && !$('shopMore').classList.contains('hidden')) loadShop(false); },{rootMargin:'0px 0px 320px 0px'}); shopIO.observe($('shopMore')); }
 async function loadShop(reset){
+  if(!shopGender){ const g=userGender(); if(g) setShopGender(g,false); else {
+    shopLoaded=true; $('shopMore').classList.add('hidden');
+    $('shopList').innerHTML='<div class="empty-ill gpick"><b>想看哪一邊的衣服？</b><p>男生、女生的衣服分開放，選一次就好，之後可以在上面切換。</p><div class="row" style="justify-content:center;gap:12px;margin-top:6px"><button class="btn primary lg" data-pg="f">女生</button><button class="btn primary lg" data-pg="m">男生</button></div></div>';
+    $('shopList').querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>{ setShopGender(b.dataset.pg,true); loadShop(true); });
+    return; } }
   if(shopBusy && !reset) return; shopBusy=true; const seq=++shopSeq; shopLoaded=true;
   if(reset){ shopPage=0; shopItems=[]; shopTypeChips(); shopBrandChips(); $('shopList').innerHTML='<div class="skel"><i></i><i></i><i></i><i></i></div>'; }
   try{
@@ -1686,7 +1696,7 @@ function priceTxt(p){ return p&&p.price>0 ? ((p.currency&&p.currency!=='TWD')?p.
 function syncRackBtn(id){ const on=inRack(id); document.querySelectorAll(`#shopList [data-rack="${id}"]`).forEach(b=>{ b.classList.toggle('on',on); const t=b.querySelector('.t'); if(t) t.textContent=on?'✓ 衣架':'＋衣架'; b.setAttribute('aria-pressed',on); }); }
 function renderShop(){
   const box=$('shopList');
-  if(!shopItems.length && (shopFilterType||shopGender||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopGender=''; shopBrand=''; $('shopQ').value=''; syncShopClear(); $('shopGender').querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.g==='')); loadShop(true); }; return; }
+  if(!shopItems.length && (shopFilterType||shopBrand||$('shopQ').value.trim())){ box.innerHTML=`<div class="empty-ill"><b>找不到符合的商品</b><p>換個關鍵字，或清除篩選看看。</p><button class="btn primary" id="shopClear">清除篩選</button></div>`; $('shopClear').onclick=()=>{ shopFilterType=''; shopBrand=''; $('shopQ').value=''; syncShopClear(); loadShop(true); }; return; }
   if(!shopItems.length){ box.innerHTML=`<div class="empty-ill"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.5 12h-13z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg></div><b>還沒有商品</b><p>商店上架後會出現在這裡。現在可以先用自己的照片在試衣間試穿。</p><button class="btn primary" id="shopGoTry">去試衣間</button></div>`; $('shopGoTry').onclick=()=>go('tryon'); return; }
   box.innerHTML=`<div class="pgrid">${shopItems.map((p,pi)=>`<div class="pitem" data-id="${p.id}" role="button" tabindex="0"><div class="img">${(I=>`<img src="${esc(I.src)}" ${pi<2?'fetchpriority="high" decoding="async"':'loading="lazy" decoding="async"'} referrerpolicy="no-referrer" alt="${esc(p.name)}" data-fb="${esc(I.fb)}" onerror="imgFb(this)">`)(pImg(p,SHOP_TW))}${p.featured?'<span class="feat">精選</span>':''}</div><div class="info"><span class="brand">${esc(p.brand)}</span><span class="name">${esc(p.name)}</span><span class="price">${priceTxt(p)}</span><div class="acts"><button class="btn primary" data-try="${p.id}">試穿</button><button class="btn rackbtn${inRack(p.id)?' on':''}" data-rack="${p.id}" aria-pressed="${inRack(p.id)}" aria-label="加入衣架">${HANGER}<span class="t">${inRack(p.id)?'✓ 衣架':'＋衣架'}</span></button>${p.buy_url?`<button class="btn" data-buy="${p.id}">購買</button>`:''}</div></div></div>`).join('')}</div>`;
   box.querySelectorAll('[data-try]').forEach(b=>b.onclick=()=>tryProduct(shopItems.find(x=>String(x.id)===b.dataset.try)));
@@ -1736,11 +1746,20 @@ async function comboKey(items){ const h=await crypto.subtle.digest('SHA-256', ne
 function personAspect(){ return loadImg(state.person).then(pim=>{ const r=pim.width/pim.height; const opts=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',2/3],['9:16',9/16],['5:4',1.25],['4:3',4/3],['3:2',1.5],['16:9',16/9]]; return opts.reduce((a,b)=>Math.abs(Math.log(b[1]/r))<Math.abs(Math.log(a[1]/r))?b:a)[0]; }).catch(()=>'auto'); }
 const pf={key:null,id:null,st:null,timer:null};
 /* 點數夠不夠：回傳還差幾點（0＝夠） */
-function creditShort(){ if(!state.me||!runCost) return 0; const free=Math.min(state.me.free_left||0,runCost); return Math.max(0, runCost-free-(state.me.credits||0)); }
+/* 會員限時免費：伺服器的 FREE_MODE 開著時，試穿不扣點（每人每天有免費件數上限），360° 仍要 2 點。登入前先用這裡的預設值。 */
+const FREE_MODE_DEFAULT=true;
+const FM=()=> state.me ? !!state.me.free_mode : FREE_MODE_DEFAULT;
+const viewsCost=()=>{ try{ return (Object.keys(state.slots).length && $('wantViews').classList.contains('on')) ? 2 : 0; }catch{ return 0; } };
+function creditShort(){ if(!state.me||!runCost) return 0;
+  if(FM()){ const v=viewsCost(), itemsCost=runCost-v; return Math.max(0, Math.max(0,itemsCost-(state.me.free_left||0)) + v - (state.me.credits||0)); }
+  const free=Math.min(state.me.free_left||0,runCost); return Math.max(0, runCost-free-(state.me.credits||0)); }
 function shortText(){ const m=state.me, short=creditShort(), free=Math.min(m.free_left||0,runCost), n=Object.keys(state.slots).length;
+  if(FM()){ const v=viewsCost(), itemsCost=runCost-v;
+    if(itemsCost<=(m.free_left||0)) return `360° 需要 2 點，你目前有 ${m.credits||0} 點。關掉 360° 就能免費試穿。`;
+    return (m.free_left>0) ? `今天還可以免費試 ${m.free_left} 件，這次放了 ${itemsCost} 件。拿掉 ${itemsCost-m.free_left} 件就能試，明天會再補滿 ${m.free_daily} 件。` : `今天的免費試穿用完了（每天 ${m.free_daily} 件），明天會再補滿。`; }
   if(!(m.free_left>0)) return `今天的免費額度用完了（明天會再送），目前點數 ${m.credits||0} 點，這次需要 ${runCost} 點。`;
   return short<=n-1 ? `免費額度今天剩 ${free} 張、點數 ${m.credits||0} 點，這次需要 ${runCost} 點。拿掉 ${short} 件單品就能先免費試。` : `這次需要 ${runCost} 點，免費額度今天剩 ${free} 張、點數 ${m.credits||0} 點。關掉加價選項或少放幾件，就能先用免費額度試。`; }
-function pfHint(){ const h=$('pfHint'); if(!h) return; const sh=creditShort(); h.classList.toggle('warn',sh>0); if(sh>0){ h.textContent=shortText(); return; } const parts=[]; if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
+function pfHint(){ const h=$('pfHint'); if(!h) return; const sh=creditShort(); h.classList.toggle('warn',sh>0); if(sh>0){ h.textContent=shortText(); return; } const parts=[]; if(runCost&&FM()){ parts.push('會員限時免費，不扣點'); if(state.me) parts.push(`今天還可以試 ${state.me.free_left} 件`); if(viewsCost()) parts.push('360° 另扣 2 點'); } else if(runCost){ parts.push('每個品項 1 點'); if(state.me){ const free=Math.min(state.me.free_left,runCost); parts.push(free>=runCost?`這次全用免費額度（剩 ${state.me.free_left} 張）`:`免費額度抵 ${free} 點，點數扣 ${runCost-free} 點`); } } if(pf.st==='ready') parts.push('⚡ 已經先幫你做好了，按下立刻出現'); else if(pf.st==='running') parts.push('⚡ 已先在背景準備，按下會更快'); if(runCost&&hqOn()) parts.push('高品質模式'); h.textContent=parts.join(' · '); }
 function schedulePrefetch(){ clearTimeout(pf.timer); pf.timer=setTimeout(doPrefetch, 4000); }
 async function doPrefetch(){
   try{ if(localStorage.getItem('tryon.noprefetch')) return; }catch{}
@@ -2656,7 +2675,7 @@ async function runTryon(opts={}){ let noCredit=false;
     }
     R.done=true; R.rec={ person0, img:imgs[0], d };
     const charged=d.charged!=null?d.charged:null;
-    $('runStatus').textContent = (charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.not_charged ? ' 這張不夠準，這次不扣點。' : (d.quality&&d.quality.retried ? ' 已自動檢查並重做一次。' : ''));
+    $('runStatus').textContent = (FM() && !charged ? `完成！限時免費，不扣點` + (d.free_left!=null?`，今天還可以試 ${d.free_left} 件。`:'。') : charged!=null ? `完成！本次扣 ${charged} 點（免費額度抵 ${d.free_used||0} 點）` + (d.credits!=null?`，剩餘 ${d.credits} 點。`:'。') : '完成！') + (d.views_error ? ' 多角度生成失敗，已退回 2 點。' : '') + (d.not_charged ? ' 這張不夠準，這次不扣點。' : (d.quality&&d.quality.retried ? ' 已自動檢查並重做一次。' : ''));
     if (state.me && d.credits!=null){ state.me.credits=d.credits; state.me.free_left=d.free_left; renderUser(); renderCredits(); } else refreshMe();
     let finalImg = imgs[0];
     if (imgs.length > 1) {
@@ -2679,21 +2698,22 @@ async function runTryon(opts={}){ let noCredit=false;
     if(!fg()){ toast(`有一套沒有成功（${R.label}）：${msg}`); renderTray(); return; }
     if(resumeId && /找不到這筆合成/.test(String(e.message))){ $('runStatus').textContent=''; }
     else {
-      $('runStatus').innerHTML = '<span style="color:var(--bad)">'+esc(msg)+'</span>' + (e.data&&e.data.need_credits?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
+      $('runStatus').innerHTML = '<span style="color:var(--bad)">'+esc(msg)+'</span>' + (e.data&&e.data.need_credits&&!e.data.free_mode?' <button class="btn sm primary" data-go="credits" style="margin-left:6px">去買點數</button>':'');
       const b=$('runStatus').querySelector('[data-go]'); if(b) b.onclick=()=>go('credits');
     }
   }finally{
     R.done=true; renderTray(); setTimeout(()=>{ if(!R.unseen) runs.delete(myRun); renderTray(); },4000);
     if(!fg()) return;
     busy=false; $('btnRun').disabled=false; $('result').classList.remove('busy'); renderSlots(); setTimeout(()=>prog.classList.add('hidden'),800);
-    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>'+(noCredit?'點數不夠，這次沒有送出、也沒有扣點。<br>拿掉幾件單品，或買點數後再試':'這次沒有成功。再按一次「開始 AI 試穿」，<br>或換一張更清楚的全身照')+'</div>'; }
+    if(!state.result){ $('result').style.background=''; $('result').style.border=''; $('result').style.overflow=''; $('result').innerHTML='<div class="empty"><div class="big"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg></div>'+(noCredit?(FM()?'今天的免費次數不夠，這次沒有送出。<br>拿掉幾件單品，或明天再試':'點數不夠，這次沒有送出、也沒有扣點。<br>拿掉幾件單品，或買點數後再試'):'這次沒有成功。再按一次「開始 AI 試穿」，<br>或換一張更清楚的全身照')+'</div>'; }
   }
 }
 $('btnRun').onclick=async()=>{
   if(!busy && creditShort()>0){
     const canFree=(state.me.free_left||0)>0;
-    const go2=await ask('點數不夠', shortText(), {ok:'去買點數', cancel:canFree?'我拿掉幾件':'先不要'});
-    if(go2) go('credits'); else if(canFree){ const sl=$('slots'); if(sl){ sl.scrollIntoView({behavior:'smooth',block:'center'}); sl.classList.add('flash'); setTimeout(()=>sl.classList.remove('flash'),1600); } }
+    const fm=FM();
+    const go2=await ask(fm?'今天的免費次數不夠':'點數不夠', shortText(), fm?{ok:canFree?'我拿掉幾件':'知道了', cancel:null}:{ok:'去買點數', cancel:canFree?'我拿掉幾件':'先不要'});
+    if(go2 && !fm) go('credits'); else if(canFree){ const sl=$('slots'); if(sl){ sl.scrollIntoView({behavior:'smooth',block:'center'}); sl.classList.add('flash'); setTimeout(()=>sl.classList.remove('flash'),1600); } }
     return;
   }
   runTryon();
